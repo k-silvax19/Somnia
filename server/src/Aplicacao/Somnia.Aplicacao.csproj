@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Dominio/Somnia.Dominio.csproj" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="FluentResults" Version="4.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.13" />
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../Dominio/Somnia.Dominio.csproj" /></ItemGroup>
 </Project>

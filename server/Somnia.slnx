@@ -5,4 +5,7 @@
     <Project Path="src/Dominio/Somnia.Dominio.csproj" />
     <Project Path="src/Infraestrutura/Somnia.Infraestrutura.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Somnia.Tests/Somnia.Tests.csproj" />
+  </Folder>
 </Solution>
