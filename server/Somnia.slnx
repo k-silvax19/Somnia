@@ -1,3 +1,8 @@
 <Solution>
-  <Project Path="Somnia.WebApi/Somnia.WebApi.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Api/Somnia.Api.csproj" />
+    <Project Path="src/Aplicacao/Somnia.Aplicacao.csproj" />
+    <Project Path="src/Dominio/Somnia.Dominio.csproj" />
+    <Project Path="src/Infraestrutura/Somnia.Infraestrutura.csproj" />
+  </Folder>
 </Solution>
