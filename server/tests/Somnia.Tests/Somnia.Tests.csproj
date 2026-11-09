@@ -16,6 +16,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/Api/Somnia.Api.csproj" />
     <ProjectReference Include="../../src/Aplicacao/Somnia.Aplicacao.csproj" />
     <ProjectReference Include="../../src/Dominio/Somnia.Dominio.csproj" />
   </ItemGroup>

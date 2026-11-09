@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ builder.Services
     .Validate(x => !string.IsNullOrWhiteSpace(x.Issuer), "Jwt:Issuer é obrigatório.")
     .Validate(x => !string.IsNullOrWhiteSpace(x.Audience), "Jwt:Audience é obrigatório.")
     .Validate(x => Encoding.UTF8.GetByteCount(x.SigningKey) >= 32, "Jwt:SigningKey deve ter ao menos 32 bytes.")
-    .Validate(x => x.ExpiresInMinutes is > 0 and <= 35791394, "Jwt:ExpiresInMinutes inválido.")
+    .Validate(x => x.ExpiresInMinutes is > 0 and <= 15, "Jwt:ExpiresInMinutes inválido.")
     .ValidateOnStart();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new();
@@ -40,6 +41,7 @@ builder.Services
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
         NameClaimType = JwtRegisteredClaimNames.Sub,
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
         ClockSkew = TimeSpan.FromSeconds(30)
     };
 
@@ -52,6 +54,15 @@ builder.Services
             if (string.IsNullOrWhiteSpace(jti))
             {
                 context.Fail("Token sem identificador.");
+                return;
+            }
+
+            var sessoes = context.HttpContext.RequestServices.GetRequiredService<IRefreshTokens>();
+            if (!Guid.TryParse(context.Principal?.FindFirst("sid")?.Value, out var sessaoId)
+                || !Guid.TryParse(context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var usuarioId)
+                || !await sessoes.SessaoEstaAtivaAsync(sessaoId, usuarioId, context.HttpContext.RequestAborted))
+            {
+                context.Fail("Sessao encerrada ou expirada.");
                 return;
             }
 
@@ -84,13 +95,40 @@ builder.Services.AddCors(options => options.AddPolicy("Client", policy =>
         policy.WithOrigins(origins);
     }
 
-    policy.AllowAnyHeader().AllowAnyMethod();
+    policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 }));
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    foreach (var (nome, limite) in new[] { ("login", 10), ("register", 5), ("refresh", 30) })
+    {
+        options.AddPolicy(nome, context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = limite,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    }
+});
 
 var app = builder.Build();
 
-app.MapOpenApi().AllowAnonymous();
-app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Somnia API v1"));
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi().AllowAnonymous();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "Somnia API");
+        options.UseRequestInterceptor("request => { request.headers['X-Somnia-Client'] = 'web'; const csrf = document.cookie.split('; ').find(cookie => cookie.startsWith('__Host-somnia-csrf=')); if (csrf) request.headers['X-CSRF-Token'] = decodeURIComponent(csrf.substring(csrf.indexOf('=') + 1)); return request; }");
+    });
+}
+else
+{
+    app.UseHsts();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -117,7 +155,9 @@ app.UseExceptionHandler(error => error.Run(async context =>
 
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseCors("Client");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

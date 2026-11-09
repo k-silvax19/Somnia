@@ -5,7 +5,7 @@ using Somnia.Dominio.Compartilhado;
 
 namespace Somnia.Aplicacao.Modulos.Auth;
 
-public sealed record CadastrarUsuarioCommand(string? Nome, string? Email, string? Senha)
+public sealed record CadastrarUsuarioCommand(string? Nome, string? Email, string? Senha, string? Username = null)
     : IRequest<Result<UsuarioDto>>;
 
 public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identidade)
@@ -44,11 +44,10 @@ public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identi
 
         try
         {
-            var usuario = await identidade.CadastrarAsync(
-                command.Nome!,
-                command.Email!,
-                command.Senha!,
-                ct);
+            var usuario = command.Username is null
+                ? await identidade.CadastrarAsync(command.Nome!, command.Email!, command.Senha!, ct)
+                : await identidade.CadastrarComUsernameAsync(
+                    command.Nome!, command.Email!, command.Senha!, command.Username, ct);
 
             return Result.Ok(usuario);
         }
@@ -56,6 +55,11 @@ public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identi
         {
             return Result.Fail<UsuarioDto>(
                 Erros.Criar(TipoErro.Conflito, "O e-mail já está cadastrado.", "email"));
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "USERNAME_DUPLICADO")
+        {
+            return Result.Fail<UsuarioDto>(
+                Erros.Criar(TipoErro.Conflito, "O username j? est? cadastrado.", "username"));
         }
         catch (ArgumentException ex)
         {

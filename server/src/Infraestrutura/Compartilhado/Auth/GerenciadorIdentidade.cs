@@ -15,22 +15,36 @@ public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
         CancellationToken ct
     )
     {
+        return await CadastrarComUsernameAsync(nome, email, senha, email, ct);
+    }
+
+    public async Task<UsuarioDto> CadastrarComUsernameAsync(
+        string nome,
+        string email,
+        string senha,
+        string username,
+        CancellationToken ct
+    )
+    {
         ct.ThrowIfCancellationRequested();
 
         var user = new SomniaUser
         {
             Id = Guid.CreateVersion7(),
-            UserName = email,
+            UserName = username.Trim(),
             Email = email,
             Nome = nome.Trim()
         };
         var result = await userManager.CreateAsync(user, senha);
 
         if (result.Succeeded)
-            return new UsuarioDto(user.Id, user.Nome, user.Email!);
+            return new UsuarioDto(user.Id, user.Nome, user.Email!, user.UserName);
 
-        if (result.Errors.Any(x => x.Code is "DuplicateEmail" or "DuplicateUserName"))
+        if (result.Errors.Any(x => x.Code == "DuplicateEmail"))
             throw new InvalidOperationException("EMAIL_DUPLICADO");
+
+        if (result.Errors.Any(x => x.Code == "DuplicateUserName"))
+            throw new InvalidOperationException("USERNAME_DUPLICADO");
 
         throw new ArgumentException(string.Join(" ", result.Errors.Select(x => x.Description)));
     }
@@ -66,6 +80,6 @@ public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
         if (user is null)
             return null;
 
-        return new UsuarioDto(user.Id, user.Nome, user.Email!);
+        return new UsuarioDto(user.Id, user.Nome, user.Email!, user.UserName);
     }
 }

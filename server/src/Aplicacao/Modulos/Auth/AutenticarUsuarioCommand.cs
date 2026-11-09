@@ -10,7 +10,8 @@ public sealed record AutenticarUsuarioCommand(string? Email, string? Senha)
 
 public sealed class AutenticarUsuarioCommandHandler(
     IGerenciadorIdentidade identidade,
-    IEmissorTokens emissor)
+    IEmissorTokens emissor,
+    IRefreshTokens refreshTokens)
     : IRequestHandler<AutenticarUsuarioCommand, Result<TokenDto>>
 {
     public async Task<Result<TokenDto>> Handle(AutenticarUsuarioCommand command, CancellationToken ct)
@@ -27,6 +28,13 @@ public sealed class AutenticarUsuarioCommandHandler(
             return Result.Fail<TokenDto>(Erros.Criar(TipoErro.NaoAutenticado, "Credenciais inválidas."));
         }
 
-        return Result.Ok(emissor.CriarToken(usuario));
+        var refreshToken = await refreshTokens.CriarAsync(usuario.Id, ct);
+        var token = emissor.CriarToken(usuario, refreshToken.SessaoId) with
+        {
+            RefreshToken = refreshToken.Token,
+            RefreshExpiraEmUtc = refreshToken.ExpiraEmUtc
+        };
+
+        return Result.Ok(token);
     }
 }

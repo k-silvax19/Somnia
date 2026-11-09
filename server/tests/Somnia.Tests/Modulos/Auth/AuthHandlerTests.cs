@@ -90,9 +90,12 @@ public sealed class AuthHandlerTests
             .Setup(x => x.AutenticarAsync("ana@example.com", "SenhaSegura1!", It.IsAny<CancellationToken>()))
             .ReturnsAsync(credenciais);
         emissor
-            .Setup(x => x.CriarToken(credenciais))
+            .Setup(x => x.CriarToken(credenciais, It.IsAny<Guid>()))
             .Returns(token);
-        var handler = new AutenticarUsuarioCommandHandler(identidade.Object, emissor.Object);
+        var refreshTokens = new Mock<IRefreshTokens>();
+        refreshTokens.Setup(x => x.CriarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RefreshTokenDto("refresh", DateTime.UtcNow.AddDays(7), Guid.NewGuid()));
+        var handler = new AutenticarUsuarioCommandHandler(identidade.Object, emissor.Object, refreshTokens.Object);
 
         // Act
         var result = await handler.Handle(
@@ -101,8 +104,9 @@ public sealed class AuthHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(token, result.Value);
-        emissor.Verify(x => x.CriarToken(credenciais), Times.Once);
+        Assert.Equal(token.AccessToken, result.Value.AccessToken);
+        Assert.Equal("refresh", result.Value.RefreshToken);
+        emissor.Verify(x => x.CriarToken(credenciais, It.IsAny<Guid>()), Times.Once);
     }
 
     [Fact]
@@ -114,7 +118,10 @@ public sealed class AuthHandlerTests
         identidade
             .Setup(x => x.AutenticarAsync("ana@example.com", "senha-errada", It.IsAny<CancellationToken>()))
             .ReturnsAsync((CredenciaisUsuario?)null);
-        var handler = new AutenticarUsuarioCommandHandler(identidade.Object, emissor.Object);
+        var refreshTokens = new Mock<IRefreshTokens>();
+        refreshTokens.Setup(x => x.CriarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RefreshTokenDto("refresh", DateTime.UtcNow.AddDays(7), Guid.NewGuid()));
+        var handler = new AutenticarUsuarioCommandHandler(identidade.Object, emissor.Object, refreshTokens.Object);
 
         // Act
         var result = await handler.Handle(
@@ -123,7 +130,7 @@ public sealed class AuthHandlerTests
 
         // Assert
         Assert.True(result.IsFailed);
-        emissor.Verify(x => x.CriarToken(It.IsAny<CredenciaisUsuario>()), Times.Never);
+        emissor.Verify(x => x.CriarToken(It.IsAny<CredenciaisUsuario>(), It.IsAny<Guid>()), Times.Never);
     }
 
     [Fact]
@@ -172,7 +179,7 @@ public sealed class AuthHandlerTests
         revogacao
             .Setup(x => x.RevogarAsync("jti-token", expiracao, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var handler = new EncerrarSessaoCommandHandler(revogacao.Object);
+        var handler = new EncerrarSessaoCommandHandler(revogacao.Object, Mock.Of<IRefreshTokens>());
 
         // Act
         var result = await handler.Handle(

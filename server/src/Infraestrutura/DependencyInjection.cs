@@ -38,6 +38,7 @@ public static class DependencyInjection
 
         services.AddScoped<IGerenciadorIdentidade, GerenciadorIdentidade>();
         services.AddScoped<IRevogacaoToken, RevogacaoTokenEmOrm>();
+        services.AddScoped<IRefreshTokens, RefreshTokensEmOrm>();
 
         return services;
     }

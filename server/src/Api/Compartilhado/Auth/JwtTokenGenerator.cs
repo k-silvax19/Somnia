@@ -9,13 +9,14 @@ namespace Somnia.Api.Compartilhado.Auth;
 
 public sealed class JwtTokenGenerator(IOptions<JwtOptions> options) : IEmissorTokens
 {
-    public TokenDto CriarToken(CredenciaisUsuario usuario)
+    public TokenDto CriarToken(CredenciaisUsuario usuario, Guid sessaoId)
     {
         var jwt = options.Value;
         var expires = DateTime.UtcNow.AddMinutes(jwt.ExpiresInMinutes);
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
+            new Claim("sid", sessaoId.ToString()),
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.Nome),
             new Claim(ClaimTypes.Email, usuario.Email),

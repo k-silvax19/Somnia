@@ -86,6 +86,63 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpiraEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RevogadoEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SessaoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessaoId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.SessaoAutenticacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpiraEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RevogadaEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("Sessoes");
+                });
+
             modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -197,6 +254,36 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.RefreshToken", b =>
+                {
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SessaoAutenticacao", "Sessao")
+                        .WithMany()
+                        .HasForeignKey("SessaoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sessao");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.SessaoAutenticacao", b =>
+                {
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 #pragma warning restore 612, 618
         }
