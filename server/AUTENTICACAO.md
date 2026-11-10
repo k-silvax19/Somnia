@@ -118,6 +118,8 @@ Os cenários incluem cookies seguros, CSRF forjado, origem não permitida, roubo
 reutilização de refresh token, concorrência, revogação de JWTs, logout global,
 expiração absoluta, armazenamento por hash e limites de requisições.
 
-Na revisão de 10/11/2026, os 32 testes xUnit do projeto e o teste integrado
-acima passaram. Isso valida os cenários implementados de autenticação e
-perfil; não homologa os critérios do MVP que dependem dos demais módulos.
+Após a implementação de avatar em 10/11/2026, os 44 testes xUnit do projeto
+e o teste integrado acima passaram. Além de autenticação e perfil, o teste
+integrado verifica upload, substituição, remoção, concorrência e validação
+do avatar estático, incluindo titularidade e rejeição de APNG. Isso não
+homologa os critérios do MVP que dependem dos demais módulos.
