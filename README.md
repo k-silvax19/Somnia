@@ -1,7 +1,8 @@
 # Somnia
 
 API de um diário musical com avaliações e recursos sociais. O MVP está em
-desenvolvimento: atualmente há autenticação e perfis com avatar estático.
+desenvolvimento: atualmente há autenticação e perfis com avatar estático,
+processado de forma assíncrona por RabbitMQ e um Worker separado.
 
 ## Conferência da especificação
 
@@ -26,7 +27,8 @@ arquivos em Downloads:
 | Premium | Fora do MVP técnico; não implementado |
 
 Os documentos detalhados são [Autenticação](server/AUTENTICACAO.md) e
-[Perfis](server/PERFIS.md). Eles descrevem o que existe e suas pendências;
+[Perfis](server/PERFIS.md), com execução do consumer em
+[Mensageria](server/MENSAGERIA.md). Eles descrevem o que existe e suas pendências;
 não representam homologação do MVP completo.
 
 ## Arquitetura e diferenças da proposta
@@ -37,6 +39,8 @@ Backend em ASP.NET Core 10, organizado em `server/src`:
 - `Aplicacao`: casos de uso e handlers MediatR.
 - `Dominio`: contratos e tipos do domínio, sem dependência das outras camadas.
 - `Infraestrutura`: EF Core, SQL Server, Identity e repositórios.
+- `Worker`: host do consumer MassTransit/RabbitMQ, com conversão de avatar
+  fora do processo HTTP. As responsabilidades continuam nas quatro camadas.
 
 | Tema | Proposta do PDF | Implementação atual |
 | --- | --- | --- |
@@ -56,8 +60,8 @@ anônimo, verificação de e-mail, exclusão de conta e retenção de dados.
 
 ## Execução local
 
-Pré-requisitos: SDK .NET 10, SQL Server acessível e certificado HTTPS de
-desenvolvimento. Execute os comandos na raiz do repositório.
+Pré-requisitos: SDK .NET 10, SQL Server acessível, Docker/RabbitMQ e
+certificado HTTPS de desenvolvimento. Execute os comandos na raiz do repositório.
 
 Configure a conexão e a chave JWT via User Secrets, substituindo os valores
 de exemplo por valores locais. A chave precisa ter pelo menos 32 bytes.
@@ -65,6 +69,7 @@ de exemplo por valores locais. A chave precisa ter pelo menos 32 bytes.
 ```powershell
 dotnet user-secrets set "ConnectionStrings:SqlServer" "<conexão SQL Server local>" --project server/src/Api
 dotnet user-secrets set "Jwt:SigningKey" "<chave aleatória com pelo menos 32 bytes>" --project server/src/Api
+dotnet user-secrets set "ConnectionStrings:RabbitMq" "rabbitmq://somnia:<senha>@localhost:5672/" --project server/src/Api
 dotnet dev-certs https --trust
 dotnet restore server/Somnia.slnx
 dotnet run --project server/src/Api --launch-profile https
@@ -81,6 +86,13 @@ OpenAPI: `https://localhost:7201/openapi/v1.json`. O `v1` desse arquivo
 identifica o documento OpenAPI; as rotas dos controllers continuam em `/api`.
 Swagger e OpenAPI são expostos somente em Development.
 
+Configure a senha do broker e inicie RabbitMQ conforme
+[MENSAGERIA.md](server/MENSAGERIA.md). Após iniciar a API, execute em outro
+terminal `dotnet run --project server/src/Worker` com
+`DOTNET_ENVIRONMENT=Development` para carregar os User Secrets compartilhados.
+O PUT de avatar responde `202`; o frontend consulta o status até a conclusão.
+Há também Compose com Worker limitado a uma CPU e 512 MiB de RAM.
+
 As migrations em `server/src/Infraestrutura/Compartilhado/Orm/Migrations`
 são aplicadas automaticamente na inicialização em Development. Produção
 precisa de uma etapa controlada de migração, ainda não configurada no repo.
@@ -93,12 +105,13 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-Após a implementação de avatar em 10/11/2026, os 44 testes xUnit e o teste
-integrado HTTPS/SQL passaram. O projeto de testes compila a API e suas
-dependências em Release. O avatar usa SkiaSharp, com bibliotecas nativas
-incluídas pelos pacotes para Windows, macOS e Linux; a execução foi validada
-localmente no Windows. A migration `AdicionarAvatares` armazena as imagens
-normalizadas no SQL Server, sem exigir diretório de uploads ou Blob Storage.
+Após a integração RabbitMQ, a suíte possui 47 testes xUnit. O teste integrado
+exercita HTTPS, SQL e um broker real com API/consumer separados. O build da
+solução inclui o Worker. O avatar usa SkiaSharp com bibliotecas nativas para
+Windows, macOS e Linux. As migrations `AdicionarAvatares` e
+`ProcessarAvataresAssincronos` armazenam imagens normalizadas, solicitações
+privadas e mensagens de outbox no SQL Server, sem exigir diretório de uploads
+ou Blob Storage.
 Os resultados cobrem autenticação e perfis existentes; os demais critérios
 de aceite continuam pendentes.
 
@@ -106,5 +119,6 @@ O teste integrado usa Python com biblioteca padrão, certificado HTTPS do .NET
 e Docker. Atualmente lê a conexão de `appsettings.Development.json` e acessa
 o contêiner `notekeeper-sqlserver-1` pelo nome fixo; não usa a conexão dos
 User Secrets. Exige esse ambiente local, cria um banco temporário com prefixo
-`SomniaAuthSecurity_` e o remove ao terminar. Detalhes dos cenários em
-[AUTENTICACAO.md](server/AUTENTICACAO.md).
+`SomniaAuthSecurity_` e um contêiner RabbitMQ descartável com credenciais
+aleatórias. Os recursos temporários são removidos ao terminar. Detalhes em
+[AUTENTICACAO.md](server/AUTENTICACAO.md) e [MENSAGERIA.md](server/MENSAGERIA.md).

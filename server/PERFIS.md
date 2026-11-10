@@ -23,8 +23,9 @@ já fechada nesses documentos.
 | GET | `/api/me` | Dados do titular, e-mail e preferências |
 | PATCH | `/api/me/profile` | Perfil atualizado do titular |
 | GET | `/api/users/{username}` | Apenas username, displayName, bio e avatarUrl |
-| PUT | `/api/me/avatar` | Upload multipart e dados atualizados do titular (`200`) |
+| PUT | `/api/me/avatar` | Solicitação de processamento assíncrono (`202`) |
 | DELETE | `/api/me/avatar` | Remove o avatar do titular (`204`) |
+| GET | `/api/me/avatar/requests/{solicitacaoId}` | Status privado da solicitação (`200`) |
 | GET | `/api/users/{username}/avatar` | Imagem PNG (`200`) ou `404` se ausente |
 
 `GET /api/me` continua sendo uma única rota, agora no controller de perfis.
@@ -84,16 +85,29 @@ const resposta = await fetch('https://localhost:7201/api/me/avatar', {
 });
 ```
 
-O conteúdo real deve ser PNG ou JPEG estático de até 2 MiB e dimensões
-de até 2048 × 2048 pixels. Extensão e MIME declarados não são usados para
-aprovar o arquivo. GIF, SVG, APNG, arquivos corrompidos e imagens que excedem
-os limites são rejeitados com `400`. O limite total da requisição multipart
-é 2 MiB + 64 KiB para acomodar o envelope; ultrapassá-lo também pode ser
-rejeitado pela infraestrutura HTTP antes da validação do arquivo.
+O upload retorna `202 Accepted` com ID, `status: "pending"`, `erro: null`
+e o endereço da consulta no cabeçalho `Location`. Isso confirma recebimento;
+a aprovação do conteúdo acontece depois, no consumer RabbitMQ em processo
+separado. Consulte `GET /api/me/avatar/requests/{id}` com o JWT do titular
+até `completed`, `rejected`, `cancelled` ou `failed`.
+
+O tamanho do arquivo é limitado a 2 MiB pela API (`400` se excedido).
+O limite total da requisição multipart é 2 MiB + 64 KiB para o envelope;
+ultrapassá-lo também pode ser rejeitado pela infraestrutura HTTP. Uploads
+têm limite de dez chamadas/minuto por usuário e instância (`429`) e de
+100 solicitações pendentes globalmente (`409` se a admissão estiver cheia).
+
+O consumer exige conteúdo real PNG ou JPEG estático e dimensões de até
+2048 × 2048 pixels. Extensão e MIME declarados não aprovam um arquivo.
+GIF, SVG, APNG, arquivos corrompidos e dimensões excessivas resultam em
+status `rejected` com a mensagem de validação. Esses erros de conteúdo
+não retornam `400` no PUT, porque são detectados após o `202`.
 
 A imagem é decodificada com SkiaSharp e regravada em PNG de até 512 × 512,
 preservando proporção, sem ampliar imagens pequenas e sem copiar metadados
-ou conteúdo anexado. O arquivo e seu nome original não são armazenados.
+ou conteúdo anexado. O original fica temporariamente privado na tabela
+`SolicitacoesAvatar` até finalizar/cancelar ou expirar. O nome do arquivo
+não é armazenado e os bytes originais não são publicados no RabbitMQ.
 A imagem normalizada fica na tabela `Avatares`, vinculada ao titular por
 chave estrangeira; consultas comuns de perfil não carregam seus bytes.
 
@@ -103,13 +117,15 @@ com Bearer e criar uma URL de objeto para exibição quando necessário.
 Um `<img src="...">` sozinho não envia o Bearer mantido em memória.
 A resposta usa `image/png`, `X-Content-Type-Options: nosniff` e `no-store`.
 
-O PUT substitui o avatar anterior e retorna o perfil atualizado. O DELETE
-remove somente o avatar do usuário identificado no JWT e pode ser repetido;
-`avatarUrl` volta a nulo. Nome de usuário ou ID de terceiros não são
-parâmetros de escrita. A troca da imagem e da URL ocorre na mesma transação,
-com serialização de alterações simultâneas do mesmo titular. Falha de
-validação preserva a imagem anterior. URLs externas continuam rejeitadas
-no PATCH.
+O avatar anterior continua disponível durante o processamento. O consumer
+só o substitui após validação, na mesma transação da atualização do status.
+Um novo upload cancela pendências anteriores; o DELETE remove o avatar do
+titular e cancela seus trabalhos pendentes, sem esperar o consumer. Mensagens
+antigas ou duplicadas não podem sobrescrever uma solicitação mais recente
+nem recriar um avatar removido. URLs externas continuam rejeitadas no PATCH.
+
+Detalhes de configuração, recuperação, retenção e execução do Worker estão
+em [MENSAGERIA.md](MENSAGERIA.md).
 GIFs de avatar pertencem à fase Premium descrita no PRD v1.1 e estão fora
 do escopo da especificação técnica do MVP gratuito.
 
@@ -130,11 +146,13 @@ HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifi
 titularidade, normalização do username, edição parcial, preferências privadas e
 ausência de dados privados nas respostas públicas.
 
-Depois da implementação de avatar em 10/11/2026, passaram os 44 testes xUnit
-do projeto e o teste integrado HTTPS/SQL. A migration `AdicionarAvatares`
-cria a tabela com exclusão em cascata quando o usuário é excluído.
+Após a integração assíncrona, a suíte possui 47 testes xUnit. A migration
+`AdicionarAvatares` cria a imagem publicada; `ProcessarAvataresAssincronos`
+adiciona solicitações, versão atual do avatar e tabelas de outbox.
 
 A validação inclui PNG/JPEG reais, limites, redução proporcional, conteúdo
 inválido, imagem truncada, GIF/APNG, metadados, acesso autenticado, titularidade,
-substituição, remoção repetida e uploads concorrentes. Avaliações públicas e
-relações sociais ainda não foram implementadas e não estão homologadas.
+substituição, remoção repetida e uploads concorrentes. O teste integrado
+também cobre o broker indisponível, reinícios e mensagens duplicadas/antigas,
+conforme [MENSAGERIA.md](MENSAGERIA.md). Avaliações públicas e relações sociais
+ainda não foram implementadas e não estão homologadas.

@@ -108,9 +108,11 @@ python server/tests/security/auth_security_smoke.py
 ```
 
 O teste de segurança usa somente a biblioteca padrão do Python, requer o SQL
-Server Docker configurado no desenvolvimento e um certificado HTTPS de
-desenvolvimento do .NET. Ele cria um banco temporário com prefixo
-`SomniaAuthSecurity_` e o remove ao terminar. A validação do certificado é
+Server Docker configurado no desenvolvimento, a solução compilada em Release
+(incluindo Worker), a imagem Docker `rabbitmq:4-management` e um certificado
+HTTPS de desenvolvimento do .NET. Ele cria um banco temporário com prefixo
+`SomniaAuthSecurity_` e um broker descartável; remove ambos ao terminar.
+A validação do certificado é
 dispensada somente pelo cliente de teste que acessa o processo isolado em
 loopback; a API continua exigindo HTTPS.
 
@@ -118,8 +120,10 @@ Os cenários incluem cookies seguros, CSRF forjado, origem não permitida, roubo
 reutilização de refresh token, concorrência, revogação de JWTs, logout global,
 expiração absoluta, armazenamento por hash e limites de requisições.
 
-Após a implementação de avatar em 10/11/2026, os 44 testes xUnit do projeto
-e o teste integrado acima passaram. Além de autenticação e perfil, o teste
-integrado verifica upload, substituição, remoção, concorrência e validação
-do avatar estático, incluindo titularidade e rejeição de APNG. Isso não
-homologa os critérios do MVP que dependem dos demais módulos.
+Após a integração RabbitMQ, a suíte possui 47 testes xUnit. Além de
+autenticação e perfil, o teste integrado verifica processamento assíncrono,
+substituição, remoção, concorrência e validação do avatar estático, incluindo
+titularidade, rejeição de APNG e recuperação do outbox. A API deixa o
+processamento de imagem para o Worker; configuração em
+[MENSAGERIA.md](MENSAGERIA.md). Isso não homologa os critérios do MVP que
+dependem dos demais módulos.
