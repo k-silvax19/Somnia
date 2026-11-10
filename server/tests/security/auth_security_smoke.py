@@ -1,6 +1,7 @@
 """HTTPS/SQL/RabbitMQ regression checks. Requires a Release solution build, Docker SQL and a .NET dev certificate."""
 import base64
 import concurrent.futures
+import http.client
 import json
 import os
 import secrets
@@ -14,6 +15,7 @@ import urllib.error
 import urllib.request
 import uuid
 import zlib
+from contextlib import closing
 from http.cookies import SimpleCookie
 from pathlib import Path
 
@@ -37,6 +39,8 @@ with socket.socket() as sock:
     management_port = sock.getsockname()[1]
 rabbit_name = 'somnia-avatar-test-' + uuid.uuid4().hex
 rabbit_password = secrets.token_hex(24)
+worker_image = os.environ.get('SOMNIA_TEST_WORKER_IMAGE')
+worker_name = rabbit_name + '-worker'
 worker = None
 rabbit_started = False
 env = os.environ.copy()
@@ -59,6 +63,36 @@ def sql(query):
     if result.returncode:
         raise RuntimeError('Isolated database operation failed: ' + result.stdout + result.stderr)
     return result.stdout
+
+
+def assert_problem(response, payload):
+    assert response.headers.get('Content-Type', '').startswith('application/problem+json'), (response.status, response.headers.get('Content-Type'))
+    assert isinstance(payload, dict) and payload.get('status') == response.status, payload
+    assert payload.get('type') == f'urn:somnia:problem:http:{response.status}', payload
+    assert all(isinstance(payload.get(field), str) and payload[field] for field in ('title', 'detail', 'traceId')), payload
+    assert 'no-store' in response.headers.get('Cache-Control', '')
+    if response.status == 429:
+        assert int(response.headers.get('Retry-After', '0')) > 0
+
+
+def oversized_request(session):
+    # Send headers first: Kestrel rejects Content-Length before reading the body.
+    # A client that sends the whole body first can see a TLS reset instead of the 413.
+    with closing(http.client.HTTPSConnection('localhost', port, context=ssl._create_unverified_context(), timeout=20)) as client:
+        client.putrequest('PUT', '/api/me/avatar')
+        for key, value in {
+            'Content-Type': 'multipart/form-data; boundary=SomniaOversize',
+            'Content-Length': str(2 * 1024 * 1024 + 65537),
+            'Authorization': 'Bearer ' + session['accessToken'],
+            'Origin': f'https://localhost:{port}',
+            'X-Somnia-Client': 'web'
+        }.items():
+            client.putheader(key, value)
+        client.endheaders()
+        response = client.getresponse()
+        payload = json.loads(response.read())
+        assert response.status in (400, 413), (response.status, payload)
+        assert_problem(response, payload)
 
 
 def request(method, path, body=None, session=None, csrf=True, origin=None, client_header=True, upload=None):
@@ -86,6 +120,8 @@ def request(method, path, body=None, session=None, csrf=True, origin=None, clien
         response = error
     content = response.read()
     payload = json.loads(content) if content and 'json' in response.headers.get('Content-Type', '') else content or {}
+    if response.status >= 400:
+        assert_problem(response, payload)
     if content and response.headers.get('Content-Type') == 'image/png':
         assert 'no-store' in response.headers.get('Cache-Control', '')
         assert response.headers.get('X-Content-Type-Options') == 'nosniff'
@@ -155,7 +191,10 @@ def start_rabbit():
 def stop_worker():
     global worker
     if worker is not None:
-        worker.terminate()
+        if worker_image:
+            subprocess.run(['docker', 'stop', '-t', '5', worker_name], capture_output=True, timeout=15)
+        else:
+            worker.terminate()
         try:
             worker.wait(timeout=10)
         except subprocess.TimeoutExpired:
@@ -166,8 +205,22 @@ def stop_worker():
 
 def start_worker():
     global worker
-    worker = subprocess.Popen(['dotnet', str(worker_path / 'bin/Release/net10.0/Somnia.Worker.dll')],
-                              cwd=worker_path, env=env, stdout=log, stderr=log)
+    if worker_image:
+        container_env = env.copy()
+        server_key = next(key for key in parts if key.lower() in ('server', 'data source'))
+        server = parts[server_key]
+        server_host = server.split(',')[0]
+        assert server_host.lower() in ('localhost', '127.0.0.1'), 'Container test requires local Docker SQL'
+        container_env['ConnectionStrings__SqlServer'] = connection.replace(server, server.replace(server_host, 'host.docker.internal', 1))
+        container_env['ConnectionStrings__RabbitMq'] = env['ConnectionStrings__RabbitMq'].replace('@localhost:', '@host.docker.internal:')
+        worker = subprocess.Popen(['docker', 'run', '--rm', '--name', worker_name,
+                                   '--memory', '512m', '--cpus', '1', '--read-only', '--tmpfs', '/tmp',
+                                   '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
+                                   '-e', 'ConnectionStrings__SqlServer', '-e', 'ConnectionStrings__RabbitMq', worker_image],
+                                  env=container_env, stdout=log, stderr=log)
+    else:
+        worker = subprocess.Popen(['dotnet', str(worker_path / 'bin/Release/net10.0/Somnia.Worker.dll')],
+                                  cwd=worker_path, env=env, stdout=log, stderr=log)
 
 
 def restart_api():
@@ -205,7 +258,12 @@ def wait_avatar(session, request_id, expected):
             assert payload['status'] == expected, payload
             return payload
         if worker is not None and worker.poll() is not None:
-            raise AssertionError('Avatar worker exited unexpectedly')
+            log.seek(0, 2)
+            end = log.tell()
+            log.seek(max(0, end - 5000))
+            details = log.read().decode(errors='replace').replace(rabbit_password, '<REDACTED>').replace(parts['Password'], '<REDACTED>')
+            log.seek(0, 2)
+            raise AssertionError('Avatar worker exited unexpectedly: ' + details)
         time.sleep(0.25)
     raise AssertionError('Avatar processing did not finish')
 
@@ -256,6 +314,8 @@ try:
     assert http_response.headers['Location'] == f'https://localhost:{port}/swagger/index.html'
 
     registration = {'email': 'security@example.com', 'username': 'security', 'password': 'Security123!@', 'displayName': 'Security'}
+    assert request('POST', '/api/auth/register', dict(registration, username='ab'))[0] == 400
+    assert request('POST', '/api/auth/register', dict(registration, username='a' * 31))[0] == 400
     assert request('POST', '/api/auth/register', registration)[0] == 201
     original = login()
     assert request('GET', '/api/me', session=original)[0] == 200
@@ -268,6 +328,22 @@ try:
     assert request('POST', '/api/auth/register', bob_registration)[0] == 201
     bob_status, bob = request('POST', '/api/auth/login', {'email': 'bob@example.com', 'password': registration['password']})
     assert bob_status == 200
+    assert request('POST', '/api/auth/register', dict(registration, email='SECURITY@EXAMPLE.COM', username='another-user'))[0] == 409
+    restart_api()  # Fresh rate window for the remaining independent registration check.
+    assert request('POST', '/api/auth/register', dict(registration, email='another@example.com', username='SECURITY'))[0] == 409
+    sql(f"USE [{database}]; IF EXISTS (SELECT 1 FROM AspNetUsers WHERE EmailConfirmed=1) THROW 51000, 'Pilot fixture must use unconfirmed email', 1;")
+    assert request('GET', '/api/does-not-exist', session=original)[0] == 404
+    assert request('PUT', '/api/auth/login', {}, session=original)[0] == 405
+
+    # Exercise the actual 500 handler against this disposable database only.
+    assert database.startswith('SomniaAuthSecurity_')
+    sql(f"USE [{database}]; EXEC sp_rename 'AspNetUsers', 'AspNetUsers_ErrorProbe';")
+    try:
+        status, internal = request('POST', '/api/auth/login', {'email': 'security@example.com', 'password': registration['password']})
+        assert status == 500
+        assert 'AspNetUsers' not in json.dumps(internal) and parts['Password'] not in json.dumps(internal)
+    finally:
+        sql(f"USE [{database}]; EXEC sp_rename 'AspNetUsers_ErrorProbe', 'AspNetUsers';")
     status, updated = request('PATCH', '/api/me/profile', {'bio': 'Minha bio', 'defaultScoreVisibility': 'public'}, session=original)
     assert status == 200 and updated['bio'] == 'Minha bio'
     assert updated['defaultScoreVisibility'] == 'public' and updated['defaultReviewVisibility'] == 'private'
@@ -294,6 +370,9 @@ try:
     assert request('PUT', '/api/me/avatar', session=bob, upload=png(), client_header=False)[0] == 403
     assert request('PUT', '/api/me/avatar', session=bob, upload=png(), origin='https://evil.example')[0] == 403
     assert request('PUT', '/api/me/avatar', session=bob, upload=b'A' * (2 * 1024 * 1024 + 1))[0] == 400
+    oversized_request(bob)
+    assert request('PUT', '/api/me/avatar', {}, session=original)[0] == 415
+    print('HTTP checks passed: registration rules, normalized duplicates, private profiles and ProblemDetails including controlled 500 and oversized requests.', flush=True)
     # Broker and consumer are both OFF: acceptance must be durable, without decoding in the API.
     first_request = submit_avatar(original, png())
     assert request('GET', avatar_path, session=bob)[0] == 404
