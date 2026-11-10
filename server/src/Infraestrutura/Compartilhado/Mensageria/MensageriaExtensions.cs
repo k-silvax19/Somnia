@@ -15,7 +15,7 @@ public static class MensageriaExtensions
     {
         var conexao = configuration.GetConnectionString("RabbitMq")
             ?? throw new InvalidOperationException("Connection string RabbitMq não configurada.");
-        if (!Uri.TryCreate(conexao, UriKind.Absolute, out var uri) || uri.Scheme is not ("rabbitmq" or "rabbitmqs"))
+        if (!Uri.TryCreate(conexao, UriKind.Absolute, out var uri) || uri.Scheme is not ("rabbitmq" or "rabbitmqs" or "amqp" or "amqps"))
             throw new InvalidOperationException("Connection string RabbitMq inválida.");
 
         services.AddMassTransit(config =>
