@@ -10,12 +10,14 @@ using Somnia.Api.Compartilhado.Http;
 using Somnia.Aplicacao;
 using Somnia.Dominio.Compartilhado;
 using Somnia.Infraestrutura;
+using Somnia.Infraestrutura.Compartilhado.Mensageria;
 using Somnia.Infraestrutura.Compartilhado.Orm;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddAvatarMessaging(builder.Configuration);
 builder.Services.AddScoped<IEmissorTokens, JwtTokenGenerator>();
 builder.Services
     .AddOptions<JwtOptions>()
@@ -112,6 +114,14 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
     }
+    options.AddPolicy("avatar", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
 });
 
 var app = builder.Build();
@@ -158,8 +168,8 @@ app.UseExceptionHandler(error => error.Run(async context =>
 app.UseStatusCodePages();
 app.UseRouting();
 app.UseCors("Client");
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

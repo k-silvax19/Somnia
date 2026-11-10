@@ -5,6 +5,10 @@
     <Project Path="src/Dominio/Somnia.Dominio.csproj" />
     <Project Path="src/Infraestrutura/Somnia.Infraestrutura.csproj" />
   </Folder>
+  <Folder Name="/src/Infraestrutura/" />
+  <Folder Name="/src/Worker/">
+    <Project Path="src/Worker/Somnia.Worker.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Somnia.Tests/Somnia.Tests.csproj" />
   </Folder>

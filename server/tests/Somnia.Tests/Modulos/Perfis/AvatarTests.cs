@@ -1,7 +1,10 @@
 using System.Text;
+using MassTransit;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SkiaSharp;
 using Somnia.Aplicacao.Modulos.Perfis;
+using Somnia.Aplicacao.Modulos.Perfis.Mensageria;
 using Somnia.Dominio.Compartilhado;
 using Somnia.Dominio.Modulos.Perfis;
 using Somnia.Infraestrutura.Modulos.Perfis;
@@ -68,40 +71,81 @@ public sealed class AvatarTests
     public async Task Atualizar_TamanhoInvalido_NaoProcessaNemPersiste(int tamanho)
     {
         var repositorio = new Mock<IRepositorioAvatar>(MockBehavior.Strict);
-        var processador = new Mock<IProcessadorAvatar>(MockBehavior.Strict);
-        var result = await new AtualizarAvatarCommandHandler(repositorio.Object, processador.Object)
-            .Handle(new AtualizarAvatarCommand(Guid.NewGuid(), new byte[tamanho]), CancellationToken.None);
+        var result = await new SolicitarAvatarCommandHandler(repositorio.Object)
+            .Handle(new SolicitarAvatarCommand(Guid.NewGuid(), new byte[tamanho]), CancellationToken.None);
 
         Assert.Equal(TipoErro.Validacao, result.Errors[0].Metadata[nameof(TipoErro)]);
         repositorio.VerifyNoOtherCalls();
-        processador.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task Atualizar_ImagemRejeitada_NaoPersiste()
+    public async Task Solicitar_NaoDecodificaImagem_RetornaIdPendente()
     {
+        var usuarioId = Guid.NewGuid();
+        byte[] arquivo = [1, 2, 3];
+        var pendente = new ProcessamentoAvatarDto(Guid.NewGuid(), "pending", null);
         var repositorio = new Mock<IRepositorioAvatar>(MockBehavior.Strict);
-        var result = await new AtualizarAvatarCommandHandler(repositorio.Object, new ProcessadorAvatar())
-            .Handle(new AtualizarAvatarCommand(Guid.NewGuid(), [1, 2, 3]), CancellationToken.None);
+        repositorio.Setup(x => x.SolicitarAsync(usuarioId, arquivo, CancellationToken.None)).ReturnsAsync(pendente);
+        var result = await new SolicitarAvatarCommandHandler(repositorio.Object)
+            .Handle(new SolicitarAvatarCommand(usuarioId, arquivo), CancellationToken.None);
 
-        Assert.Equal(TipoErro.Validacao, result.Errors[0].Metadata[nameof(TipoErro)]);
-        repositorio.VerifyNoOtherCalls();
+        Assert.Equal(pendente, result.Value);
     }
 
     [Fact]
     public async Task Remover_NaoExigeImagem_EUsaOTitularInformado()
     {
         var id = Guid.NewGuid();
-        var usuario = new UsuarioDto(id, "Titular", "titular@example.com", "titular");
         var repositorio = new Mock<IRepositorioAvatar>(MockBehavior.Strict);
-        repositorio.Setup(x => x.SalvarAsync(id, null, CancellationToken.None)).ReturnsAsync(usuario);
+        repositorio.Setup(x => x.RemoverAsync(id, CancellationToken.None)).ReturnsAsync(true);
+
+        var result = await new RemoverAvatarCommandHandler(repositorio.Object)
+            .Handle(new RemoverAvatarCommand(id), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Consumer_FinalizaImagemOuRejeitaSemPublicarOriginal(bool invalida)
+    {
+        var id = Guid.NewGuid();
+        byte[] arquivo = [1, 2, 3];
+        byte[] normalizado = [4, 5, 6];
+        var repositorio = new Mock<IRepositorioAvatar>();
+        repositorio.Setup(x => x.IniciarProcessamentoAsync(id, CancellationToken.None)).ReturnsAsync(arquivo);
+        var processador = new Mock<IProcessadorAvatar>();
+        if (invalida)
+            processador.Setup(x => x.Normalizar(arquivo)).Throws(new ArgumentException("Imagem inválida."));
+        else
+            processador.Setup(x => x.Normalizar(arquivo)).Returns(normalizado);
+        var contexto = new Mock<ConsumeContext<ProcessarAvatarMessage>>();
+        contexto.SetupGet(x => x.Message).Returns(new ProcessarAvatarMessage(id));
+
+        await new ProcessarAvatarConsumer(repositorio.Object, processador.Object,
+            NullLogger<ProcessarAvatarConsumer>.Instance).Consume(contexto.Object);
+
+        repositorio.Verify(x => x.FinalizarAsync(id, invalida ? null : normalizado,
+            invalida ? "Imagem inválida." : null, CancellationToken.None), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consumer_MensagemDuplicadaOuCancelada_NaoDecodifica()
+    {
+        var id = Guid.NewGuid();
+        var repositorio = new Mock<IRepositorioAvatar>();
+        repositorio.Setup(x => x.IniciarProcessamentoAsync(id, CancellationToken.None)).ReturnsAsync((byte[]?)null);
         var processador = new Mock<IProcessadorAvatar>(MockBehavior.Strict);
+        var contexto = new Mock<ConsumeContext<ProcessarAvatarMessage>>();
+        contexto.SetupGet(x => x.Message).Returns(new ProcessarAvatarMessage(id));
 
-        var result = await new AtualizarAvatarCommandHandler(repositorio.Object, processador.Object)
-            .Handle(new AtualizarAvatarCommand(id, null), CancellationToken.None);
+        await new ProcessarAvatarConsumer(repositorio.Object, processador.Object,
+            NullLogger<ProcessarAvatarConsumer>.Instance).Consume(contexto.Object);
 
-        Assert.Equal(usuario, result.Value);
         processador.VerifyNoOtherCalls();
+        repositorio.Verify(x => x.FinalizarAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static byte[] CriarImagem(int largura, int altura, SKEncodedImageFormat formato)

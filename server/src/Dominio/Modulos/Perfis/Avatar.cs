@@ -17,6 +17,15 @@ public interface IProcessadorAvatar
 
 public interface IRepositorioAvatar
 {
-    Task<UsuarioDto?> SalvarAsync(Guid usuarioId, byte[]? imagem, CancellationToken ct);
+    Task<ProcessamentoAvatarDto?> SolicitarAsync(Guid usuarioId, byte[] arquivo, CancellationToken ct);
+    Task<bool> RemoverAsync(Guid usuarioId, CancellationToken ct);
     Task<byte[]?> ObterAsync(string username, CancellationToken ct);
+    Task<ProcessamentoAvatarDto?> ObterStatusAsync(Guid usuarioId, Guid solicitacaoId, CancellationToken ct);
+    Task<byte[]?> IniciarProcessamentoAsync(Guid solicitacaoId, CancellationToken ct);
+    Task FinalizarAsync(Guid solicitacaoId, byte[]? imagem, string? erro, CancellationToken ct);
+    Task MarcarFalhaAsync(Guid solicitacaoId, CancellationToken ct);
 }
+
+public sealed record ProcessamentoAvatarDto(Guid Id, string Status, string? Erro);
+
+public sealed class LimiteProcessamentosAvatarException : Exception;

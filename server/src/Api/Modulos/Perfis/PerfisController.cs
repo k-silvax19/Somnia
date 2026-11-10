@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Somnia.Api.Compartilhado.Auth;
 using Somnia.Api.Compartilhado.Http;
 using Somnia.Aplicacao.Modulos.Auth;
@@ -53,6 +54,7 @@ public sealed class PerfisController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("me/avatar")]
+    [EnableRateLimiting("avatar")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(LimitesAvatar.TamanhoMaximo + 65536)]
     [RequestFormLimits(MultipartBodyLengthLimit = LimitesAvatar.TamanhoMaximo + 65536)]
@@ -69,8 +71,9 @@ public sealed class PerfisController(IMediator mediator) : ControllerBase
         await using var arquivo = request.File.OpenReadStream();
         using var buffer = new MemoryStream();
         await arquivo.CopyToAsync(buffer, ct);
-        var result = await mediator.Send(new AtualizarAvatarCommand(usuarioId, buffer.ToArray()), ct);
-        return result.IsFailed ? this.ResultProblem(result) : Ok(result.Value);
+        var result = await mediator.Send(new SolicitarAvatarCommand(usuarioId, buffer.ToArray()), ct);
+        return result.IsFailed ? this.ResultProblem(result)
+            : AcceptedAtAction(nameof(StatusAvatar), new { solicitacaoId = result.Value.Id }, result.Value);
     }
 
     [HttpDelete("me/avatar")]
@@ -78,8 +81,17 @@ public sealed class PerfisController(IMediator mediator) : ControllerBase
     {
         if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
             return Unauthorized();
-        var result = await mediator.Send(new AtualizarAvatarCommand(usuarioId, null), ct);
+        var result = await mediator.Send(new RemoverAvatarCommand(usuarioId), ct);
         return result.IsFailed ? this.ResultProblem(result) : NoContent();
+    }
+
+    [HttpGet("me/avatar/requests/{solicitacaoId:guid}")]
+    public async Task<IActionResult> StatusAvatar(Guid solicitacaoId, CancellationToken ct)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
+            return Unauthorized();
+        var result = await mediator.Send(new ObterStatusAvatarQuery(usuarioId, solicitacaoId), ct);
+        return result.IsFailed ? this.ResultProblem(result) : Ok(result.Value);
     }
 
     [HttpGet("users/{username}/avatar")]
