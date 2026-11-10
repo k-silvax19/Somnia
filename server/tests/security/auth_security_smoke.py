@@ -1,4 +1,4 @@
-"""HTTPS/SQL security regression checks. Requires a Release build, Docker SQL and a .NET development certificate."""
+"""HTTPS/SQL/RabbitMQ regression checks. Requires a Release solution build, Docker SQL and a .NET dev certificate."""
 import base64
 import concurrent.futures
 import json
@@ -18,6 +18,7 @@ from http.cookies import SimpleCookie
 from pathlib import Path
 
 api = Path(__file__).resolve().parents[2] / 'src' / 'Api'
+worker_path = api.parent / 'Worker'
 connection = json.loads((api / 'appsettings.Development.json').read_text(encoding='utf-8-sig'))['ConnectionStrings']['SqlServer']
 parts = dict(part.split('=', 1) for part in connection.split(';') if '=' in part)
 database = 'SomniaAuthSecurity_' + uuid.uuid4().hex
@@ -28,9 +29,20 @@ with socket.socket() as sock:
 with socket.socket() as sock:
     sock.bind(('127.0.0.1', 0))
     http_port = sock.getsockname()[1]
+with socket.socket() as sock:
+    sock.bind(('127.0.0.1', 0))
+    rabbit_port = sock.getsockname()[1]
+with socket.socket() as sock:
+    sock.bind(('127.0.0.1', 0))
+    management_port = sock.getsockname()[1]
+rabbit_name = 'somnia-avatar-test-' + uuid.uuid4().hex
+rabbit_password = secrets.token_hex(24)
+worker = None
+rabbit_started = False
 env = os.environ.copy()
 env.update(ASPNETCORE_ENVIRONMENT='Development', ASPNETCORE_URLS=f'https://localhost:{port};http://localhost:{http_port}',
            ConnectionStrings__SqlServer=connection, Jwt__SigningKey=secrets.token_hex(32), Jwt__ExpiresInMinutes='15')
+env['ConnectionStrings__RabbitMq'] = f'rabbitmq://somnia:{rabbit_password}@localhost:{rabbit_port}/'
 # Only the isolated loopback test client bypasses trust of the development certificate.
 opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
 log = tempfile.TemporaryFile(mode='w+b')
@@ -95,12 +107,12 @@ def login():
     return session
 
 
-def png(animated=False):
+def png(animated=False, blue=False):
     """Small real PNG/APNG fixtures, including metadata that must not be published."""
     def chunk(kind, content):
         return struct.pack('>I', len(content)) + kind + content + struct.pack('>I', zlib.crc32(kind + content))
     header = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 6, 0, 0, 0))
-    pixels = zlib.compress(b'\x00\xff\x00\x00\xff')
+    pixels = zlib.compress(b'\x00' + (b'\x00\x00\xff\xff' if blue else b'\xff\x00\x00\xff'))
     header += chunk(b'tEXt', b'Comment\x00private-avatar-metadata')
     if animated:
         header += chunk(b'acTL', struct.pack('>II', 2, 0))
@@ -110,6 +122,111 @@ def png(animated=False):
         header += chunk(b'fcTL', struct.pack('>IIIIIHHBB', 1, 1, 1, 0, 0, 1, 10, 0, 0))
         header += chunk(b'fdAT', struct.pack('>I', 2) + pixels)
     return header + chunk(b'IEND', b'')
+
+
+def rabbit_api(method, path, payload=None):
+    headers = {'Authorization': 'Basic ' + base64.b64encode(f'somnia:{rabbit_password}'.encode()).decode(),
+               'Content-Type': 'application/json'}
+    req = urllib.request.Request(f'http://localhost:{management_port}/api/' + path,
+                                 data=json.dumps(payload).encode() if payload is not None else None,
+                                 headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as response:
+        return json.loads(response.read())
+
+
+def start_rabbit():
+    global rabbit_started
+    docker_env = os.environ.copy()
+    docker_env.update(RABBITMQ_DEFAULT_USER='somnia', RABBITMQ_DEFAULT_PASS=rabbit_password)
+    subprocess.run(['docker', 'run', '-d', '--name', rabbit_name, '--memory', '512m', '--cpus', '1',
+                    '-p', f'127.0.0.1:{rabbit_port}:5672', '-p', f'127.0.0.1:{management_port}:15672',
+                    '-e', 'RABBITMQ_DEFAULT_USER', '-e', 'RABBITMQ_DEFAULT_PASS', 'rabbitmq:4-management'],
+                   env=docker_env, check=True, capture_output=True, timeout=60)
+    rabbit_started = True
+    for _ in range(160):
+        try:
+            rabbit_api('GET', 'overview')
+            return
+        except (OSError, ValueError):
+            time.sleep(0.25)
+    raise AssertionError('RabbitMQ did not start')
+
+
+def stop_worker():
+    global worker
+    if worker is not None:
+        worker.terminate()
+        try:
+            worker.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            worker.kill()
+            worker.wait()
+        worker = None
+
+
+def start_worker():
+    global worker
+    worker = subprocess.Popen(['dotnet', str(worker_path / 'bin/Release/net10.0/Somnia.Worker.dll')],
+                              cwd=worker_path, env=env, stdout=log, stderr=log)
+
+
+def restart_api():
+    global process
+    process.terminate()
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+    process = subprocess.Popen(['dotnet', str(api / 'bin/Release/net10.0/Somnia.Api.dll')],
+                               cwd=api, env=env, stdout=log, stderr=log)
+    for _ in range(160):
+        try:
+            if request('GET', '/openapi/v1.json')[0] == 200:
+                return
+        except OSError:
+            pass
+        time.sleep(0.25)
+    raise AssertionError('API did not recover after restart')
+
+
+def submit_avatar(session, image):
+    status, payload = request('PUT', '/api/me/avatar', session=session, upload=image)
+    assert status == 202 and payload['status'] == 'pending', (status, payload)
+    assert set(payload) == {'id', 'status', 'erro'}, 'Request leaked private source or user data'
+    return payload['id']
+
+
+def wait_avatar(session, request_id, expected):
+    for _ in range(160):
+        status, payload = request('GET', '/api/me/avatar/requests/' + request_id, session=session)
+        assert status == 200, (status, payload)
+        if payload['status'] != 'pending':
+            assert payload['status'] == expected, payload
+            return payload
+        if worker is not None and worker.poll() is not None:
+            raise AssertionError('Avatar worker exited unexpectedly')
+        time.sleep(0.25)
+    raise AssertionError('Avatar processing did not finish')
+
+
+def replay_avatar(request_id):
+    envelope = {'messageId': str(uuid.uuid4()),
+                'messageType': ['urn:message:Somnia.Aplicacao.Modulos.Perfis.Mensageria:ProcessarAvatarMessage'],
+                'message': {'solicitacaoId': request_id}, 'headers': {}}
+    result = rabbit_api('POST', 'exchanges/%2F/somnia-avatars-solicitados/publish', {
+        'properties': {'content_type': 'application/vnd.masstransit+json', 'delivery_mode': 2},
+        'routing_key': '', 'payload': json.dumps(envelope), 'payload_encoding': 'string'})
+    assert result['routed'], 'Replay did not reach the real queue'
+
+
+def drain_queue():
+    for _ in range(80):
+        state = rabbit_api('GET', 'queues/%2F/somnia-avatars-solicitados')
+        if state.get('messages', -1) == 0:
+            return
+        time.sleep(0.25)
+    raise AssertionError('RabbitMQ queue did not drain')
 
 
 try:
@@ -174,13 +291,31 @@ try:
     avatar_path = '/api/users/security/avatar'
     assert request('GET', avatar_path, session=bob)[0] == 404
     assert request('PUT', '/api/me/avatar', upload=png())[0] == 401
-    assert request('PUT', '/api/me/avatar', session=original, upload=png(), client_header=False)[0] == 403
-    assert request('PUT', '/api/me/avatar', session=original, upload=png(), origin='https://evil.example')[0] == 403
-    assert request('PUT', '/api/me/avatar', session=original, upload=b'<script>not an image</script>')[0] == 400
-    assert request('PUT', '/api/me/avatar', session=original, upload=png(animated=True))[0] == 400
-    assert request('PUT', '/api/me/avatar', session=original, upload=b'A' * (2 * 1024 * 1024 + 1))[0] == 400
-    status, uploaded = request('PUT', '/api/me/avatar', session=original, upload=png())
-    assert status == 200 and uploaded['avatarUrl'] == avatar_path, (status, uploaded)
+    assert request('PUT', '/api/me/avatar', session=bob, upload=png(), client_header=False)[0] == 403
+    assert request('PUT', '/api/me/avatar', session=bob, upload=png(), origin='https://evil.example')[0] == 403
+    assert request('PUT', '/api/me/avatar', session=bob, upload=b'A' * (2 * 1024 * 1024 + 1))[0] == 400
+    # Broker and consumer are both OFF: acceptance must be durable, without decoding in the API.
+    first_request = submit_avatar(original, png())
+    assert request('GET', avatar_path, session=bob)[0] == 404
+    assert request('GET', '/api/me/avatar/requests/' + first_request, session=bob)[0] == 404
+    assert request('GET', '/api/me/avatar/requests/' + first_request)[0] == 401
+    assert request('GET', '/api/me/avatar/requests/' + first_request, session=original)[1]['status'] == 'pending'
+    sql(f"USE [{database}]; IF NOT EXISTS (SELECT 1 FROM OutboxMessage) THROW 51000, 'Missing durable outbox', 1;")
+    restart_api()
+    assert request('GET', '/api/me/avatar/requests/' + first_request, session=original)[1]['status'] == 'pending'
+    start_rabbit()
+    for _ in range(160):
+        try:
+            if rabbit_api('GET', 'queues/%2F/somnia-avatars-solicitados').get('messages_ready', 0) > 0:
+                break
+        except urllib.error.HTTPError:
+            pass
+        time.sleep(0.25)
+    else:
+        raise AssertionError('Outbox did not deliver to a queue with no consumer')
+    # Start a separate consumer process only after the API accepted the upload.
+    start_worker()
+    wait_avatar(original, first_request, 'completed')
     assert request('GET', '/api/me', session=original)[1]['avatarUrl'] == avatar_path
     assert request('GET', '/api/users/security', session=bob)[1]['avatarUrl'] == avatar_path
     assert request('GET', avatar_path)[0] == 401
@@ -189,19 +324,51 @@ try:
     assert b'private-avatar-metadata' not in avatar, 'Avatar metadata leaked'
     assert request('GET', '/api/me', session=bob)[1]['avatarUrl'] is None
     # A failed replacement must preserve the previous image.
-    assert request('PUT', '/api/me/avatar', session=original, upload=b'broken')[0] == 400
+    failed = submit_avatar(original, b'broken')
+    assert wait_avatar(original, failed, 'rejected')['erro']
     assert request('GET', avatar_path, session=bob)[1] == avatar
-    assert request('PUT', '/api/me/avatar', session=original, upload=png())[0] == 200
+    for invalid in (b'<script>not an image</script>', png(animated=True)):
+        rejected = submit_avatar(bob, invalid)
+        wait_avatar(bob, rejected, 'rejected')
     assert request('DELETE', '/api/me/avatar', session=bob)[0] == 204
     assert request('GET', avatar_path, session=bob)[0] == 200, 'Another user removed the avatar'
-    # Replacements and deletion of one avatar are serialized in the same transaction.
+    stop_worker()
+    # Two simultaneous submissions: the newer one supersedes the older one.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        writes = list(pool.map(lambda _: request('PUT', '/api/me/avatar', session=original, upload=png())[0], range(2)))
-    assert writes == [200, 200], writes
+        writes = list(pool.map(lambda _: submit_avatar(original, png(blue=True)), range(2)))
+    states = [request('GET', '/api/me/avatar/requests/' + item, session=original)[1]['status'] for item in writes]
+    assert sorted(states) == ['cancelled', 'pending'], states
+    older = writes[states.index('cancelled')]
+    newer = writes[states.index('pending')]
+    start_worker()
+    wait_avatar(original, newer, 'completed')
+    blue_avatar = request('GET', avatar_path, session=bob)[1]
+    assert blue_avatar != avatar, 'Latest avatar did not replace the old image'
+    replay_avatar(first_request)  # Duplicate completed message.
+    replay_avatar(older)  # Late message from a superseded upload.
+    drain_queue()
+    assert request('GET', avatar_path, session=bob)[1] == blue_avatar
+
+    stop_worker()
+    pending_delete = submit_avatar(original, png())
     assert request('DELETE', '/api/me/avatar', session=original)[0] == 204
+    wait_avatar(original, pending_delete, 'cancelled')
+    start_worker()
+    replay_avatar(pending_delete)
+    drain_queue()
     assert request('GET', avatar_path, session=bob)[0] == 404
     assert request('GET', '/api/me', session=original)[1]['avatarUrl'] is None
     assert request('DELETE', '/api/me/avatar', session=original)[0] == 204
+
+    stop_worker()
+    exhausted = submit_avatar(original, png())
+    sql(f"USE [{database}]; UPDATE SolicitacoesAvatar SET Tentativas=3 WHERE Id='{exhausted}';")
+    start_worker()
+    wait_avatar(original, exhausted, 'failed')
+    sql(f"USE [{database}]; IF EXISTS (SELECT 1 FROM SolicitacoesAvatar WHERE Status <> 'pending' AND Arquivo IS NOT NULL) THROW 51000, 'Raw image retained', 1;")
+    limits = [request('PUT', '/api/me/avatar', session=bob, upload=b'')[0] for _ in range(11)]
+    assert 429 in limits, 'Avatar per-user upload rate limit not enforced'
+    assert request('GET', '/api/me', session=original)[0] == 200
     assert request('POST', '/api/auth/refresh', session=original, csrf=False)[0] == 403
     assert request('POST', '/api/auth/refresh', session=original, origin='https://evil.example')[0] == 403
     assert request('POST', '/api/auth/login', {}, client_header=False)[0] == 403
@@ -254,8 +421,9 @@ try:
     assert 429 in throttled, 'Login rate limit not enforced'
     paths = request('GET', '/openapi/v1.json')[1]['paths']
     assert '/auth/login' not in paths and '/api/v1/auth/login' not in paths
-    print('Security checks passed: secure cookies, signed CSRF, origin checks, stolen-token replay, concurrent replay, global logout, absolute expiration, token hashing, rate limiting, profile privacy/ownership/partial updates and static avatar upload/replacement/deletion/validation/concurrency.')
+    print('Security checks passed: authentication, profile privacy, async RabbitMQ avatar consumer, broker-offline outbox, worker restart, invalid/APNG rejection, metadata stripping, supersession, duplicate delivery, deletion cancellation, attempt limits and upload rate limiting.')
 finally:
+    stop_worker()
     process.terminate()
     try:
         process.wait(timeout=10)
@@ -264,4 +432,8 @@ finally:
         process.wait()
     log.close()
     assert database.startswith('SomniaAuthSecurity_') and database.replace('_', '').isalnum()
-    sql(f"IF DB_ID('{database}') IS NOT NULL BEGIN ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{database}]; END")
+    try:
+        sql(f"IF DB_ID('{database}') IS NOT NULL BEGIN ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{database}]; END")
+    finally:
+        if rabbit_started:
+            subprocess.run(['docker', 'rm', '-f', '-v', rabbit_name], check=True, capture_output=True, timeout=30)
