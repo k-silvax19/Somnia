@@ -14,9 +14,9 @@ O projeto usa SQL Server, quatro camadas e rotas sem `/v1`; PostgreSQL e
 
 Todas as rotas abaixo exigem JWT Bearer. A consulta pública significa uma
 projeção com dados públicos, disponível nesta etapa para usuários autenticados.
-O acesso de visitantes sem conta continua sendo uma decisão pendente na
-seção 15 do PDF e na seção 11 do PRD; exigir login não contraria uma decisão
-já fechada nesses documentos.
+O piloto fecha a decisão que estava aberta na seção 15 do PDF e na seção 11
+do PRD: visitantes sem conta não consultam perfis nem avatares. A exigência
+de autenticação é explícita no controller; detalhes em [CADASTRO.md](CADASTRO.md).
 
 | Método | Rota | Resposta |
 | --- | --- | --- |
@@ -135,8 +135,10 @@ do escopo da especificação técnica do MVP gratuito.
   módulo de avaliações e ainda não possuem endpoint implementado.
 - Seguir, deixar de seguir, feed e descoberta (RF08/RF09) também não estão
   implementados; a consulta de perfil existente não entrega esses recursos.
-- Confirmar os limites adotados: bio de 300 segue a sugestão do PDF; nome de
-  exibição de 256 é uma escolha da implementação, sem limite definido no PDF.
+
+Os limites adotados nesta etapa são bio de até 300 e nome de exibição de
+1 a 256 caracteres. O PDF sugere o primeiro; o segundo é uma escolha de
+implementação, registrada em [CADASTRO.md](CADASTRO.md).
 
 ## Validação
 
@@ -146,7 +148,7 @@ HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifi
 titularidade, normalização do username, edição parcial, preferências privadas e
 ausência de dados privados nas respostas públicas.
 
-Após a integração assíncrona, a suíte possui 47 testes xUnit. A migration
+Após a revisão de erros e cadastro, a suíte possui 68 testes xUnit. A migration
 `AdicionarAvatares` cria a imagem publicada; `ProcessarAvataresAssincronos`
 adiciona solicitações, versão atual do avatar e tabelas de outbox.
 

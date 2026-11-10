@@ -28,7 +28,9 @@ arquivos em Downloads:
 
 Os documentos detalhados são [Autenticação](server/AUTENTICACAO.md) e
 [Perfis](server/PERFIS.md), com execução do consumer em
-[Mensageria](server/MENSAGERIA.md). Eles descrevem o que existe e suas pendências;
+[Mensageria](server/MENSAGERIA.md). As políticas do piloto estão em
+[Cadastro](server/CADASTRO.md) e o contrato HTTP em [Erros](server/ERROS.md).
+Esses documentos descrevem o que existe e suas pendências;
 não representam homologação do MVP completo.
 
 ## Arquitetura e diferenças da proposta
@@ -49,14 +51,16 @@ Backend em ASP.NET Core 10, organizado em `server/src`:
 | Testes | MSTest e integração HTTP/banco | xUnit e teste integrado Python com SQL Server |
 | OpenAPI | Swagger UI com Swashbuckle | OpenAPI nativo do ASP.NET Core e Swagger UI do Swashbuckle |
 | Configuração do banco | `ConnectionStrings__Default` | `ConnectionStrings__SqlServer` |
-| Perfil público | Acesso anônimo a decidir | Exige autenticação |
-| Erros | ProblemDetails com `type`, `title`, `status`, `detail`, `traceId` | Padronização completa ainda pendente |
+| Perfil público | Acesso anônimo a decidir | No piloto, somente participantes autenticados |
+| Erros | ProblemDetails com `type`, `title`, `status`, `detail`, `traceId` | Padronizados, incluindo validação, autenticação, rate limiting e falhas internas |
 
 A seção 16 do PDF identifica stack, URL base e outros detalhes como propostas
 técnicas. Esta revisão registra as diferenças encontradas; não confirma
 aprovação dessas escolhas nem altera banco, rotas ou framework de testes.
-Também continuam pendentes as decisões sobre limites de cadastro, acesso
-anônimo, verificação de e-mail, exclusão de conta e retenção de dados.
+Para o piloto: usernames de 3 a 30 caracteres ASCII permitidos, confirmação
+de e-mail não obrigatória e perfis restritos a participantes autenticados.
+Continuam pendentes exclusão de conta, retenção de dados e eventual controle
+por convites; detalhes em [CADASTRO.md](server/CADASTRO.md).
 
 ## Execução local
 
@@ -105,13 +109,16 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-Após a integração RabbitMQ, a suíte possui 47 testes xUnit. O teste integrado
+Após a revisão de erros e cadastro, a suíte possui 68 testes xUnit. O teste integrado
 exercita HTTPS, SQL e um broker real com API/consumer separados. O build da
 solução inclui o Worker. O avatar usa SkiaSharp com bibliotecas nativas para
 Windows, macOS e Linux. As migrations `AdicionarAvatares` e
 `ProcessarAvataresAssincronos` armazenam imagens normalizadas, solicitações
 privadas e mensagens de outbox no SQL Server, sem exigir diretório de uploads
 ou Blob Storage.
+Passaram os 68 testes e o teste integrado com o Worker dentro da imagem
+Linux, limitado a uma CPU e 512 MiB. O build usou um builder isolado para
+contornar o cache local danificado; comandos em [MENSAGERIA.md](server/MENSAGERIA.md).
 Os resultados cobrem autenticação e perfis existentes; os demais critérios
 de aceite continuam pendentes.
 

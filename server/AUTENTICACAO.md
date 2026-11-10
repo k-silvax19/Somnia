@@ -17,11 +17,11 @@ implementado encerra todas as sessões do usuário, comportamento mais amplo que
 a descrição de revogar o refresh token. Cookies e CSRF são detalhes do contrato
 atual que o frontend precisa seguir.
 
-Pendências: padronizar todos os erros com `type`, `title`, `status`, `detail`
-e `traceId`; confirmar os limites de username (o PDF sugere 3–30, enquanto o
-cadastro HTTP aceita 1–256) e a política de verificação de e-mail do piloto.
-O uso de ProblemDetails já existe, mas não garante todos esses campos em
-todas as respostas, incluindo erros de autenticação e de rate limiting.
+Os erros da API agora seguem [ERROS.md](ERROS.md), com `type`, `title`,
+`status`, `detail` e `traceId`, incluindo autenticação e rate limiting.
+O piloto adota username de 3–30 caracteres, sem confirmação obrigatória de
+e-mail e sem consultas anônimas de perfil. Regras e compatibilidade com
+registros existentes em [CADASTRO.md](CADASTRO.md).
 
 Execute a API por HTTPS. O perfil local padrão é `https`; o frontend local deve
 usar `https://localhost:4200` ou ser servido na mesma origem da API.
@@ -41,6 +41,10 @@ O cadastro recebe `email`, `username`, `password` e `displayName`; retorna
 oito caracteres, um número e um caractere especial. E-mail e username são
 verificados pelo Identity com normalização e duplicidades retornam `409`.
 As rotas adicionais de perfil estão em [PERFIS.md](PERFIS.md).
+Username aceita letras ASCII, números, ponto, hífen e sublinhado; não aceita
+espaços ou acentos. O nome de exibição permite até 256 caracteres. O e-mail
+pode permanecer não confirmado durante o piloto; não existe fluxo de envio
+de confirmação nesta etapa.
 
 Todas as chamadas POST exigem `X-Somnia-Client: web`. Requisições com `Origin`
 precisam corresponder à própria API ou a uma origem explicitamente configurada
@@ -93,7 +97,8 @@ origem, HTTPS e cabeçalhos CSRF; não faça ciclos de renovação.
 
 Login permite dez chamadas por minuto por IP, cadastro cinco e refresh trinta.
 Esses limites são por instância da API. `429` exige aguardar antes de tentar
-novamente.
+novamente. A resposta `429` usa ProblemDetails e o limitador informa o prazo
+em segundos no cabeçalho `Retry-After`.
 
 A migration `ProtegerSessoesAutenticacao` invalida os refresh tokens anteriores:
 é necessário entrar novamente depois da atualização. Não guarde segredos de
@@ -120,10 +125,13 @@ Os cenários incluem cookies seguros, CSRF forjado, origem não permitida, roubo
 reutilização de refresh token, concorrência, revogação de JWTs, logout global,
 expiração absoluta, armazenamento por hash e limites de requisições.
 
-Após a integração RabbitMQ, a suíte possui 47 testes xUnit. Além de
+Após a revisão de erros e cadastro, a suíte possui 68 testes xUnit. Além de
 autenticação e perfil, o teste integrado verifica processamento assíncrono,
 substituição, remoção, concorrência e validação do avatar estático, incluindo
-titularidade, rejeição de APNG e recuperação do outbox. A API deixa o
+titularidade, rejeição de APNG, recuperação do outbox, limites de username,
+duplicidades normalizadas e o contrato de erros HTTP. O cenário de `500`
+usa uma falha SQL controlada somente no banco descartável e verifica que
+detalhes internos não chegam ao cliente. A API deixa o
 processamento de imagem para o Worker; configuração em
 [MENSAGERIA.md](MENSAGERIA.md). Isso não homologa os critérios do MVP que
 dependem dos demais módulos.
