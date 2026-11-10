@@ -148,7 +148,7 @@ HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifi
 titularidade, normalização do username, edição parcial, preferências privadas e
 ausência de dados privados nas respostas públicas.
 
-Após a primeira etapa do catálogo, a suíte possui 92 testes xUnit. A migration
+Com o adaptador Spotify, a suíte possui 120 testes xUnit. A migration
 `AdicionarAvatares` cria a imagem publicada; `ProcessarAvataresAssincronos`
 adiciona solicitações, versão atual do avatar e tabelas de outbox.
 

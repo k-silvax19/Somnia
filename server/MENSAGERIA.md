@@ -222,6 +222,11 @@ integrado voltou a passar com API e Worker em processos locais, incluindo
 as consultas de catálogo. O modo de teste do Worker Linux descrito acima
 continua disponível. Essa etapa não altera o consumer de imagens.
 
+Com o adaptador Spotify, passaram 120 testes unitários e o smoke completo
+HTTPS/SQL/RabbitMQ com API e Worker locais, incluindo consultas reais ao
+Spotify. Não foi necessário reconstruir a imagem Docker do Worker nessa
+etapa; a validação Linux acima continua sendo a execução anterior.
+
 Referências de implementação: Gerador de Certificados em
 `../GeradorDeCertificados/src/Aplicacao` (pasta irmã do repositório),
 [Transactional Outbox do MassTransit](https://masstransit.io/documentation/patterns/transactional-outbox)

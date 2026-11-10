@@ -36,6 +36,7 @@ nomes do contrato JSON são usados na validação automática.
 | `415` | Content-Type não suportado pela operação |
 | `429` | Limite de chamadas excedido, com `Retry-After` em segundos quando informado pelo limitador |
 | `500` | Falha interna com mensagem genérica |
+| `502` | Resposta inválida do provedor externo, sem expor seu conteúdo |
 | `503` | Serviço temporariamente indisponível, incluindo catálogo desativado ou falha controlada do provedor |
 
 A padronização alcança erros dos casos de uso, validação automática do MVC,
@@ -44,6 +45,13 @@ métodos não encontrados e exceções capturadas pelo middleware da API.
 O desafio Bearer preserva `WWW-Authenticate`; detalhes da validação do JWT
 não são enviados ao cliente. Respostas `500` não incluem stack trace,
 consultas SQL, senhas ou mensagens internas da exceção.
+
+No catálogo Spotify, credenciais da aplicação recusadas (`401`/`403` externos),
+limite externo (`429`), timeout e falhas de transporte/servidor resultam em
+`503`. O `Retry-After` informa a espera quando disponível; isso não encerra a
+sessão Somnia. Resposta externa malformada retorna `502`, consulta recusada
+com `400` retorna validação no campo `catalog`, e item ausente retorna `404`.
+Nenhuma dessas respostas inclui tokens ou o corpo de erro do Spotify.
 
 Falhas anteriores à execução da API, como recusa pelo proxy, encerramento da
 conexão TLS ou requisição HTTP ilegível, podem não ter corpo JSON. Um cliente

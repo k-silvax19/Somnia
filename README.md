@@ -2,7 +2,8 @@
 
 API de um diário musical com avaliações e recursos sociais. O MVP está em
 desenvolvimento: atualmente há autenticação e perfis com avatar estático,
-processado de forma assíncrona por RabbitMQ e um Worker separado.
+processado de forma assíncrona por RabbitMQ e um Worker separado, além de
+catálogo musical integrado ao Spotify.
 
 ## Conferência da especificação
 
@@ -19,8 +20,8 @@ arquivos em Downloads:
 | --- | --- |
 | RF01 — Conta e autenticação | Cadastro, login, refresh rotativo, logout global e JWT implementados |
 | RF02 — Perfil | Consulta do titular, perfil público, edição de nome/bio/preferências e upload/remoção de avatar estático implementados |
-| RF03/RF04 — Catálogo | Busca paginada e detalhes de álbum/faixa com provedor simulado em Development |
-| RF05/RF11 — Integração externa | Spotify real, links de escuta e homologação de indisponibilidade externa pendentes |
+| RF03/RF04 — Catálogo | Busca paginada e detalhes de álbum/faixa integrados ao Spotify, incluindo todas as faixas do álbum |
+| RF05/RF11 — Integração externa | Client Credentials, links oficiais e falhas externas controladas implementados; acesso real validado com o aplicativo local |
 | RF06/RF10 — Avaliações e média | Não implementado |
 | RF07 — Diário privado | Não implementado |
 | RF08/RF09 — Relações, feed e descoberta | Não implementado |
@@ -76,6 +77,8 @@ de exemplo por valores locais. A chave precisa ter pelo menos 32 bytes.
 ```powershell
 dotnet user-secrets set "ConnectionStrings:SqlServer" "<conexão SQL Server local>" --project server/src/Api
 dotnet user-secrets set "Jwt:SigningKey" "<chave aleatória com pelo menos 32 bytes>" --project server/src/Api
+dotnet user-secrets set "Spotify:ClientId" "<Client ID do aplicativo Spotify>" --project server/src/Api
+dotnet user-secrets set "Spotify:ClientSecret" "<Client Secret do aplicativo Spotify>" --project server/src/Api
 dotnet dev-certs https --trust
 dotnet restore server/Somnia.slnx
 dotnet run --project server/src/Api --launch-profile https
@@ -104,11 +107,14 @@ terminal `dotnet run --project server/src/Worker` com
 O PUT de avatar responde `202`; o frontend consulta o status até a conclusão.
 Há também Compose com Worker limitado a uma CPU e 512 MiB de RAM.
 
-Em Development, `MusicCatalog:Provider=Simulated` habilita dois álbuns e seis
-faixas fictícias, identificados por `provider: "simulated"`. Consulte
-`GET /api/catalog/search?q=Somnia&type=album` com JWT. O arquivo base usa
-`Disabled`: o catálogo retorna `503` até existir integração real. O simulado
-não pode ser ativado em produção e não utiliza credenciais Spotify.
+Em Development, `MusicCatalog:Provider=Spotify` usa as credenciais dos User
+Secrets compartilhados (`Somnia`). Reinicie a API após configurá-las. Consulte
+`GET /api/catalog/search?q=Radiohead&type=album&limit=10&offset=0` com JWT no
+Swagger. O mercado padrão é `BR`; não é necessário login Spotify do usuário.
+O arquivo base mantém `Disabled`: para produção, configure explicitamente
+`MusicCatalog__Provider=Spotify` e os segredos no ambiente de hospedagem.
+`Simulated` continua disponível somente em Development para testes sem Spotify.
+Configuração, limites e atribuição estão em [CATALOGO.md](server/CATALOGO.md).
 
 As migrations em `server/src/Infraestrutura/Compartilhado/Orm/Migrations`
 são aplicadas automaticamente na inicialização em Development. Produção
@@ -122,14 +128,14 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-Após a primeira etapa do catálogo, a suíte possui 92 testes xUnit. O teste integrado
+Com o adaptador Spotify, a suíte possui 120 testes xUnit. O teste integrado
 exercita HTTPS, SQL e um broker real com API/consumer separados. O build da
 solução inclui o Worker. O avatar usa SkiaSharp com bibliotecas nativas para
 Windows, macOS e Linux. As migrations `AdicionarAvatares` e
 `ProcessarAvataresAssincronos` armazenam imagens normalizadas, solicitações
 privadas e mensagens de outbox no SQL Server, sem exigir diretório de uploads
 ou Blob Storage.
-Passaram os 92 testes e o teste integrado HTTPS/SQL/RabbitMQ, incluindo as
+Passaram os 120 testes. O teste integrado HTTPS/SQL/RabbitMQ cobre as
 três rotas de catálogo, paginação, indisponibilidade controlada e limites
 por usuário. A execução anterior do Worker Linux, limitada a uma CPU e
 512 MiB, está registrada em [MENSAGERIA.md](server/MENSAGERIA.md).

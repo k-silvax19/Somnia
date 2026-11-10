@@ -125,7 +125,7 @@ Os cenários incluem cookies seguros, CSRF forjado, origem não permitida, roubo
 reutilização de refresh token, concorrência, revogação de JWTs, logout global,
 expiração absoluta, armazenamento por hash e limites de requisições.
 
-Após a primeira etapa do catálogo, a suíte possui 92 testes xUnit. Além de
+Com o adaptador Spotify, a suíte possui 120 testes xUnit. Além de
 autenticação e perfil, o teste integrado verifica processamento assíncrono,
 substituição, remoção, concorrência e validação do avatar estático, incluindo
 titularidade, rejeição de APNG, recuperação do outbox, limites de username,
