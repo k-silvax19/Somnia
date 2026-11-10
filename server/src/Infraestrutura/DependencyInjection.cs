@@ -42,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IRevogacaoToken, RevogacaoTokenEmOrm>();
         services.AddScoped<IRefreshTokens, RefreshTokensEmOrm>();
         services.AddScoped<IRepositorioPerfil, RepositorioPerfilEmOrm>();
+        services.AddScoped<IRepositorioAvatar, RepositorioAvatarEmOrm>();
+        services.AddSingleton<IProcessadorAvatar, ProcessadorAvatar>();
 
         return services;
     }

@@ -6,12 +6,14 @@ import os
 import secrets
 import socket
 import ssl
+import struct
 import subprocess
 import tempfile
 import time
 import urllib.error
 import urllib.request
 import uuid
+import zlib
 from http.cookies import SimpleCookie
 from pathlib import Path
 
@@ -47,8 +49,14 @@ def sql(query):
     return result.stdout
 
 
-def request(method, path, body=None, session=None, csrf=True, origin=None, client_header=True):
+def request(method, path, body=None, session=None, csrf=True, origin=None, client_header=True, upload=None):
     headers = {'Content-Type': 'application/json', 'Origin': origin or f'https://localhost:{port}'}
+    data = json.dumps(body).encode() if body is not None else None
+    if upload is not None:
+        boundary = 'SomniaBoundary' + uuid.uuid4().hex
+        headers['Content-Type'] = 'multipart/form-data; boundary=' + boundary
+        data = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="avatar.png"\r\n'
+                'Content-Type: image/png\r\n\r\n').encode() + upload + f'\r\n--{boundary}--\r\n'.encode()
     if client_header:
         headers['X-Somnia-Client'] = 'web'
     if session:
@@ -58,14 +66,17 @@ def request(method, path, body=None, session=None, csrf=True, origin=None, clien
         if csrf:
             headers['X-CSRF-Token'] = session.get('csrfToken', '')
     req = urllib.request.Request(f'https://localhost:{port}' + path,
-                                 data=json.dumps(body).encode() if body is not None else None,
+                                 data=data,
                                  headers=headers, method=method)
     try:
         response = opener.open(req, timeout=20)
     except urllib.error.HTTPError as error:
         response = error
     content = response.read()
-    payload = json.loads(content) if content and 'json' in response.headers.get('Content-Type', '') else {}
+    payload = json.loads(content) if content and 'json' in response.headers.get('Content-Type', '') else content or {}
+    if content and response.headers.get('Content-Type') == 'image/png':
+        assert 'no-store' in response.headers.get('Cache-Control', '')
+        assert response.headers.get('X-Content-Type-Options') == 'nosniff'
     if response.status == 200 and path in ('/api/auth/login', '/api/auth/refresh'):
         assert 'refreshToken' not in payload, 'Refresh token leaked in JSON'
         cookies = SimpleCookie()
@@ -82,6 +93,23 @@ def login():
     status, session = request('POST', '/api/auth/login', {'email': 'security@example.com', 'password': 'Security123!@'})
     assert status == 200, f'Login failed: {status}'
     return session
+
+
+def png(animated=False):
+    """Small real PNG/APNG fixtures, including metadata that must not be published."""
+    def chunk(kind, content):
+        return struct.pack('>I', len(content)) + kind + content + struct.pack('>I', zlib.crc32(kind + content))
+    header = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 6, 0, 0, 0))
+    pixels = zlib.compress(b'\x00\xff\x00\x00\xff')
+    header += chunk(b'tEXt', b'Comment\x00private-avatar-metadata')
+    if animated:
+        header += chunk(b'acTL', struct.pack('>II', 2, 0))
+        header += chunk(b'fcTL', struct.pack('>IIIIIHHBB', 0, 1, 1, 0, 0, 1, 10, 0, 0))
+    header += chunk(b'IDAT', pixels)
+    if animated:
+        header += chunk(b'fcTL', struct.pack('>IIIIIHHBB', 1, 1, 1, 0, 0, 1, 10, 0, 0))
+        header += chunk(b'fdAT', struct.pack('>I', 2) + pixels)
+    return header + chunk(b'IEND', b'')
 
 
 try:
@@ -142,6 +170,38 @@ try:
     assert status == 200 and cleared['bio'] is None and cleared['defaultScoreVisibility'] == 'public'
     assert request('GET', '/api/users/security', session=bob)[1]['bio'] is None
     assert request('GET', '/api/users/missing', session=bob)[0] == 404
+
+    avatar_path = '/api/users/security/avatar'
+    assert request('GET', avatar_path, session=bob)[0] == 404
+    assert request('PUT', '/api/me/avatar', upload=png())[0] == 401
+    assert request('PUT', '/api/me/avatar', session=original, upload=png(), client_header=False)[0] == 403
+    assert request('PUT', '/api/me/avatar', session=original, upload=png(), origin='https://evil.example')[0] == 403
+    assert request('PUT', '/api/me/avatar', session=original, upload=b'<script>not an image</script>')[0] == 400
+    assert request('PUT', '/api/me/avatar', session=original, upload=png(animated=True))[0] == 400
+    assert request('PUT', '/api/me/avatar', session=original, upload=b'A' * (2 * 1024 * 1024 + 1))[0] == 400
+    status, uploaded = request('PUT', '/api/me/avatar', session=original, upload=png())
+    assert status == 200 and uploaded['avatarUrl'] == avatar_path, (status, uploaded)
+    assert request('GET', '/api/me', session=original)[1]['avatarUrl'] == avatar_path
+    assert request('GET', '/api/users/security', session=bob)[1]['avatarUrl'] == avatar_path
+    assert request('GET', avatar_path)[0] == 401
+    status, avatar = request('GET', '/api/users/SECURITY/avatar', session=bob)
+    assert status == 200 and avatar.startswith(b'\x89PNG\r\n\x1a\n')
+    assert b'private-avatar-metadata' not in avatar, 'Avatar metadata leaked'
+    assert request('GET', '/api/me', session=bob)[1]['avatarUrl'] is None
+    # A failed replacement must preserve the previous image.
+    assert request('PUT', '/api/me/avatar', session=original, upload=b'broken')[0] == 400
+    assert request('GET', avatar_path, session=bob)[1] == avatar
+    assert request('PUT', '/api/me/avatar', session=original, upload=png())[0] == 200
+    assert request('DELETE', '/api/me/avatar', session=bob)[0] == 204
+    assert request('GET', avatar_path, session=bob)[0] == 200, 'Another user removed the avatar'
+    # Replacements and deletion of one avatar are serialized in the same transaction.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        writes = list(pool.map(lambda _: request('PUT', '/api/me/avatar', session=original, upload=png())[0], range(2)))
+    assert writes == [200, 200], writes
+    assert request('DELETE', '/api/me/avatar', session=original)[0] == 204
+    assert request('GET', avatar_path, session=bob)[0] == 404
+    assert request('GET', '/api/me', session=original)[1]['avatarUrl'] is None
+    assert request('DELETE', '/api/me/avatar', session=original)[0] == 204
     assert request('POST', '/api/auth/refresh', session=original, csrf=False)[0] == 403
     assert request('POST', '/api/auth/refresh', session=original, origin='https://evil.example')[0] == 403
     assert request('POST', '/api/auth/login', {}, client_header=False)[0] == 403
@@ -194,7 +254,7 @@ try:
     assert 429 in throttled, 'Login rate limit not enforced'
     paths = request('GET', '/openapi/v1.json')[1]['paths']
     assert '/auth/login' not in paths and '/api/v1/auth/login' not in paths
-    print('Security checks passed: secure cookies, signed CSRF, origin checks, stolen-token replay, concurrent replay, global logout, absolute expiration, token hashing, rate limiting route cleanup and profile privacy/ownership/partial updates.')
+    print('Security checks passed: secure cookies, signed CSRF, origin checks, stolen-token replay, concurrent replay, global logout, absolute expiration, token hashing, rate limiting, profile privacy/ownership/partial updates and static avatar upload/replacement/deletion/validation/concurrency.')
 finally:
     process.terminate()
     try:

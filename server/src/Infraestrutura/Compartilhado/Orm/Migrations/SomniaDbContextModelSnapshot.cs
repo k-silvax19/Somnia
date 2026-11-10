@@ -86,6 +86,20 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.AvatarUsuario", b =>
+                {
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Conteudo")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("UsuarioId");
+
+                    b.ToTable("Avatares", (string)null);
+                });
+
             modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -270,6 +284,15 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                     b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.AvatarUsuario", b =>
+                {
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
+                        .WithOne()
+                        .HasForeignKey("Somnia.Infraestrutura.Compartilhado.Orm.AvatarUsuario", "UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
