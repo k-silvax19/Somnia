@@ -41,9 +41,20 @@ internal static class ResultadosCatalogo
                 ? Result.Fail<T>(Erros.Criar(TipoErro.NaoEncontrado, "Item de catálogo não encontrado."))
                 : Result.Ok(item);
         }
-        catch (CatalogoIndisponivelException)
+        catch (CatalogoIndisponivelException ex)
         {
-            return Result.Fail<T>(Erros.Criar(TipoErro.Indisponivel, "Catálogo temporariamente indisponível."));
+            var erro = Erros.Criar(TipoErro.Indisponivel, "Catálogo temporariamente indisponível.");
+            if (ex.RetryAfterSeconds is > 0)
+                erro.WithMetadata("RetryAfterSeconds", ex.RetryAfterSeconds.Value);
+            return Result.Fail<T>(erro);
+        }
+        catch (RespostaCatalogoInvalidaException)
+        {
+            return Result.Fail<T>(Erros.Criar(TipoErro.FalhaIntegracao, "Resposta inválida do catálogo externo."));
+        }
+        catch (ConsultaCatalogoInvalidaException)
+        {
+            return Result.Fail<T>(Erros.Criar(TipoErro.Validacao, "Consulta recusada pelo catálogo. Verifique os parâmetros.", "catalog"));
         }
     }
 }

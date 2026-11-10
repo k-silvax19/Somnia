@@ -50,7 +50,13 @@ public sealed record FaixaCatalogoDto : ItemCatalogoDto
 
 public sealed record PaginaCatalogoDto(IReadOnlyList<ItemCatalogoDto> Items, int Limit, int Offset, int Total)
 {
-    public bool HasMore => (long)Offset + Items.Count < Total;
+    public bool HasMore { get; init; } = (long)Offset + Items.Count < Total;
 }
 
-public sealed class CatalogoIndisponivelException : Exception;
+public sealed class CatalogoIndisponivelException(int? retryAfterSeconds = null) : Exception
+{
+    public int? RetryAfterSeconds { get; } = retryAfterSeconds;
+}
+
+public sealed class RespostaCatalogoInvalidaException : Exception;
+public sealed class ConsultaCatalogoInvalidaException : Exception;

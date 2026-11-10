@@ -6,5 +6,6 @@ public enum TipoErro
     NaoEncontrado,
     Conflito,
     NaoAutenticado,
-    Indisponivel
+    Indisponivel,
+    FalhaIntegracao
 }

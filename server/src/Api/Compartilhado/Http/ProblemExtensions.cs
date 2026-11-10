@@ -18,6 +18,7 @@ public static class ProblemExtensions
             TipoErro.Conflito => 409,
             TipoErro.NaoAutenticado => 401,
             TipoErro.Indisponivel => 503,
+            TipoErro.FalhaIntegracao => 502,
             _ => 500
         };
 
@@ -40,6 +41,7 @@ public static class ProblemExtensions
                     404 => "Recurso não encontrado",
                     409 => "Conflito",
                     503 => "Serviço temporariamente indisponível",
+                    502 => "Resposta inválida do serviço externo",
                     _ => "Erro interno do servidor"
                 },
                 Detail = status == 500 ? null : primeiroErro?.Message
@@ -47,6 +49,8 @@ public static class ProblemExtensions
         }
 
         problem.Status = status;
+        if (primeiroErro?.Metadata.GetValueOrDefault("RetryAfterSeconds") is int espera && espera > 0)
+            controller.Response.Headers.RetryAfter = espera.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         if (problem is ValidationProblemDetails)
         {

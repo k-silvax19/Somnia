@@ -48,6 +48,7 @@ public static class ApiProblemDetails
         415 => "Formato não suportado",
         429 => "Limite de requisições excedido",
         503 => "Serviço temporariamente indisponível",
+        502 => "Resposta inválida do serviço externo",
         _ => status >= 500 ? "Erro interno do servidor" : "Não foi possível concluir a requisição"
     };
 
@@ -63,6 +64,7 @@ public static class ApiProblemDetails
         415 => "O formato do corpo da requisição não é aceito por esta operação.",
         429 => "Aguarde antes de tentar novamente.",
         503 => "O serviço solicitado está indisponível. Tente novamente mais tarde.",
+        502 => "O serviço externo retornou uma resposta que não pôde ser processada.",
         _ => status >= 500 ? "Ocorreu uma falha interna. Informe o traceId ao solicitar suporte."
             : "Não foi possível concluir a requisição."
     };

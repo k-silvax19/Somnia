@@ -2,11 +2,26 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Somnia.Api.Compartilhado.Http;
 using Xunit;
+using FluentResults;
+using Somnia.Aplicacao.Compartilhado;
+using Somnia.Dominio.Compartilhado;
 
 namespace Somnia.Tests.Compartilhado.Http;
 
 public sealed class ApiProblemDetailsTests
 {
+    [Fact]
+    public void IndisponibilidadeDoProvedor_PreservaRetryAfterNoHttp()
+    {
+        var controller = new ControllerTeste { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+        var erro = Erros.Criar(TipoErro.Indisponivel, "Catálogo indisponível.").WithMetadata("RetryAfterSeconds", 42);
+        var response = Assert.IsType<ObjectResult>(controller.ResultProblem(Result.Fail(erro)));
+        Assert.Equal(503, response.StatusCode);
+        Assert.Equal("42", controller.Response.Headers.RetryAfter);
+    }
+
+    private sealed class ControllerTeste : ControllerBase;
+
     [Theory]
     [InlineData(400)]
     [InlineData(401)]
@@ -18,6 +33,7 @@ public sealed class ApiProblemDetailsTests
     [InlineData(415)]
     [InlineData(429)]
     [InlineData(503)]
+    [InlineData(502)]
     public void Completar_GaranteContratoSemIncluirQueryString(int status)
     {
         var contexto = new DefaultHttpContext();
