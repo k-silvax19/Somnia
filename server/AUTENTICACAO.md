@@ -1,17 +1,46 @@
 # Autenticação
 
+## Conferência com a especificação
+
+Revisado em 10/11/2026 contra `Somnia_Especificacao_Tecnica_API_MVP_v1.0.pdf`
+(09/11/2026), seções 3, 4, 10 e 11, e o PRD `somnia.docx` (v1.1).
+Esta página descreve o contrato implementado de RF01 e a consulta do titular
+de RF02; não significa que todo o MVP esteja concluído.
+
+O PDF propõe `/api/v1`, PostgreSQL e MSTest. O repositório implementa `/api`,
+SQL Server e xUnit, com integração HTTP/banco em Python. São diferenças em
+relação à proposta técnica, não equivalência literal com o PDF. A seção 16
+do próprio PDF identifica essas escolhas como sugestões de implementação.
+
+Refresh rotativo foi adotado, embora seja opcional na especificação. O logout
+implementado encerra todas as sessões do usuário, comportamento mais amplo que
+a descrição de revogar o refresh token. Cookies e CSRF são detalhes do contrato
+atual que o frontend precisa seguir.
+
+Pendências: padronizar todos os erros com `type`, `title`, `status`, `detail`
+e `traceId`; confirmar os limites de username (o PDF sugere 3–30, enquanto o
+cadastro HTTP aceita 1–256) e a política de verificação de e-mail do piloto.
+O uso de ProblemDetails já existe, mas não garante todos esses campos em
+todas as respostas, incluindo erros de autenticação e de rate limiting.
+
 Execute a API por HTTPS. O perfil local padrão é `https`; o frontend local deve
 usar `https://localhost:4200` ou ser servido na mesma origem da API.
 
 ## Contrato com o frontend
 
-As cinco rotas continuam sendo:
+As rotas de autenticação e consulta do titular são:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
 - `GET /api/me`
+
+O cadastro recebe `email`, `username`, `password` e `displayName`; retorna
+`201` com os dados do titular, sem iniciar sessão. A senha exige pelo menos
+oito caracteres, um número e um caractere especial. E-mail e username são
+verificados pelo Identity com normalização e duplicidades retornam `409`.
+As rotas adicionais de perfil estão em [PERFIS.md](PERFIS.md).
 
 Todas as chamadas POST exigem `X-Somnia-Client: web`. Requisições com `Origin`
 precisam corresponder à própria API ou a uma origem explicitamente configurada
@@ -88,3 +117,7 @@ loopback; a API continua exigindo HTTPS.
 Os cenários incluem cookies seguros, CSRF forjado, origem não permitida, roubo e
 reutilização de refresh token, concorrência, revogação de JWTs, logout global,
 expiração absoluta, armazenamento por hash e limites de requisições.
+
+Na revisão de 10/11/2026, os 32 testes xUnit do projeto e o teste integrado
+acima passaram. Isso valida os cenários implementados de autenticação e
+perfil; não homologa os critérios do MVP que dependem dos demais módulos.
