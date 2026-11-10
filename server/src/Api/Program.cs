@@ -13,11 +13,13 @@ using Somnia.Dominio.Compartilhado;
 using Somnia.Infraestrutura;
 using Somnia.Infraestrutura.Compartilhado.Mensageria;
 using Somnia.Infraestrutura.Compartilhado.Orm;
+using Somnia.Infraestrutura.Modulos.Catalogo;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddMusicCatalogServices(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddAvatarMessaging(builder.Configuration);
 builder.Services.AddScoped<IEmissorTokens, JwtTokenGenerator>();
 builder.Services
@@ -129,6 +131,14 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
     }
+    options.AddPolicy("catalog", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
     options.AddPolicy("avatar", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions

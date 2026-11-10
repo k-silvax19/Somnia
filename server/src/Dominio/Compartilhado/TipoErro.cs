@@ -5,5 +5,6 @@ public enum TipoErro
     Validacao,
     NaoEncontrado,
     Conflito,
-    NaoAutenticado
+    NaoAutenticado,
+    Indisponivel
 }

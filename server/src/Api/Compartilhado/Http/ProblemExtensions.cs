@@ -17,6 +17,7 @@ public static class ProblemExtensions
             TipoErro.NaoEncontrado => 404,
             TipoErro.Conflito => 409,
             TipoErro.NaoAutenticado => 401,
+            TipoErro.Indisponivel => 503,
             _ => 500
         };
 
@@ -38,6 +39,7 @@ public static class ProblemExtensions
                     401 => "Não autenticado",
                     404 => "Recurso não encontrado",
                     409 => "Conflito",
+                    503 => "Serviço temporariamente indisponível",
                     _ => "Erro interno do servidor"
                 },
                 Detail = status == 500 ? null : primeiroErro?.Message

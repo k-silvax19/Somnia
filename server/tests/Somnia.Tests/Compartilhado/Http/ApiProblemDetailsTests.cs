@@ -17,6 +17,7 @@ public sealed class ApiProblemDetailsTests
     [InlineData(413)]
     [InlineData(415)]
     [InlineData(429)]
+    [InlineData(503)]
     public void Completar_GaranteContratoSemIncluirQueryString(int status)
     {
         var contexto = new DefaultHttpContext();
