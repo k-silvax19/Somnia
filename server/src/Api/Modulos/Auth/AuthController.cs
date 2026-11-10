@@ -9,14 +9,16 @@ using Somnia.Api.Compartilhado.Auth;
 using MediatR;
 using Somnia.Api.Compartilhado.Http;
 using Somnia.Aplicacao.Modulos.Auth;
+using Somnia.Dominio.Compartilhado;
 
 namespace Somnia.Api.Modulos.Auth;
 
 public sealed record RegistroRequest(
     [Required] string? Email,
-    [Required, StringLength(256), RegularExpression(@"[a-zA-Z0-9._-]+")] string? Username,
+    [Required, StringLength(RegrasCadastro.UsernameMaximo, MinimumLength = RegrasCadastro.UsernameMinimo),
+     RegularExpression(@"[a-zA-Z0-9._-]+")] string? Username,
     [Required] string? Password,
-    [Required] string? DisplayName
+    [Required, StringLength(RegrasCadastro.NomeMaximo)] string? DisplayName
 );
 public sealed record AutenticacaoRequest(string? Email, string? Password);
 

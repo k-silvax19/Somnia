@@ -14,20 +14,20 @@ public sealed class AuthHandlerTests
         var usuario = new UsuarioDto(Guid.NewGuid(), "Ana", "ana@example.com");
         var identidade = new Mock<IGerenciadorIdentidade>();
         identidade
-            .Setup(x => x.CadastrarAsync("Ana", "ana@example.com", "SenhaSegura1!", It.IsAny<CancellationToken>()))
+            .Setup(x => x.CadastrarComUsernameAsync("Ana", "ana@example.com", "SenhaSegura1!", "ana", It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
         var handler = new CadastrarUsuarioCommandHandler(identidade.Object);
 
         // Act
         var result = await handler.Handle(
-            new CadastrarUsuarioCommand("Ana", "ana@example.com", "SenhaSegura1!"),
+            new CadastrarUsuarioCommand("Ana", "ana@example.com", "SenhaSegura1!", "ana"),
             CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(usuario, result.Value);
         identidade.Verify(
-            x => x.CadastrarAsync("Ana", "ana@example.com", "SenhaSegura1!", It.IsAny<CancellationToken>()),
+            x => x.CadastrarComUsernameAsync("Ana", "ana@example.com", "SenhaSegura1!", "ana", It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -37,19 +37,19 @@ public sealed class AuthHandlerTests
         // Arrange
         var identidade = new Mock<IGerenciadorIdentidade>();
         identidade
-            .Setup(x => x.CadastrarAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CadastrarComUsernameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("EMAIL_DUPLICADO"));
         var handler = new CadastrarUsuarioCommandHandler(identidade.Object);
 
         // Act
         var result = await handler.Handle(
-            new CadastrarUsuarioCommand("Ana", "ana@example.com", "SenhaSegura1!"),
+            new CadastrarUsuarioCommand("Ana", "ana@example.com", "SenhaSegura1!", "ana"),
             CancellationToken.None);
 
         // Assert
         Assert.True(result.IsFailed);
         identidade.Verify(
-            x => x.CadastrarAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            x => x.CadastrarComUsernameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -68,14 +68,42 @@ public sealed class AuthHandlerTests
 
         // Act
         var result = await handler.Handle(
-            new CadastrarUsuarioCommand(nome, email, senha),
+            new CadastrarUsuarioCommand(nome, email, senha, "ana"),
             CancellationToken.None);
 
         // Assert
         Assert.True(result.IsFailed);
         identidade.Verify(
-            x => x.CadastrarAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            x => x.CadastrarComUsernameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("ab")]
+    [InlineData("nome com espaco")]
+    [InlineData("nome@dominio")]
+    [InlineData("usuário")]
+    [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public async Task CadastrarUsernameInvalido_NaoAcessaIdentidade(string? username)
+    {
+        var identidade = new Mock<IGerenciadorIdentidade>(MockBehavior.Strict);
+        var resultado = await new CadastrarUsuarioCommandHandler(identidade.Object).Handle(
+            new CadastrarUsuarioCommand("Ana", "ana@example.com", "SenhaSegura1!", username), CancellationToken.None);
+
+        Assert.True(resultado.IsFailed);
+        Assert.Contains(resultado.Errors, erro => erro.Metadata.GetValueOrDefault("Campo")?.ToString() == "username");
+        identidade.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData("ana")]
+    [InlineData("Ana_01.test-user")]
+    [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public void UsernameAceitaLimitesECaracteresDocumentados(string username)
+    {
+        Assert.True(RegrasCadastro.UsernameValido(username));
     }
 
     [Fact]

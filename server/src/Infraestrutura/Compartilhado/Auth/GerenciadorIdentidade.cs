@@ -9,16 +9,6 @@ namespace Somnia.Infraestrutura.Compartilhado.Auth;
 public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
     : IGerenciadorIdentidade
 {
-    public async Task<UsuarioDto> CadastrarAsync(
-        string nome,
-        string email,
-        string senha,
-        CancellationToken ct
-    )
-    {
-        return await CadastrarComUsernameAsync(nome, email, senha, email, ct);
-    }
-
     public async Task<UsuarioDto> CadastrarComUsernameAsync(
         string nome,
         string email,
@@ -29,11 +19,14 @@ public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
     {
         ct.ThrowIfCancellationRequested();
 
+        if (!RegrasCadastro.UsernameValido(username))
+            throw new ArgumentException("Username deve ter de 3 a 30 caracteres e usar somente letras sem acento, números, ponto, hífen ou sublinhado.");
+
         var user = new SomniaUser
         {
             Id = Guid.CreateVersion7(),
             UserName = username.Trim(),
-            Email = email,
+            Email = email.Trim(),
             Nome = nome.Trim()
         };
         var result = await userManager.CreateAsync(user, senha);
@@ -58,7 +51,7 @@ public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
     {
         ct.ThrowIfCancellationRequested();
 
-        var user = await userManager.FindByEmailAsync(email);
+        var user = await userManager.FindByEmailAsync(email.Trim());
 
         if (user is null || await userManager.IsLockedOutAsync(user))
             return null;

@@ -23,12 +23,6 @@ public sealed record CredenciaisUsuario(Guid Id, string Nome, string Email);
 
 public interface IGerenciadorIdentidade
 {
-    Task<UsuarioDto> CadastrarAsync(
-        string nome,
-        string email,
-        string senha,
-        CancellationToken cancellationToken
-    );
     Task<CredenciaisUsuario?> AutenticarAsync(
         string email,
         string senha,

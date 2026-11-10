@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Somnia.Api.Compartilhado.Auth;
@@ -12,6 +13,7 @@ using Somnia.Dominio.Modulos.Perfis;
 namespace Somnia.Api.Modulos.Perfis;
 
 [ApiController]
+[Authorize]
 [ValidarOrigemAuth]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [Route("api")]

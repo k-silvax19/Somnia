@@ -15,10 +15,14 @@ public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identi
     {
         var erros = new List<Error>();
 
-        if (string.IsNullOrWhiteSpace(command.Nome))
+        if (string.IsNullOrWhiteSpace(command.Nome) || command.Nome.Length > RegrasCadastro.NomeMaximo)
         {
-            erros.Add(Erros.Criar(TipoErro.Validacao, "Nome é obrigatório.", "nome"));
+            erros.Add(Erros.Criar(TipoErro.Validacao, "Nome deve ter entre 1 e 256 caracteres.", "displayName"));
         }
+
+        if (!RegrasCadastro.UsernameValido(command.Username))
+            erros.Add(Erros.Criar(TipoErro.Validacao,
+                "Username deve ter de 3 a 30 caracteres: letras sem acento, números, ponto, hífen ou sublinhado.", "username"));
 
         if (string.IsNullOrWhiteSpace(command.Email)
             || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(command.Email))
@@ -34,7 +38,7 @@ public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identi
             erros.Add(Erros.Criar(
                 TipoErro.Validacao,
                 "A senha deve ter pelo menos 8 caracteres, incluindo um número e um caractere especial.",
-                "senha"));
+                "password"));
         }
 
         if (erros.Count > 0)
@@ -44,10 +48,8 @@ public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identi
 
         try
         {
-            var usuario = command.Username is null
-                ? await identidade.CadastrarAsync(command.Nome!, command.Email!, command.Senha!, ct)
-                : await identidade.CadastrarComUsernameAsync(
-                    command.Nome!, command.Email!, command.Senha!, command.Username, ct);
+            var usuario = await identidade.CadastrarComUsernameAsync(
+                command.Nome!, command.Email!.Trim(), command.Senha!, command.Username!, ct);
 
             return Result.Ok(usuario);
         }
@@ -59,11 +61,11 @@ public sealed class CadastrarUsuarioCommandHandler(IGerenciadorIdentidade identi
         catch (InvalidOperationException ex) when (ex.Message == "USERNAME_DUPLICADO")
         {
             return Result.Fail<UsuarioDto>(
-                Erros.Criar(TipoErro.Conflito, "O username j? est? cadastrado.", "username"));
+                Erros.Criar(TipoErro.Conflito, "O username já está cadastrado.", "username"));
         }
         catch (ArgumentException ex)
         {
-            return Result.Fail<UsuarioDto>(Erros.Criar(TipoErro.Validacao, ex.Message, "senha"));
+            return Result.Fail<UsuarioDto>(Erros.Criar(TipoErro.Validacao, ex.Message, "password"));
         }
     }
 }

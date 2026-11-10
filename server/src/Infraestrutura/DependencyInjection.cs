@@ -26,6 +26,8 @@ public static class DependencyInjection
         services.AddIdentityCore<SomniaUser>(options =>
         {
             options.User.RequireUniqueEmail = true;
+            // Política do piloto: e-mail identifica a conta; confirmação não bloqueia login.
+            options.SignIn.RequireConfirmedEmail = false;
 
             options.Password.RequiredLength = 8;
             options.Password.RequireDigit = true;
