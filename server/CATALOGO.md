@@ -122,6 +122,18 @@ O tratamento de quota segue [Rate Limits](https://developer.spotify.com/document
 
 ## Verificação e CI
 
+Para testar manualmente, importe no Postman
+[`catalogo.postman_collection.json`](tests/postman/catalogo.postman_collection.json).
+Edite `email`, `username` e `password` nas variáveis da coleção para uma conta
+local de teste. Execute o cadastro uma vez; depois execute login e consultas
+em ordem. O login preenche `accessToken`, a busca preenche `albumId` e o
+detalhe do álbum preenche `trackId`. Em execuções seguintes com a mesma conta,
+comece pelo login para evitar conflito de cadastro. Os últimos pedidos
+validam erros esperados `400` e `401`. O catálogo usa GET sem corpo JSON.
+Não compartilhe exportações com tokens ou senhas preenchidos. A API precisa
+estar em execução com HTTPS, banco, broker e Spotify configurados conforme
+o README; confie no certificado local com `dotnet dev-certs https --trust`.
+
 ```powershell
 dotnet build server/Somnia.slnx -c Release
 dotnet test server/tests/Somnia.Tests -c Release
