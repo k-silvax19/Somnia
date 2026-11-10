@@ -23,8 +23,11 @@ connection = connection.replace('Database=' + parts['Database'], 'Database=' + d
 with socket.socket() as sock:
     sock.bind(('127.0.0.1', 0))
     port = sock.getsockname()[1]
+with socket.socket() as sock:
+    sock.bind(('127.0.0.1', 0))
+    http_port = sock.getsockname()[1]
 env = os.environ.copy()
-env.update(ASPNETCORE_ENVIRONMENT='Development', ASPNETCORE_URLS=f'https://localhost:{port}',
+env.update(ASPNETCORE_ENVIRONMENT='Development', ASPNETCORE_URLS=f'https://localhost:{port};http://localhost:{http_port}',
            ConnectionStrings__SqlServer=connection, Jwt__SigningKey=secrets.token_hex(32), Jwt__ExpiresInMinutes='15')
 # Only the isolated loopback test client bypasses trust of the development certificate.
 opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
@@ -94,6 +97,18 @@ try:
         time.sleep(0.25)
     else:
         raise RuntimeError('API did not start')
+
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            return None
+
+    http_client = urllib.request.build_opener(NoRedirect())
+    try:
+        http_response = http_client.open(f'http://localhost:{http_port}/swagger/index.html', timeout=10)
+    except urllib.error.HTTPError as error:
+        http_response = error
+    assert http_response.status == 307, 'Swagger is served over HTTP instead of redirecting to HTTPS'
+    assert http_response.headers['Location'] == f'https://localhost:{port}/swagger/index.html'
 
     registration = {'email': 'security@example.com', 'username': 'security', 'password': 'Security123!@', 'displayName': 'Security'}
     assert request('POST', '/api/auth/register', registration)[0] == 201

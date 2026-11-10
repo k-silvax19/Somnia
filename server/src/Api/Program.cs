@@ -116,13 +116,15 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+app.UseHttpsRedirection();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().AllowAnonymous();
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "Somnia API");
-        options.UseRequestInterceptor("request => { request.headers['X-Somnia-Client'] = 'web'; const csrf = document.cookie.split('; ').find(cookie => cookie.startsWith('__Host-somnia-csrf=')); if (csrf) request.headers['X-CSRF-Token'] = decodeURIComponent(csrf.substring(csrf.indexOf('=') + 1)); return request; }");
+        options.UseRequestInterceptor("function (request) { request.headers['X-Somnia-Client'] = 'web'; const csrf = document.cookie.split('; ').find(cookie => cookie.startsWith('__Host-somnia-csrf=')); if (csrf) request.headers['X-CSRF-Token'] = decodeURIComponent(csrf.substring(csrf.indexOf('=') + 1)); return request; }");
     });
 }
 else
@@ -154,7 +156,6 @@ app.UseExceptionHandler(error => error.Run(async context =>
 }));
 
 app.UseStatusCodePages();
-app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("Client");
 app.UseRateLimiter();
