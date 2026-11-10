@@ -1,12 +1,21 @@
 # Perfis
 
-Implementação baseada em RF02 e nas regras de privacidade da especificação do
-Somnia. Mantém SQL Server, as quatro camadas e rotas sem `/v1`.
+Implementação parcial de RF02 e das regras de privacidade do Somnia.
+Conferida em 10/11/2026 contra `Somnia_Especificacao_Tecnica_API_MVP_v1.0.pdf`
+(09/11/2026), seções 4, 8, 10 e 15, e o PRD `somnia.docx` (v1.1).
+
+O PDF inclui edição de avatar no perfil; esse recurso ainda não foi
+implementado. Portanto, RF02 não deve ser tratado como concluído.
+O projeto usa SQL Server, quatro camadas e rotas sem `/v1`; PostgreSQL e
+`/api/v1` são propostas do PDF que diferem da implementação atual.
 
 ## Endpoints
 
 Todas as rotas abaixo exigem JWT Bearer. A consulta pública significa uma
 projeção com dados públicos, disponível nesta etapa para usuários autenticados.
+O acesso de visitantes sem conta continua sendo uma decisão pendente na
+seção 15 do PDF e na seção 11 do PRD; exigir login não contraria uma decisão
+já fechada nesses documentos.
 
 | Método | Rota | Resposta |
 | --- | --- | --- |
@@ -56,6 +65,18 @@ O contrato reserva `avatarUrl`, inicialmente nulo. Upload e alteração do avata
 ficaram para a etapa seguinte; URLs externas não são aceitas no PATCH.
 O upload futuro precisará validar imagem estática, formato, tamanho e propriedade
 do arquivo antes de preencher esse campo.
+GIFs de avatar pertencem à fase Premium descrita no PRD v1.1 e estão fora
+do escopo da especificação técnica do MVP gratuito.
+
+## O que ainda falta
+
+- Edição do avatar estático para completar o contrato de RF02.
+- Avaliações públicas no perfil, descritas na seção 8 do PDF, dependem do
+  módulo de avaliações e ainda não possuem endpoint implementado.
+- Seguir, deixar de seguir, feed e descoberta (RF08/RF09) também não estão
+  implementados; a consulta de perfil existente não entrega esses recursos.
+- Confirmar os limites adotados: bio de 300 segue a sugestão do PDF; nome de
+  exibição de 256 é uma escolha da implementação, sem limite definido no PDF.
 
 ## Validação
 
@@ -64,3 +85,7 @@ unitários cobrem validação e distinção entre campos omitidos e nulos. O tes
 HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifica
 titularidade, normalização do username, edição parcial, preferências privadas e
 ausência de dados privados nas respostas públicas.
+
+Na revisão de 10/11/2026, passaram os 32 testes xUnit do projeto e o teste
+integrado HTTPS/SQL. Não há validação de upload, avaliações públicas ou
+relações sociais, pois esses recursos ainda não foram implementados.
