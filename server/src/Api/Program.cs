@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Somnia.Api.Compartilhado.Auth;
@@ -48,6 +49,7 @@ builder.Services
     };
 
     options.MapInboundClaims = false;
+    options.IncludeErrorDetails = false;
     options.Events = new JwtBearerEvents
     {
         OnTokenValidated = async context =>
@@ -85,7 +87,13 @@ builder.Services
         .Build());
 
 builder.Services.AddControllers(options =>
-    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+{
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+    options.Filters.Add<ApiProblemDetailsFilter>();
+    options.ModelMetadataDetailsProviders.Add(new Microsoft.AspNetCore.Mvc.ModelBinding.Metadata.SystemTextJsonValidationMetadataProvider());
+});
+builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+    ApiProblemDetails.Completar(context.HttpContext, context.ProblemDetails));
 
 builder.Services.AddOpenApiServices();
 
@@ -103,6 +111,13 @@ builder.Services.AddCors(options => options.AddPolicy("Client", policy =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var espera))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Max(1, (int)Math.Ceiling(espera.TotalSeconds))
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        await ApiProblemDetails.EscreverAsync(context.HttpContext, StatusCodes.Status429TooManyRequests, ct);
+    };
     foreach (var (nome, limite) in new[] { ("login", 10), ("register", 5), ("refresh", 30) })
     {
         options.AddPolicy(nome, context => RateLimitPartition.GetFixedWindowLimiter(
@@ -125,6 +140,16 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler(error => error.Run(context =>
+{
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var status = exception is BadHttpRequestException requestException
+        ? requestException.StatusCode : StatusCodes.Status500InternalServerError;
+    return ApiProblemDetails.EscreverAsync(context, status, context.RequestAborted);
+}));
+app.UseStatusCodePages(context => ApiProblemDetails.EscreverAsync(context.HttpContext,
+    context.HttpContext.Response.StatusCode, context.HttpContext.RequestAborted));
 
 app.UseHttpsRedirection();
 
@@ -153,19 +178,6 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-app.UseExceptionHandler(error => error.Run(async context =>
-{
-    context.Response.StatusCode = 500;
-    context.Response.ContentType = "application/problem+json";
-    await context.Response.WriteAsJsonAsync(
-        new Microsoft.AspNetCore.Mvc.ProblemDetails
-        {
-            Status = 500,
-            Title = "Erro interno do servidor"
-        });
-}));
-
-app.UseStatusCodePages();
 app.UseRouting();
 app.UseCors("Client");
 app.UseAuthentication();
