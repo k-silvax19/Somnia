@@ -44,7 +44,7 @@ worker_name = rabbit_name + '-worker'
 worker = None
 rabbit_started = False
 env = os.environ.copy()
-env.update(ASPNETCORE_ENVIRONMENT='Development', ASPNETCORE_URLS=f'https://localhost:{port};http://localhost:{http_port}',
+env.update(ASPNETCORE_ENVIRONMENT='Development', DOTNET_ENVIRONMENT='Development', ASPNETCORE_URLS=f'https://localhost:{port};http://localhost:{http_port}',
            ConnectionStrings__SqlServer=connection, Jwt__SigningKey=secrets.token_hex(32), Jwt__ExpiresInMinutes='15')
 env['ConnectionStrings__RabbitMq'] = f'rabbitmq://somnia:{rabbit_password}@localhost:{rabbit_port}/'
 env['MusicCatalog__Provider'] = 'Simulated'
@@ -410,6 +410,27 @@ try:
     assert request('GET', search_path, session=bob)[0] == 200, 'Catalog rate limit leaked to another user'
     assert request('GET', '/api/me', session=original)[0] == 200
     print('Catalog checks passed: authenticated endpoints, type isolation, pagination, album-track links, validation, controlled outage and per-user rate limit.', flush=True)
+
+    if os.environ.get('SOMNIA_TEST_SPOTIFY_LIVE') == '1':
+        env['MusicCatalog__Provider'] = 'Spotify'
+        restart_api()
+        status, live_search = request('GET', '/api/catalog/search?q=Radiohead&type=album&limit=1', session=original)
+        assert status == 200 and live_search['items'], (status, live_search)
+        live_item = live_search['items'][0]
+        assert set(live_item) == {'provider', 'type', 'externalId', 'title', 'artists', 'coverUrl', 'spotifyUrl'}
+        assert live_item['provider'] == 'spotify' and live_item['type'] == 'album'
+        assert live_item['spotifyUrl'] == 'https://open.spotify.com/album/' + live_item['externalId']
+        status, live_album = request('GET', '/api/catalog/albums/' + live_item['externalId'], session=original)
+        assert status == 200 and live_album['tracks'], (status, live_album)
+        status, live_track = request('GET', '/api/catalog/tracks/' + live_album['tracks'][0]['externalId'], session=original)
+        assert status == 200 and live_track['provider'] == 'spotify' and live_track['type'] == 'track', (status, live_track)
+        assert live_track['album']['type'] == 'album' and live_track['album']['externalId']
+        status, live_tracks = request('GET', '/api/catalog/search?q=Radiohead&type=track&limit=1', session=original)
+        assert status == 200 and live_tracks['items'][0]['type'] == 'track', (status, live_tracks)
+        assert request('GET', '/api/me', session=original)[0] == 200
+        print('Live Spotify checks passed through Somnia: album/track search, album tracks, track details, attribution and links.', flush=True)
+        env['MusicCatalog__Provider'] = 'Simulated'
+        restart_api()
 
     avatar_path = '/api/users/security/avatar'
     assert request('GET', avatar_path, session=bob)[0] == 404
