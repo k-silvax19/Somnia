@@ -3,8 +3,9 @@
 A API implementa busca e detalhes de RF03/RF04 e fornece links oficiais de
 escuta de RF05 pelo `IMusicCatalogProvider`. O adaptador Spotify usa Client
 Credentials no servidor; participantes do Somnia continuam autenticados por
-JWT e não precisam conectar uma conta Spotify. Avaliações e diário ainda
-não estão implementados.
+JWT e não precisam conectar uma conta Spotify. Avaliações e seu histórico
+no perfil ainda não estão implementados. O diário privado foi retirado do
+escopo no [PRD v1.2](../docs/PRD.md).
 
 ## Configuração
 

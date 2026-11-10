@@ -1,6 +1,6 @@
 # Somnia
 
-API de um diário musical com avaliações e recursos sociais. O MVP está em
+API de avaliações musicais e recursos sociais. O MVP está em
 desenvolvimento: atualmente há autenticação e perfis com avatar estático,
 processado de forma assíncrona por RabbitMQ e um Worker separado, além de
 catálogo musical integrado ao Spotify.
@@ -12,8 +12,10 @@ arquivos em Downloads:
 
 - `Somnia_Especificacao_Tecnica_API_MVP_v1.0.pdf`, de 09/11/2026: referência
   técnica do MVP gratuito, com RF01–RF11 e critérios CA01–CA15 próprios da API.
-- `somnia.docx`, PRD v1.1 de 07/11/2026: regras do produto e expansão Premium
-  posterior ao piloto. Os IDs de critérios de aceite do PRD e do PDF têm
+- `somnia.docx`, PRD v1.2 de 10/11/2026, com transcrição versionada em
+  [docs/PRD.md](docs/PRD.md): avaliações compõem o histórico do perfil;
+  diário privado e registros de escuta foram retirados do MVP. A expansão
+  Premium continua posterior ao piloto. Os IDs de critérios de aceite do PRD e do PDF têm
   significados diferentes e devem ser lidos dentro de cada documento.
 
 | Área | Estado verificado no repositório |
@@ -23,7 +25,7 @@ arquivos em Downloads:
 | RF03/RF04 — Catálogo | Busca paginada e detalhes de álbum/faixa integrados ao Spotify, incluindo todas as faixas do álbum |
 | RF05/RF11 — Integração externa | Client Credentials, links oficiais e falhas externas controladas implementados; acesso real validado com o aplicativo local |
 | RF06/RF10 — Avaliações e média | Não implementado |
-| RF07 — Diário privado | Não implementado |
+| RF07 da API — Diário privado | Retirado do escopo pelo PRD v1.2; histórico de avaliações no perfil ainda será implementado |
 | RF08/RF09 — Relações, feed e descoberta | Não implementado |
 | CI | Workflow versionado com restore, build e testes unitários |
 | Deploy e Azure | Não configurados |
@@ -36,6 +38,16 @@ Os documentos detalhados são [Autenticação](server/AUTENTICACAO.md) e
 As rotas de busca e detalhes estão em [Catálogo](server/CATALOGO.md).
 Esses documentos descrevem o que existe e suas pendências;
 não representam homologação do MVP completo.
+
+Na revisão de escopo de 10/11/2026, avaliações passam a seguir o acesso do
+perfil: visíveis aos participantes autenticados e editáveis/excluíveis
+somente pelo autor, sem visibilidade independente de nota e resenha.
+O histórico reúne avaliações atuais, sem datas de escuta nem registros
+repetidos por audição. O PRD revisa jornadas, modelo de dados, critérios de
+aceite e referências Premium. O PDF técnico v1.0 permanece como referência
+original; nas regras alteradas, vale o PRD v1.2. A implementação das
+avaliações e a adequação das preferências de publicação já existentes na
+API de perfil continuam pendentes.
 
 ## Arquitetura e diferenças da proposta
 
