@@ -73,7 +73,6 @@ de exemplo por valores locais. A chave precisa ter pelo menos 32 bytes.
 ```powershell
 dotnet user-secrets set "ConnectionStrings:SqlServer" "<conexão SQL Server local>" --project server/src/Api
 dotnet user-secrets set "Jwt:SigningKey" "<chave aleatória com pelo menos 32 bytes>" --project server/src/Api
-dotnet user-secrets set "ConnectionStrings:RabbitMq" "rabbitmq://somnia:<senha>@localhost:5672/" --project server/src/Api
 dotnet dev-certs https --trust
 dotnet restore server/Somnia.slnx
 dotnet run --project server/src/Api --launch-profile https
@@ -90,8 +89,13 @@ OpenAPI: `https://localhost:7201/openapi/v1.json`. O `v1` desse arquivo
 identifica o documento OpenAPI; as rotas dos controllers continuam em `/api`.
 Swagger e OpenAPI são expostos somente em Development.
 
-Configure a senha do broker e inicie RabbitMQ conforme
-[MENSAGERIA.md](server/MENSAGERIA.md). Após iniciar a API, execute em outro
+API e Worker já possuem `ConnectionStrings:RabbitMq` no
+`appsettings.Development.json`, seguindo o Gerador de Certificados:
+`amqp://guest:guest@localhost:5673`. O Worker também usa a mesma conexão SQL
+local da API nesse arquivo. User Secrets e variáveis de ambiente podem
+sobrescrever esses valores. O broker do Compose usa outra configuração;
+os detalhes estão em [MENSAGERIA.md](server/MENSAGERIA.md).
+Após iniciar a API, execute em outro
 terminal `dotnet run --project server/src/Worker` com
 `DOTNET_ENVIRONMENT=Development` para carregar os User Secrets compartilhados.
 O PUT de avatar responde `202`; o frontend consulta o status até a conclusão.

@@ -72,6 +72,17 @@ um teto físico de 100 mensagens no RabbitMQ.
 Pré-requisitos: Docker, .NET 10, SQL Server e a configuração HTTPS/JWT do
 [README](../README.md). Execute os comandos na raiz do projeto.
 
+O padrão de desenvolvimento segue o Gerador de Certificados. API e Worker
+definem `ConnectionStrings:RabbitMq` em seus `appsettings.Development.json`:
+`amqp://guest:guest@localhost:5673`. Ambos também têm a conexão SQL local
+com `SomniaDb`. Essa configuração espera um broker local na porta 5673,
+com o usuário de desenvolvimento `guest`.
+
+O Compose deste repositório é uma alternativa: usa `somnia`, senha definida
+no ambiente e porta 5672. Para usar essa alternativa, sobrescreva a conexão
+como nos comandos abaixo; o contêiner do Worker já recebe sua própria URI
+com o hostname `rabbitmq` pelo Compose.
+
 Defina `RABBITMQ_PASSWORD` no ambiente ou em `server/.env` (ignorado pelo Git).
 Use uma senha aleatória hexadecimal, pois ela também será usada na URI.
 Conserve a mesma senha ao reutilizar o volume persistente do broker.
@@ -90,9 +101,11 @@ $env:DOTNET_ENVIRONMENT = "Development"
 dotnet run --project server/src/Worker
 ```
 
-API e Worker compartilham o `UserSecretsId` `Somnia`. O Worker precisa de
-`ConnectionStrings:SqlServer` e `ConnectionStrings:RabbitMq` nos User Secrets
-ou variáveis de ambiente. Não precisa de chave JWT. O Worker não aplica
+API e Worker compartilham o `UserSecretsId` `Somnia`. Em Development, o
+Worker lê `ConnectionStrings:SqlServer` e `ConnectionStrings:RabbitMq` do
+seu `appsettings.Development.json`; User Secrets e variáveis de ambiente
+têm precedência. Em produção, configure as conexões por variáveis de ambiente
+ou outro provedor de segredos. O Worker não precisa de chave JWT e não aplica
 migrations: a migration `ProcessarAvataresAssincronos` deve existir no banco
 antes da inicialização do consumer.
 
