@@ -47,6 +47,7 @@ env = os.environ.copy()
 env.update(ASPNETCORE_ENVIRONMENT='Development', ASPNETCORE_URLS=f'https://localhost:{port};http://localhost:{http_port}',
            ConnectionStrings__SqlServer=connection, Jwt__SigningKey=secrets.token_hex(32), Jwt__ExpiresInMinutes='15')
 env['ConnectionStrings__RabbitMq'] = f'rabbitmq://somnia:{rabbit_password}@localhost:{rabbit_port}/'
+env['MusicCatalog__Provider'] = 'Simulated'
 # Only the isolated loopback test client bypasses trust of the development certificate.
 opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
 log = tempfile.TemporaryFile(mode='w+b')
@@ -364,6 +365,52 @@ try:
     assert request('GET', '/api/users/security', session=bob)[1]['bio'] is None
     assert request('GET', '/api/users/missing', session=bob)[0] == 404
 
+    search_path = '/api/catalog/search?q=Somnia&type=album'
+    album_path = '/api/catalog/albums/somnia-demo-album-aurora'
+    track_path = '/api/catalog/tracks/somnia-demo-track-primeira-luz'
+    for path in (search_path, album_path, track_path):
+        assert request('GET', path)[0] == 401
+    status, albums = request('GET', search_path, session=original)
+    assert status == 200 and albums['total'] == 2 and albums['limit'] == 10 and albums['offset'] == 0
+    assert len(albums['items']) == 2 and not albums['hasMore']
+    assert all(item['type'] == 'album' and item['provider'] == 'simulated' for item in albums['items'])
+    assert all(item['spotifyUrl'] is None and item['coverUrl'] is None for item in albums['items'])
+    status, tracks = request('GET', '/api/catalog/search?q=%20somnia%20&type=track&limit=1&offset=1', session=original)
+    assert status == 200 and tracks['total'] == 6 and tracks['hasMore']
+    assert len(tracks['items']) == 1 and tracks['items'][0]['type'] == 'track'
+    status, empty = request('GET', '/api/catalog/search?q=not-found&type=album', session=original)
+    assert status == 200 and empty['items'] == [] and empty['total'] == 0 and not empty['hasMore']
+    status, end = request('GET', '/api/catalog/search?q=Somnia&type=track&offset=1000', session=original)
+    assert status == 200 and not end['items'] and end['total'] == 6 and not end['hasMore']
+    status, album = request('GET', album_path, session=original)
+    assert status == 200 and album['type'] == 'album'
+    assert [track['trackNumber'] for track in album['tracks']] == [1, 2, 3]
+    status, track = request('GET', track_path, session=original)
+    assert status == 200 and track['type'] == 'track' and track['trackNumber'] == 1
+    assert track['album']['externalId'] == album['externalId']
+    assert request('GET', '/api/catalog/albums/somnia-demo-track-primeira-luz', session=original)[0] == 404
+    assert request('GET', '/api/catalog/tracks/somnia-demo-album-aurora', session=original)[0] == 404
+    assert request('GET', '/api/catalog/albums/missing', session=original)[0] == 404
+    assert request('GET', '/api/catalog/albums/bad%3Aid', session=original)[0] == 400
+    for query in ('type=album', 'q=Somnia', 'q=%20&type=album', 'q=Somnia&type=artist',
+                  'q=Somnia&type=album&limit=0', 'q=Somnia&type=album&limit=11',
+                  'q=Somnia&type=album&limit=abc', 'q=Somnia&type=album&offset=-1',
+                  'q=Somnia&type=album&offset=1001', 'q=' + 'a' * 201 + '&type=album'):
+        assert request('GET', '/api/catalog/search?' + query, session=original)[0] == 400, query
+
+    env['MusicCatalog__Provider'] = 'Disabled'
+    restart_api()
+    for path in (search_path, album_path, track_path):
+        assert request('GET', path, session=original)[0] == 503
+    assert request('GET', '/api/me', session=original)[0] == 200, 'Catalog outage blocked owner data'
+    env['MusicCatalog__Provider'] = 'Simulated'
+    restart_api()
+    catalog_limits = [request('GET', search_path, session=original)[0] for _ in range(62)]
+    assert 429 in catalog_limits, 'Catalog rate limit not enforced'
+    assert request('GET', search_path, session=bob)[0] == 200, 'Catalog rate limit leaked to another user'
+    assert request('GET', '/api/me', session=original)[0] == 200
+    print('Catalog checks passed: authenticated endpoints, type isolation, pagination, album-track links, validation, controlled outage and per-user rate limit.', flush=True)
+
     avatar_path = '/api/users/security/avatar'
     assert request('GET', avatar_path, session=bob)[0] == 404
     assert request('PUT', '/api/me/avatar', upload=png())[0] == 401
@@ -500,7 +547,7 @@ try:
     assert 429 in throttled, 'Login rate limit not enforced'
     paths = request('GET', '/openapi/v1.json')[1]['paths']
     assert '/auth/login' not in paths and '/api/v1/auth/login' not in paths
-    print('Security checks passed: authentication, profile privacy, async RabbitMQ avatar consumer, broker-offline outbox, worker restart, invalid/APNG rejection, metadata stripping, supersession, duplicate delivery, deletion cancellation, attempt limits and upload rate limiting.')
+    print('Security checks passed: authentication, profile privacy, catalog, async RabbitMQ avatar consumer, broker-offline outbox, worker restart, invalid/APNG rejection, metadata stripping, supersession, duplicate delivery, deletion cancellation, attempt limits and rate limiting.')
 finally:
     stop_worker()
     process.terminate()
