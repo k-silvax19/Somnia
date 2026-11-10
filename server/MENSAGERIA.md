@@ -198,7 +198,7 @@ sem consumer ativo, reinício do Worker, aprovação/rejeição de imagens,
 APNG, acesso ao status por outro usuário, duplicação, mensagens antigas,
 remoção com trabalho pendente, limite de tentativas e rate limiting.
 
-Na revisão de 10/11/2026, a suíte possui 68 testes xUnit. O build Linux foi
+Na validação anterior ao catálogo, em 10/11/2026, passaram 68 testes xUnit. O build Linux foi
 destravado com um builder isolado após encontrar um arquivo de configuração
 do SDK vazio na imagem local e inconsistências no cache. A falta de espaço
 no C: também interrompeu uma compilação; depois de liberar espaço, o WSL
@@ -216,6 +216,11 @@ teste de carga nem comprova ausência de vulnerabilidades no decodificador.
 Os testes também verificam o contrato de erros HTTP, limites de username,
 duplicidades normalizadas e a política de acesso do piloto, descritos em
 [ERROS.md](ERROS.md) e [CADASTRO.md](CADASTRO.md).
+
+Com a primeira etapa do catálogo, a suíte passou a ter 92 testes; o teste
+integrado voltou a passar com API e Worker em processos locais, incluindo
+as consultas de catálogo. O modo de teste do Worker Linux descrito acima
+continua disponível. Essa etapa não altera o consumer de imagens.
 
 Referências de implementação: Gerador de Certificados em
 `../GeradorDeCertificados/src/Aplicacao` (pasta irmã do repositório),

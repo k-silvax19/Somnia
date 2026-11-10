@@ -19,17 +19,20 @@ arquivos em Downloads:
 | --- | --- |
 | RF01 — Conta e autenticação | Cadastro, login, refresh rotativo, logout global e JWT implementados |
 | RF02 — Perfil | Consulta do titular, perfil público, edição de nome/bio/preferências e upload/remoção de avatar estático implementados |
-| RF03–RF05/RF11 — Catálogo | Não implementado; integração Spotify pendente |
+| RF03/RF04 — Catálogo | Busca paginada e detalhes de álbum/faixa com provedor simulado em Development |
+| RF05/RF11 — Integração externa | Spotify real, links de escuta e homologação de indisponibilidade externa pendentes |
 | RF06/RF10 — Avaliações e média | Não implementado |
 | RF07 — Diário privado | Não implementado |
 | RF08/RF09 — Relações, feed e descoberta | Não implementado |
-| CI/CD e Azure | Sem workflow ou configuração de deploy versionados |
+| CI | Workflow versionado com restore, build e testes unitários |
+| Deploy e Azure | Não configurados |
 | Premium | Fora do MVP técnico; não implementado |
 
 Os documentos detalhados são [Autenticação](server/AUTENTICACAO.md) e
 [Perfis](server/PERFIS.md), com execução do consumer em
 [Mensageria](server/MENSAGERIA.md). As políticas do piloto estão em
 [Cadastro](server/CADASTRO.md) e o contrato HTTP em [Erros](server/ERROS.md).
+As rotas de busca e detalhes estão em [Catálogo](server/CATALOGO.md).
 Esses documentos descrevem o que existe e suas pendências;
 não representam homologação do MVP completo.
 
@@ -101,6 +104,12 @@ terminal `dotnet run --project server/src/Worker` com
 O PUT de avatar responde `202`; o frontend consulta o status até a conclusão.
 Há também Compose com Worker limitado a uma CPU e 512 MiB de RAM.
 
+Em Development, `MusicCatalog:Provider=Simulated` habilita dois álbuns e seis
+faixas fictícias, identificados por `provider: "simulated"`. Consulte
+`GET /api/catalog/search?q=Somnia&type=album` com JWT. O arquivo base usa
+`Disabled`: o catálogo retorna `503` até existir integração real. O simulado
+não pode ser ativado em produção e não utiliza credenciais Spotify.
+
 As migrations em `server/src/Infraestrutura/Compartilhado/Orm/Migrations`
 são aplicadas automaticamente na inicialização em Development. Produção
 precisa de uma etapa controlada de migração, ainda não configurada no repo.
@@ -113,16 +122,22 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-Após a revisão de erros e cadastro, a suíte possui 68 testes xUnit. O teste integrado
+Após a primeira etapa do catálogo, a suíte possui 92 testes xUnit. O teste integrado
 exercita HTTPS, SQL e um broker real com API/consumer separados. O build da
 solução inclui o Worker. O avatar usa SkiaSharp com bibliotecas nativas para
 Windows, macOS e Linux. As migrations `AdicionarAvatares` e
 `ProcessarAvataresAssincronos` armazenam imagens normalizadas, solicitações
 privadas e mensagens de outbox no SQL Server, sem exigir diretório de uploads
 ou Blob Storage.
-Passaram os 68 testes e o teste integrado com o Worker dentro da imagem
-Linux, limitado a uma CPU e 512 MiB. O build usou um builder isolado para
-contornar o cache local danificado; comandos em [MENSAGERIA.md](server/MENSAGERIA.md).
+Passaram os 92 testes e o teste integrado HTTPS/SQL/RabbitMQ, incluindo as
+três rotas de catálogo, paginação, indisponibilidade controlada e limites
+por usuário. A execução anterior do Worker Linux, limitada a uma CPU e
+512 MiB, está registrada em [MENSAGERIA.md](server/MENSAGERIA.md).
+
+O workflow `.github/workflows/ci.yml` executa restore, build e testes
+unitários em pushes/PRs que alteram o backend, além de execução manual.
+Não exige SQL Server, RabbitMQ ou Spotify para os testes unitários.
+A execução remota ocorrerá depois de enviar os commits ao GitHub.
 Os resultados cobrem autenticação e perfis existentes; os demais critérios
 de aceite continuam pendentes.
 

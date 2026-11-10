@@ -148,7 +148,7 @@ HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifi
 titularidade, normalização do username, edição parcial, preferências privadas e
 ausência de dados privados nas respostas públicas.
 
-Após a revisão de erros e cadastro, a suíte possui 68 testes xUnit. A migration
+Após a primeira etapa do catálogo, a suíte possui 92 testes xUnit. A migration
 `AdicionarAvatares` cria a imagem publicada; `ProcessarAvataresAssincronos`
 adiciona solicitações, versão atual do avatar e tabelas de outbox.
 

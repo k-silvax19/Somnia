@@ -36,6 +36,7 @@ nomes do contrato JSON são usados na validação automática.
 | `415` | Content-Type não suportado pela operação |
 | `429` | Limite de chamadas excedido, com `Retry-After` em segundos quando informado pelo limitador |
 | `500` | Falha interna com mensagem genérica |
+| `503` | Serviço temporariamente indisponível, incluindo catálogo desativado ou falha controlada do provedor |
 
 A padronização alcança erros dos casos de uso, validação automática do MVC,
 filtros de origem/CSRF, autenticação, autorização, rate limiting, rotas e
