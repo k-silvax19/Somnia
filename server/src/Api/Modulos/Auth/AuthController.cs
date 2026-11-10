@@ -77,21 +77,6 @@ public sealed class AuthController(IMediator mediator, IOptions<JwtOptions> jwtO
         return Ok(CookiesAutenticacao.Definir(Response, result.Value, jwtOptions.Value.SigningKey));
     }
 
-    [HttpGet("/api/me")]
-    public async Task<IActionResult> Me(CancellationToken ct)
-    {
-        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
-            return Unauthorized();
-        var result = await mediator.Send(new ObterUsuarioQuery(usuarioId), ct);
-
-        if (result.IsFailed)
-        {
-            return this.ResultProblem(result);
-        }
-
-        return Ok(result.Value);
-    }
-
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {

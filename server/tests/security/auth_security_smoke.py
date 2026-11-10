@@ -114,6 +114,34 @@ try:
     assert request('POST', '/api/auth/register', registration)[0] == 201
     original = login()
     assert request('GET', '/api/me', session=original)[0] == 200
+    mine = request('GET', '/api/me', session=original)[1]
+    assert mine['displayName'] == 'Security'
+    assert mine['defaultScoreVisibility'] == mine['defaultReviewVisibility'] == 'private'
+    assert request('GET', '/api/users/security')[0] == 401
+    assert request('PATCH', '/api/me/profile', {'bio': 'anonymous'})[0] == 401
+    bob_registration = dict(registration, email='bob@example.com', username='bob', displayName='Bob')
+    assert request('POST', '/api/auth/register', bob_registration)[0] == 201
+    bob_status, bob = request('POST', '/api/auth/login', {'email': 'bob@example.com', 'password': registration['password']})
+    assert bob_status == 200
+    status, updated = request('PATCH', '/api/me/profile', {'bio': 'Minha bio', 'defaultScoreVisibility': 'public'}, session=original)
+    assert status == 200 and updated['bio'] == 'Minha bio'
+    assert updated['defaultScoreVisibility'] == 'public' and updated['defaultReviewVisibility'] == 'private'
+    status, public = request('GET', '/api/users/SECURITY', session=bob)
+    assert status == 200 and public['bio'] == 'Minha bio'
+    assert set(public) == {'username', 'displayName', 'bio', 'avatarUrl'}, 'Private profile fields leaked'
+    assert request('PATCH', '/api/me/profile', {'displayName': 'Bob atualizado'}, session=bob)[0] == 200
+    assert request('GET', '/api/me', session=original)[1]['displayName'] == 'Security', 'Another user changed the owner'
+    assert request('PATCH', '/api/me/profile', {'usuarioId': mine['id'], 'displayName': 'Attack'}, session=bob)[0] == 400
+    assert request('PATCH', '/api/users/security/profile', {'displayName': 'Attack'}, session=bob)[0] == 404
+    assert request('PATCH', '/api/me/profile', {'bio': 'a' * 301}, session=original)[0] == 400
+    assert request('PATCH', '/api/me/profile', {'defaultReviewVisibility': 'friends'}, session=original)[0] == 400
+    assert request('PATCH', '/api/me/profile', {'defaultReviewVisibility': None}, session=original)[0] == 400
+    assert request('PATCH', '/api/me/profile', {'displayName': None}, session=original)[0] == 400
+    assert request('PATCH', '/api/me/profile', {}, session=original)[0] == 400
+    status, cleared = request('PATCH', '/api/me/profile', {'bio': None}, session=original)
+    assert status == 200 and cleared['bio'] is None and cleared['defaultScoreVisibility'] == 'public'
+    assert request('GET', '/api/users/security', session=bob)[1]['bio'] is None
+    assert request('GET', '/api/users/missing', session=bob)[0] == 404
     assert request('POST', '/api/auth/refresh', session=original, csrf=False)[0] == 403
     assert request('POST', '/api/auth/refresh', session=original, origin='https://evil.example')[0] == 403
     assert request('POST', '/api/auth/login', {}, client_header=False)[0] == 403
@@ -166,7 +194,7 @@ try:
     assert 429 in throttled, 'Login rate limit not enforced'
     paths = request('GET', '/openapi/v1.json')[1]['paths']
     assert '/auth/login' not in paths and '/api/v1/auth/login' not in paths
-    print('Security checks passed: secure cookies, signed CSRF, origin checks, stolen-token replay, concurrent replay, global logout, absolute expiration, token hashing, rate limiting and route cleanup.')
+    print('Security checks passed: secure cookies, signed CSRF, origin checks, stolen-token replay, concurrent replay, global logout, absolute expiration, token hashing, rate limiting route cleanup and profile privacy/ownership/partial updates.')
 finally:
     process.terminate()
     try:

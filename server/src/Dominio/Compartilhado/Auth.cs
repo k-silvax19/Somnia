@@ -1,6 +1,15 @@
 namespace Somnia.Dominio.Compartilhado;
 
-public sealed record UsuarioDto(Guid Id, string Nome, string Email, string? Username = null);
+public sealed record UsuarioDto(
+    Guid Id,
+    string DisplayName,
+    string Email,
+    string? Username = null,
+    string? Bio = null,
+    string? AvatarUrl = null,
+    string DefaultScoreVisibility = "private",
+    string DefaultReviewVisibility = "private"
+);
 public sealed record TokenDto(
     Guid UsuarioId,
     string Nome,

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Somnia.Dominio.Compartilhado;
 using Somnia.Infraestrutura.Compartilhado.Orm;
+using Somnia.Infraestrutura.Modulos.Perfis;
 
 namespace Somnia.Infraestrutura.Compartilhado.Auth;
 
@@ -38,7 +39,7 @@ public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
         var result = await userManager.CreateAsync(user, senha);
 
         if (result.Succeeded)
-            return new UsuarioDto(user.Id, user.Nome, user.Email!, user.UserName);
+            return PerfilMapper.Privado(user);
 
         if (result.Errors.Any(x => x.Code == "DuplicateEmail"))
             throw new InvalidOperationException("EMAIL_DUPLICADO");
@@ -80,6 +81,6 @@ public sealed class GerenciadorIdentidade(UserManager<SomniaUser> userManager)
         if (user is null)
             return null;
 
-        return new UsuarioDto(user.Id, user.Nome, user.Email!, user.UserName);
+        return PerfilMapper.Privado(user);
     }
 }

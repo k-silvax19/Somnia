@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Somnia.Dominio.Compartilhado;
+using Somnia.Dominio.Modulos.Perfis;
+using Somnia.Infraestrutura.Modulos.Perfis;
 using Somnia.Infraestrutura.Compartilhado.Auth;
 using Somnia.Infraestrutura.Compartilhado.Orm;
 
@@ -39,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IGerenciadorIdentidade, GerenciadorIdentidade>();
         services.AddScoped<IRevogacaoToken, RevogacaoTokenEmOrm>();
         services.AddScoped<IRefreshTokens, RefreshTokensEmOrm>();
+        services.AddScoped<IRepositorioPerfil, RepositorioPerfilEmOrm>();
 
         return services;
     }
