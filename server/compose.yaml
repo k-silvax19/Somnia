@@ -1,0 +1,41 @@
+name: somnia
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: somnia
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Defina RABBITMQ_PASSWORD no ambiente ou em server/.env}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 512m
+    cpus: 1
+    restart: unless-stopped
+  worker:
+    profiles: [worker]
+    build:
+      context: .
+      dockerfile: src/Worker/Dockerfile
+    environment:
+      ConnectionStrings__SqlServer: ${SOMNIA_SQL_CONNECTION:-}
+      ConnectionStrings__RabbitMq: rabbitmq://somnia:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      DOTNET_ENVIRONMENT: Production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    mem_limit: 512m
+    cpus: 1
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+volumes:
+  rabbitmq-data:
