@@ -108,6 +108,25 @@ com uma conexão SQL acessível pelo contêiner (no Docker Desktop, o host é
 docker compose -f server/compose.yaml --profile worker up -d --build
 ```
 
+O Compose usa a imagem local `somnia-worker:dev`. Se o cache do builder
+padrão estiver danificado, use um builder isolado, sem alterar o builder
+padrão ou apagar volumes de banco:
+
+```powershell
+docker buildx create --name somnia-validation --driver docker-container --driver-opt memory=2g --bootstrap
+docker buildx build --builder somnia-validation --load --tag somnia-worker:dev --file server/src/Worker/Dockerfile server
+docker compose -f server/compose.yaml --profile worker up -d --no-build
+```
+
+Se `somnia-validation` já existir, reutilize-o e pule o comando de criação.
+O builder precisa de espaço para baixar, extrair e compilar o SDK; a imagem
+também ocupa espaço no disco virtual do Docker. Não inicie builds grandes
+com o disco do Windows próximo de ficar cheio. Depois de terminar os builds,
+`docker buildx rm somnia-validation` remove somente esse builder e seu cache.
+No Docker Desktop, liberar arquivos no Windows pode precisar ser seguido
+por reinício do WSL/Docker para recuperar um disco virtual preso após a falha.
+`wsl --shutdown` encerra todas as distribuições em execução: confira-as antes.
+
 O contêiner do Worker usa usuário sem privilégios, disco somente leitura,
 `/tmp` temporário, nenhuma capability adicional, uma CPU e 512 MiB de RAM.
 O broker também tem limites de CPU/memória e volume persistente. O teste
@@ -141,6 +160,20 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
+Para executar o mesmo teste com o consumer dentro da imagem Linux:
+
+```powershell
+$env:SOMNIA_TEST_WORKER_IMAGE = "somnia-worker:dev"
+python server/tests/security/auth_security_smoke.py
+Remove-Item Env:SOMNIA_TEST_WORKER_IMAGE
+```
+
+Nesse modo, o script inicia e reinicia contêineres temporários do Worker
+com uma CPU, 512 MiB de RAM, usuário da imagem sem privilégios, filesystem
+somente leitura, `/tmp` temporário, capabilities removidas e
+`no-new-privileges`. A conexão usa `host.docker.internal` para acessar o SQL
+Server local e o broker descartável pelas portas do Docker Desktop.
+
 O teste integrado usa SQL Server no contêiner `notekeeper-sqlserver-1`, cria
 um banco temporário e inicia um RabbitMQ descartável com credenciais
 aleatórias e portas livres. Ele inicia API e Worker em processos separados;
@@ -152,15 +185,24 @@ sem consumer ativo, reinício do Worker, aprovação/rejeição de imagens,
 APNG, acesso ao status por outro usuário, duplicação, mensagens antigas,
 remoção com trabalho pendente, limite de tentativas e rate limiting.
 
-Na validação de 10/11/2026, passaram o build Release da solução, os 47
-testes xUnit e o teste integrado com RabbitMQ real, API e Worker executados
-como processos separados no Windows. A auditoria NuGet não apontou pacotes
-vulneráveis nas fontes consultadas. O Compose passou na validação de
-configuração. O build da imagem Linux não pôde ser concluído: o Docker
-Desktop retornou `read-only file system` no armazenamento do BuildKit.
-A execução do Worker dentro do contêiner continua pendente de validação
-após a recuperação desse ambiente; os limites do Compose são configurações,
-não resultados de um teste de carga.
+Na revisão de 10/11/2026, a suíte possui 68 testes xUnit. O build Linux foi
+destravado com um builder isolado após encontrar um arquivo de configuração
+do SDK vazio na imagem local e inconsistências no cache. A falta de espaço
+no C: também interrompeu uma compilação; depois de liberar espaço, o WSL
+precisou ser reiniciado para soltar o disco virtual do Docker.
+
+Passaram o build Release da solução, os 68 testes e a execução integrada
+com `SOMNIA_TEST_WORKER_IMAGE=somnia-worker:dev`. Essa execução validou o
+consumer na imagem Linux com uma CPU, 512 MiB, filesystem somente leitura e
+as demais restrições do comando de teste, incluindo conversão real com SkiaSharp,
+reinícios, mensagens duplicadas/antigas, remoção e recuperação do outbox.
+O Compose também passou na validação de configuração.
+
+A validação funcional do contêiner não equivale a um
+teste de carga nem comprova ausência de vulnerabilidades no decodificador.
+Os testes também verificam o contrato de erros HTTP, limites de username,
+duplicidades normalizadas e a política de acesso do piloto, descritos em
+[ERROS.md](ERROS.md) e [CADASTRO.md](CADASTRO.md).
 
 Referências de implementação: Gerador de Certificados em
 `../GeradorDeCertificados/src/Aplicacao` (pasta irmã do repositório),
