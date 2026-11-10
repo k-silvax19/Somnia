@@ -1,7 +1,7 @@
 # Somnia
 
 API de um diário musical com avaliações e recursos sociais. O MVP está em
-desenvolvimento: atualmente há autenticação e parte do módulo de perfis.
+desenvolvimento: atualmente há autenticação e perfis com avatar estático.
 
 ## Conferência da especificação
 
@@ -17,7 +17,7 @@ arquivos em Downloads:
 | Área | Estado verificado no repositório |
 | --- | --- |
 | RF01 — Conta e autenticação | Cadastro, login, refresh rotativo, logout global e JWT implementados |
-| RF02 — Perfil | Consulta do titular, perfil público e edição de nome, bio e preferências implementadas; avatar pendente |
+| RF02 — Perfil | Consulta do titular, perfil público, edição de nome/bio/preferências e upload/remoção de avatar estático implementados |
 | RF03–RF05/RF11 — Catálogo | Não implementado; integração Spotify pendente |
 | RF06/RF10 — Avaliações e média | Não implementado |
 | RF07 — Diário privado | Não implementado |
@@ -93,8 +93,12 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-Na revisão de 10/11/2026, os 32 testes xUnit e o teste integrado HTTPS/SQL
-passaram. O projeto de testes compila a API e suas dependências em Release.
+Após a implementação de avatar em 10/11/2026, os 44 testes xUnit e o teste
+integrado HTTPS/SQL passaram. O projeto de testes compila a API e suas
+dependências em Release. O avatar usa SkiaSharp, com bibliotecas nativas
+incluídas pelos pacotes para Windows, macOS e Linux; a execução foi validada
+localmente no Windows. A migration `AdicionarAvatares` armazena as imagens
+normalizadas no SQL Server, sem exigir diretório de uploads ou Blob Storage.
 Os resultados cobrem autenticação e perfis existentes; os demais critérios
 de aceite continuam pendentes.
 
