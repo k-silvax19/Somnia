@@ -5,6 +5,8 @@ desenvolvimento: atualmente há autenticação e perfis com avatar estático,
 processado de forma assíncrona por RabbitMQ e um Worker separado, além de
 catálogo musical integrado ao Spotify.
 
+Para retomar o desenvolvimento, consulte [Contexto e próximos passos](docs/CONTEXTO.md).
+
 ## Conferência da especificação
 
 Revisão realizada em 10/11/2026, comparando código e documentação com os
