@@ -1,0 +1,186 @@
+<main class="auth-layout">
+  <section class="introduction" aria-labelledby="intro-title">
+    <app-brand />
+    <div class="intro-body">
+      <div class="record-art" aria-hidden="true">
+        <div class="record">
+          <div class="record-label"><span>s</span><i></i></div>
+        </div>
+        <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+      </div>
+      <p class="eyebrow">PARA QUEM SENTE A MÚSICA</p>
+      <h1 id="intro-title">Seu universo<br />musical começa <em>aqui.</em></h1>
+      <p class="intro-copy">
+        Cada álbum, uma descoberta.<br />Cada música, uma história para compartilhar.
+      </p>
+    </div>
+    <p class="intro-footer">
+      <span aria-hidden="true">✦</span> A música conecta. O Somnia aproxima.
+    </p>
+  </section>
+
+  <section class="form-section" aria-labelledby="form-title">
+    <div class="form-content">
+      <p class="eyebrow">{{ registering ? 'SEU PRÓXIMO PLAY' : 'BOM TER VOCÊ DE VOLTA' }}</p>
+      <h2 id="form-title">{{ registering ? 'Crie sua conta' : 'Entre no Somnia' }}</h2>
+      <p class="form-description">
+        {{
+          registering ? 'Um lugar para o seu jeito de ouvir.' : 'Seu gosto musical tem lugar aqui.'
+        }}
+      </p>
+
+      @if (registered) {
+        <p class="message success" role="status">Conta criada! Entre com seu e-mail e senha.</p>
+      } @else if (auth.notice()) {
+        <p class="message" role="status">{{ auth.notice() }}</p>
+      }
+      @if (error()) {
+        <p class="message error" role="alert" tabindex="-1">{{ error() }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="pending()">
+        <fieldset [disabled]="pending()">
+          <legend class="sr-only">
+            {{ registering ? 'Dados para criar sua conta' : 'Dados para entrar' }}
+          </legend>
+          @if (registering) {
+            <div class="field">
+              <label for="displayName">Nome de exibição</label>
+              <input
+                id="displayName"
+                formControlName="displayName"
+                autocomplete="nickname"
+                maxlength="256"
+                placeholder="Como você quer ser chamado?"
+                (input)="clearServerError('displayName')"
+                [attr.aria-invalid]="!!fieldError('displayName')"
+                aria-describedby="displayName-error"
+              />
+              <span id="displayName-error" class="field-error">{{
+                fieldError('displayName')
+              }}</span>
+            </div>
+            <div class="field">
+              <label for="username">Nome de usuário</label>
+              <input
+                id="username"
+                formControlName="username"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
+                maxlength="30"
+                placeholder="seu.usuario"
+                (input)="clearServerError('username')"
+                [attr.aria-invalid]="!!fieldError('username')"
+                aria-describedby="username-hint username-error"
+              />
+              <span id="username-hint" class="hint"
+                >3 a 30 caracteres: letras sem acento, números, . _ ou -</span
+              >
+              <span id="username-error" class="field-error">{{ fieldError('username') }}</span>
+            </div>
+          }
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="voce@exemplo.com"
+              (input)="clearServerError('email')"
+              [attr.aria-invalid]="!!fieldError('email')"
+              aria-describedby="email-error"
+            />
+            <span id="email-error" class="field-error">{{ fieldError('email') }}</span>
+          </div>
+          <div class="field">
+            <label for="password">Senha</label>
+            <div class="password-input">
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                [autocomplete]="registering ? 'new-password' : 'current-password'"
+                placeholder="Sua senha"
+                (input)="clearServerError('password')"
+                [attr.aria-invalid]="!!fieldError('password')"
+                [attr.aria-describedby]="
+                  registering ? 'password-hint password-error' : 'password-error'
+                "
+              />
+              <button
+                class="show-password"
+                type="button"
+                (click)="showPassword.set(!showPassword())"
+                [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+                [attr.aria-pressed]="showPassword()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  @if (showPassword()) {
+                    <path d="m3 3 18 18" />
+                  }
+                </svg>
+              </button>
+            </div>
+            @if (registering) {
+              <span id="password-hint" class="hint"
+                >Pelo menos 8 caracteres, um número e um caractere especial.</span
+              >
+            }
+            <span id="password-error" class="field-error">{{ fieldError('password') }}</span>
+          </div>
+          @if (registering) {
+            <div class="field">
+              <label for="confirmation">Confirme sua senha</label>
+              <input
+                id="confirmation"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="confirmation"
+                autocomplete="new-password"
+                placeholder="Repita sua senha"
+                [attr.aria-invalid]="!!fieldError('confirmation')"
+                aria-describedby="confirmation-error"
+              />
+              <span id="confirmation-error" class="field-error">{{
+                fieldError('confirmation')
+              }}</span>
+            </div>
+          }
+          <button
+            class="button primary submit"
+            type="submit"
+            [disabled]="pending() || cooldown() > 0"
+          >
+            @if (pending()) {
+              <span class="spinner" aria-hidden="true"></span>
+              {{ registering ? 'Criando conta…' : 'Entrando…' }}
+            } @else if (cooldown()) {
+              Aguarde {{ cooldown() }}s
+            } @else {
+              {{ registering ? 'Criar minha conta' : 'Entrar' }} <span aria-hidden="true">→</span>
+            }
+          </button>
+        </fieldset>
+      </form>
+
+      <p class="switch-form">
+        {{ registering ? 'Já faz parte do Somnia?' : 'Ainda não tem uma conta?' }}
+        <a [routerLink]="registering ? '/entrar' : '/cadastro'">{{
+          registering ? 'Entrar' : 'Criar conta'
+        }}</a>
+      </p>
+      <p class="privacy-note">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+        </svg>
+        Avaliações visíveis apenas para participantes autenticados.
+      </p>
+    </div>
+  </section>
+</main>
