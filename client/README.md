@@ -26,7 +26,7 @@ autossinado; permita esse certificado somente no ambiente local ou configure
 `ng serve --ssl-cert .certs/localhost.pem --ssl-key .certs/localhost-key.pem`
 com um certificado local confiável. `.certs` não é versionado.
 
-`src/app/environments/environment.development.ts` conecta o Angular diretamente
+`src/app/environments/environment.ts` conecta o Angular diretamente
 a `https://localhost:7201/api`, endereço HTTPS do perfil local da API. O CORS
 da API já permite `https://localhost:4200`. Confie no certificado HTTPS local
 do .NET com `dotnet dev-certs https --trust`; os cookies `__Host-` exigem HTTPS.
