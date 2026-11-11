@@ -1,10 +1,10 @@
 # Perfis
 
 Implementação do perfil básico de RF02 e das regras de privacidade do Somnia.
-Conferida em 10/11/2026 contra `Somnia_Especificacao_Tecnica_API_MVP_v1.0.pdf`
-(09/11/2026), seções 4, 8, 10 e 15, e o PRD `somnia.docx` (v1.1).
+Atualizada em 11/11/2026 conforme o PRD v1.2: avaliações e perfis são
+consultáveis pelos participantes autenticados, sem privacidade por campo.
 
-O perfil permite edição de nome, bio, preferências e avatar estático.
+O perfil permite edição de nome, bio e avatar estático.
 O avatar usa endpoints próprios de upload e remoção, em vez de receber
 uma URL no PATCH de perfil proposto pelo PDF.
 O projeto usa SQL Server, quatro camadas e rotas sem `/v1`; PostgreSQL e
@@ -20,9 +20,10 @@ de autenticação é explícita no controller; detalhes em [CADASTRO.md](CADASTR
 
 | Método | Rota | Resposta |
 | --- | --- | --- |
-| GET | `/api/me` | Dados do titular, e-mail e preferências |
+| GET | `/api/me` | Dados do titular e e-mail |
 | PATCH | `/api/me/profile` | Perfil atualizado do titular |
 | GET | `/api/users/{username}` | Apenas username, displayName, bio e avatarUrl |
+| GET | `/api/users/{username}/reviews` | Histórico paginado de avaliações |
 | PUT | `/api/me/avatar` | Solicitação de processamento assíncrono (`202`) |
 | DELETE | `/api/me/avatar` | Remove o avatar do titular (`204`) |
 | GET | `/api/me/avatar/requests/{solicitacaoId}` | Status privado da solicitação (`200`) |
@@ -40,28 +41,26 @@ por HTTPS. O usuário alterado é sempre obtido do JWT; não é aceito um ID no 
 ```json
 {
   "displayName": "Ouvinte Noturno",
-  "bio": "Meus discos favoritos e novas descobertas.",
-  "defaultScoreVisibility": "private",
-  "defaultReviewVisibility": "public"
+  "bio": "Meus discos favoritos e novas descobertas."
 }
 ```
 
 É possível enviar somente um dos campos. Campos omitidos permanecem inalterados.
 `bio: null` ou uma bio em branco remove a bio; não enviar bio preserva seu valor.
-Nome nulo/vazio, visibilidade nula/desconhecida, corpo vazio e campos não
+Nome nulo/vazio, corpo vazio e campos não
 permitidos retornam `400` com ProblemDetails.
 
 Limites adotados: nome de exibição de 1 a 256 caracteres e bio de até 300.
 Os campos são texto simples; o frontend deve exibi-los com escape, sem interpretá-los
 como HTML. Nome e bio são públicos na consulta por username.
 
-As preferências aceitam `private` e `public`, independentemente uma da outra.
-Novos usuários e registros já existentes começam com ambas privadas. Essas
-preferências servirão de padrão para avaliações futuras; não representam uma
-permissão para expor avaliações já existentes.
+As preferências `defaultScoreVisibility` e `defaultReviewVisibility` foram
+retiradas do contrato e do banco na migration `AdicionarAvaliacoes`. Enviá-las
+no PATCH retorna `400`. Avaliações seguem o acesso autenticado do perfil,
+conforme o PRD v1.2; detalhes em [AVALIACOES.md](AVALIACOES.md).
 
 Não há edição de e-mail, senha ou username por esse endpoint. Dados privados do
-Identity e preferências não são selecionados pela consulta pública nem enviados
+Identity não são selecionados pela consulta pública nem enviados
 ao cliente. Todas as respostas de perfil usam `Cache-Control: no-store`.
 
 ## Avatar
@@ -131,8 +130,8 @@ do escopo da especificação técnica do MVP gratuito.
 
 ## O que ainda falta
 
-- Avaliações públicas no perfil, descritas na seção 8 do PDF, dependem do
-  módulo de avaliações e ainda não possuem endpoint implementado.
+- Histórico de avaliações já possui endpoint próprio, descrito em
+  [AVALIACOES.md](AVALIACOES.md); sua apresentação no frontend está pendente.
 - Seguir, deixar de seguir, feed e descoberta (RF08/RF09) também não estão
   implementados; a consulta de perfil existente não entrega esses recursos.
 
@@ -142,13 +141,14 @@ implementação, registrada em [CADASTRO.md](CADASTRO.md).
 
 ## Validação
 
-A migration `AdicionarPerfis` cria os campos e os padrões privados. Os testes
+A migration histórica `AdicionarPerfis` criou os campos e padrões privados;
+`AdicionarAvaliacoes` remove as preferências que saíram do escopo. Os testes
 unitários cobrem validação e distinção entre campos omitidos e nulos. O teste
 HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifica
-titularidade, normalização do username, edição parcial, preferências privadas e
+titularidade, normalização do username, edição parcial, rejeição de preferências antigas e
 ausência de dados privados nas respostas públicas.
 
-Com o adaptador Spotify, a suíte possui 120 testes xUnit. A migration
+A suíte possui 154 testes xUnit. A migration
 `AdicionarAvatares` cria a imagem publicada; `ProcessarAvataresAssincronos`
 adiciona solicitações, versão atual do avatar e tabelas de outbox.
 
@@ -156,5 +156,5 @@ A validação inclui PNG/JPEG reais, limites, redução proporcional, conteúdo
 inválido, imagem truncada, GIF/APNG, metadados, acesso autenticado, titularidade,
 substituição, remoção repetida e uploads concorrentes. O teste integrado
 também cobre o broker indisponível, reinícios e mensagens duplicadas/antigas,
-conforme [MENSAGERIA.md](MENSAGERIA.md). Avaliações públicas e relações sociais
-ainda não foram implementadas e não estão homologadas.
+conforme [MENSAGERIA.md](MENSAGERIA.md). Avaliações foram implementadas em
+11/11/2026; relações sociais e homologação completa do MVP permanecem pendentes.

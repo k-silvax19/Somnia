@@ -1,40 +1,40 @@
 # Somnia — contexto e próximos passos
 
-Atualizado em **10/11/2026**. Este documento registra o estado da implementação,
+Atualizado em **11/11/2026**. Este documento registra o estado da implementação,
 as decisões da conversa e o ponto de retomada. Atualize-o ao concluir cada
 etapa para não confundir requisitos planejados com código já entregue.
 
 ## Ponto de retomada
 
-**Autenticação, perfis, processamento assíncrono de avatar e catálogo real
-do Spotify estão implementados. O usuário testou o catálogo no Swagger e
-confirmou que está funcionando. O próximo trabalho é implementar avaliações,
-médias e histórico de avaliações no perfil, conforme o PRD v1.2.**
+**Autenticação, perfis, avatar assíncrono, catálogo Spotify, avaliações,
+médias e histórico no perfil estão implementados. Próxima etapa: seguir/deixar
+de seguir, feed e descoberta.**
 
-O diário privado foi retirado do escopo. Não criar entidade de escuta,
-datas de escuta ou tela de diário. A última alteração antes deste registro
-foi documental: revisão do PRD, commit `600cc7a`.
+O diário privado permanece fora do escopo. Não criar entidade de escuta,
+datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 
 | Área | Estado |
 | --- | --- |
 | Cadastro, login, JWT, refresh e logout | Implementados e testados |
-| Perfil próprio, consulta de outro perfil e edição | Implementados e testados |
-| Avatar estático | Implementado com processamento assíncrono por RabbitMQ |
-| Catálogo Spotify real | Implementado, validado automaticamente e testado pelo usuário no Swagger |
-| Avaliações de álbuns e faixas | Ainda não implementadas |
-| Médias e quantidade de notas por item | Ainda não implementadas |
-| Histórico de avaliações no perfil | Escopo aprovado; ainda não implementado |
-| Seguir, feed e descoberta | Ainda não implementados |
-| Frontend integrado e deploy | Pendentes nesta entrega do backend |
-| Premium | Planejado no PRD, fora da entrega do MVP gratuito |
+| Perfil e avatar assíncrono | Implementados e testados |
+| Catálogo Spotify real | Implementado e validado anteriormente com Spotify real e no Swagger |
+| Avaliações de álbuns/faixas | CRUD autenticado e autoria implementados |
+| Médias e quantidade de notas | Calculadas no SQL a partir das notas atuais |
+| Histórico no perfil | Implementado, paginado e com desempate estável |
+| Seguir, feed e descoberta | Não implementados |
+| Frontend integrado e deploy | Pendentes |
+| Premium | Fora da entrega do MVP gratuito |
 
 ## Como trabalhar neste projeto
 
 - Comunicar em português e prosseguir com o trabalho autorizado.
-- Fazer commits pequenos por alteração coerente, usando o padrão do usuário:
-  `add: descrição em português` e `fix: descrição em português`.
-- Branch encontrada nesta atualização: `v3/catalogo`. Conferir a branch e o
-  `git status` antes de continuar, pois podem mudar.
+- Entregar mudanças por pull requests para revisão do usuário, em branches
+  próprias, sem fazer merge automaticamente. Commits são a base técnica dos
+  PRs; usar `add: descrição em português` e `fix: descrição em português`.
+- Base desta entrega: `v3/catalogo`; implementação em `feat/avaliacoes` e
+  documentação em `docs/avaliacoes`. Conferir branch e `git status` ao retomar.
+  O [PR de avaliações](https://github.com/k-silvax19/Somnia/pull/1) tem base
+  `v3/catalogo`; o PR de documentação é dependente, com base `feat/avaliacoes`.
 - Seguir a organização das quatro camadas já existentes. O Worker é um host
   separado; não substitui essa separação.
 - Não colocar Client Secret, token Spotify, JWT ou senhas reais novas na
@@ -56,6 +56,7 @@ foi documental: revisão do PRD, commit `600cc7a`.
 | [Cadastro](../server/CADASTRO.md) | Política de acesso e regras do piloto |
 | [Erros](../server/ERROS.md) | Contrato HTTP ProblemDetails |
 | [Catálogo](../server/CATALOGO.md) | Spotify, configuração, limites e verificação |
+| [Avaliações](../server/AVALIACOES.md) | CRUD, histórico, média e compatibilidade |
 
 Arquivos externos usados como referência:
 
@@ -97,16 +98,16 @@ por campo não devem orientar a nova implementação de avaliações.
 11. Premium permanece posterior ao piloto. Estatísticas e retrospectivas
     futuras devem usar avaliações, sem depender do diário removido.
 
-**Diferença entre escopo e implementação existente:** o perfil atual ainda
-possui `defaultScoreVisibility` e `defaultReviewVisibility`, com valores
-`private`/`public`. Isso foi implementado antes da revisão do PRD. Esses
-campos não devem determinar o comportamento das novas avaliações. Sua
-adequação no contrato, banco, testes e documentação é uma pendência explícita.
+**Adequação concluída:** `defaultScoreVisibility` e
+`defaultReviewVisibility` foram removidos de DTOs, PATCH, entidade e banco
+pela migration `AdicionarAvaliacoes`. Campos antigos no PATCH agora
+retornam `400`; não havia avaliações anteriores para migrar.
 
-O PRD mantém alguns detalhes como propostas operacionais. Antes de fechar
-os contratos de avaliações, revisar a possibilidade de resenha sem nota,
-o limite de texto e o tratamento HTTP de uma segunda criação para o mesmo
-item. Não inventar essas definições como decisões já aprovadas.
+Escolhas operacionais desta entrega: resenha sem nota, limite de 5.000
+caracteres, segunda criação com `409` e média com uma casa decimal.
+Foram adotadas a partir das propostas do PRD e comunicadas como ponto de
+partida; não eram decisões previamente confirmadas no v1.2.
+Detalhes em [Avaliações](../server/AVALIACOES.md).
 
 ## O que foi entregue
 
@@ -129,7 +130,7 @@ item. Não inventar essas definições como decisões já aprovadas.
 ### Perfis e avatar
 
 - Consulta própria (`GET /api/me`), consulta por username e edição parcial
-  de nome, bio e preferências implementadas.
+  de nome e bio implementadas.
 - Nome até 256 caracteres, bio até 300; conteúdo tratado como texto simples.
 - Perfil de outro participante e sua imagem exigem JWT.
 - Upload multipart em `PUT /api/me/avatar`, remoção e consulta de status.
@@ -236,10 +237,10 @@ Copiar IDs reais dos resultados; não confundir ID de álbum com ID de faixa.
 Foi criada uma [coleção Postman](../server/tests/postman/catalogo.postman_collection.json),
 mas o usuário preferiu testar no Swagger e confirmou sucesso.
 
-## Validações já realizadas
+## Validações anteriores à entrega de avaliações
 
 - Build Release da solução passou, sem avisos ou erros.
-- **120 testes unitários passaram**, incluindo o adaptador Spotify com HTTP
+- **120 testes unitários passaram na etapa anterior**, incluindo o adaptador Spotify com HTTP
   simulado, sem depender de credenciais ou rede.
 - Smoke completo HTTPS/SQL/RabbitMQ passou: autenticação, perfis, erros,
   catálogo e processamento assíncrono de avatar, incluindo recuperação e
@@ -274,70 +275,47 @@ Remove-Item Env:SOMNIA_TEST_SPOTIFY_LIVE
 A execução real consome quota do aplicativo. A validação anterior confirma
 o acesso que existia naquele momento, sem garantir quotas futuras.
 
+## Entrega de avaliações em 11/11/2026
+
+- Módulo `Avaliacoes` nas quatro camadas, handlers MediatR e repositório EF.
+- `POST /api/reviews`, `GET/PUT/DELETE /api/reviews/{id}`.
+- `GET /api/users/{username}/reviews`: histórico por criação/ID decrescentes;
+  edição preserva criação e posição; limit 1–50, offset 0–10.000.
+- `GET /api/catalog/{provider}/{type}/{externalId}/reviews`: página e resumo
+  com média/quantidade e `myReview` do titular, independente da página.
+  Sem notas: `average: null`, `count: 0`.
+- Titular obtido do JWT; consultas autenticadas; alteração alheia dá `404`.
+- Unicidade no SQL Server por titular/provedor/tipo/ID, inclusive sob concorrência.
+  Collation binária mantém IDs externos sensíveis a maiúsculas.
+- Nota 0–100 ou ausente; resenha até 5.000 caracteres; conteúdo totalmente vazio
+  rejeitado. PUT substitui os dois campos; exclusão física.
+- Só POST valida referência contra o catálogo ativo; GET/PUT/DELETE independem
+  do Spotify. Banco mantém a referência do item, sem copiar metadados/capas.
+- Média calculada em SQL, sem fila, cache ou projeção materializada.
+- Migration `AdicionarAvaliacoes` cria tabela/constraints/índices e remove
+  as duas preferências antigas de visibilidade.
+- Build Release sem avisos/erros e 154 testes unitários passaram.
+- Smoke ampliado com `tests/security/avaliacoes_smoke.py`: CRUD HTTP/SQL,
+  autorização, concorrência, paginação, médias e catálogo desligado.
+  A suíte completa HTTPS/SQL/RabbitMQ passou, incluindo regressões de avatar,
+  outbox, reinício de Worker, mensagens duplicadas e limites de requisição.
+
 ## Próximos passos em ordem
 
-### 1. Fechar os contratos de avaliações com o PRD v1.2
+1. Implementar seguir/deixar de seguir com vínculo único por par e regras
+   para seguir a si mesmo e consultar relações.
+2. Implementar feed e descoberta paginados e autenticados, mostrando avaliações
+   atuais; edição não multiplica publicações e exclusão retira conteúdo.
+3. Integrar frontend: conta, busca, álbum/faixa, avaliação, histórico, perfis
+   e comunidade. Explicar visibilidade antes de salvar e diferenciar nota
+   pessoal, média e quantidade; manter acesso aos dados próprios em falhas.
+4. Homologar estados de erro/vazio/carregamento, 360 px/desktop, teclado e
+   critérios de aceite do PRD.
+5. Preparar deploy/piloto: migrations controladas, backups, retenção,
+   exclusão de conta, controle de convites/acesso e feedback dos amigos.
 
-- Ler as seções 02, 03, 04, 08 e 09 do PRD antes de implementar.
-- Conferir detalhes ainda propostos: resenha sem nota, limite da resenha,
-  precisão/apresentação da média e resposta para criação duplicada.
-- Definir os contratos de criação, edição, exclusão, consulta por item e
-  histórico paginado por perfil. Esses endpoints ainda não existem.
-- Definir a adequação de `defaultScoreVisibility`/`defaultReviewVisibility`
-  no perfil e nos dados existentes para refletir a remoção dessa preferência.
-- Manter os exemplos do Swagger e a documentação coerentes com o contrato final.
-
-### 2. Implementar domínio, persistência e migration
-
-- Criar o módulo de avaliações nas camadas existentes.
-- Identificar item por `(provider, type, externalId)`, com titular e datas
-  de criação/edição. Não criar entidade de escuta.
-- Garantir uma avaliação por titular/item, inclusive sob concorrência, com
-  restrição de unicidade no banco.
-- Validar nota inteira de 0 a 100; distinguir zero de ausência de nota e
-  impedir avaliação completamente vazia conforme o contrato final.
-- Definir validação da referência externa sem permitir identidade arbitrária
-  ou chamar o Spotify desnecessariamente nas consultas de avaliações salvas.
-
-### 3. Implementar operações e histórico no perfil
-
-- Criar, editar e excluir avaliação com titular obtido do JWT, sem confiar
-  em um ID de autor enviado no corpo.
-- Exigir autenticação nas consultas e autoria nas alterações.
-- Listar avaliações por perfil, com paginação, criação decrescente e desempate
-  estável; editar não deve criar uma nova entrada.
-- Consultar avaliações por álbum/faixa e preservar acesso aos registros já
-  salvos quando o Spotify estiver indisponível.
-- Reutilizar ProblemDetails e as convenções HTTP do projeto.
-
-### 4. Calcular médias e contagens
-
-- Usar somente notas atuais de avaliações não excluídas, sem peso por
-  repetição, quantidade de escutas ou recursos Premium.
-- Atualizar corretamente após criação, edição, remoção de nota e exclusão.
-- Tratar ausência de notas separadamente de média zero.
-- Escolher a forma de cálculo conforme o volume e a consistência necessários.
-  Não foi definida fila/consumer de avaliações; a implementação síncrona
-  no banco é o ponto de partida recomendado.
-
-### 5. Validar e documentar a entrega
-
-- Cobrir notas 0/100, limites inválidos, duplicidade concorrente, exclusão,
-  paginação e independência entre avaliações de álbum e faixa.
-- Verificar que outro usuário não edita/exclui avaliação alheia e que
-  visitantes sem JWT não consultam o conteúdo.
-- Verificar média/contagem após todas as alterações e comportamento quando
-  o catálogo externo estiver indisponível.
-- Rodar build e testes adequados; atualizar o smoke para os novos contratos.
-- Testar pelo Swagger e atualizar PRD/documentos quando necessário.
-- Fazer commits pequenos no padrão do usuário e atualizar este contexto.
-
-### Depois das avaliações
-
-Seguir/deixar de seguir, feed e descoberta; depois integração do frontend,
-homologação do piloto e preparação do deploy. Exclusão de conta, retenção,
-convites e processo de migrations em produção continuam pendências próprias.
-Não reintroduzir diário nem antecipar Premium sem nova decisão do usuário.
+Não reintroduzir diário nem antecipar Premium. O MVP completo ainda
+depende dos recursos sociais, frontend e homologação.
 
 ## Histórico de commits relevantes
 
@@ -364,12 +342,13 @@ Não reintroduzir diário nem antecipar Premium sem nova decisão do usuário.
 Houve falta de espaço no disco C: e falhas de cache/disco virtual do Docker
 durante a validação anterior. O ambiente foi recuperado e a imagem
 `somnia-worker:dev` foi mantida. Na leitura desta atualização, C: tinha cerca
-de **2 GB livres**; verificar novamente antes de builds ou downloads grandes.
+de **2 GB livres** na sessão anterior (3,4 GB em 11/11 antes dos testes); verificar novamente antes de builds ou downloads grandes.
 
 As últimas validações do Spotify usaram API e Worker locais; não foi feito
 novo build Linux nessa etapa. Não apagar volumes de banco nem executar
 limpeza global do Docker para repetir testes. O procedimento específico de
 recuperação e o builder isolado estão em Mensageria.
 
-O projeto ainda não está integralmente homologado como MVP. O catálogo foi
-concluído nesta etapa; o ponto de continuidade é **avaliações no perfil**.
+O projeto ainda não está integralmente homologado como MVP. Avaliações,
+histórico e médias foram implementados; a continuidade é **relações sociais,
+feed e descoberta**.
