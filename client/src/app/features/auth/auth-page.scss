@@ -1,0 +1,258 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+.auth-layout {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.introduction {
+  padding: 2.6rem 3.7rem 2rem;
+  border-right: 1px solid var(--border);
+  background: #181b1e;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.intro-body {
+  margin: auto 0;
+  padding: 2rem 0 3rem;
+}
+.record-art {
+  position: relative;
+  width: 15rem;
+  height: 15rem;
+  margin: 0 auto 3rem;
+}
+.record {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #101214;
+  border: 1px solid #343535;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 0 0 10px #1c2022,
+    0 0 0 11px #303233,
+    inset 0 0 0 14px #17191b,
+    inset 0 0 0 15px #292c2d,
+    inset 0 0 0 30px #131517,
+    inset 0 0 0 31px #292c2d,
+    inset 0 0 0 46px #16181a,
+    inset 0 0 0 47px #292c2d,
+    12px 18px 30px #0003;
+}
+.record-label {
+  width: 5.7rem;
+  height: 5.7rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #292015;
+  display: grid;
+  place-items: center;
+  position: relative;
+  transform: rotate(-20deg);
+}
+.record-label span {
+  font-family: Georgia, serif;
+  font-size: 3.3rem;
+  font-style: italic;
+  margin-top: -0.7rem;
+}
+.record-label i {
+  position: absolute;
+  width: 0.45rem;
+  height: 0.45rem;
+  background: #151719;
+  border-radius: 50%;
+}
+.orbit {
+  position: absolute;
+  border: 1px solid #d99a3d30;
+  border-radius: 50%;
+  inset: -2.4rem;
+}
+.orbit-two {
+  inset: -4.2rem;
+  border-color: #d99a3d13;
+}
+h1 {
+  margin: 0.8rem 0 1.2rem;
+  font-size: clamp(2.2rem, 3.8vw, 3.6rem);
+  line-height: 1.12;
+  letter-spacing: -0.06em;
+  font-weight: 650;
+}
+h1 em {
+  color: var(--accent);
+  font-style: normal;
+}
+.intro-copy {
+  color: var(--muted);
+  line-height: 1.85;
+  font-size: 0.98rem;
+}
+.intro-footer {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 0;
+}
+.intro-footer span {
+  color: var(--accent);
+  margin-right: 0.5rem;
+}
+.form-section {
+  padding: 3rem 2rem;
+  display: grid;
+  place-items: center;
+}
+.form-content {
+  width: 100%;
+  max-width: 25rem;
+}
+h2 {
+  font-size: 2.05rem;
+  letter-spacing: -0.04em;
+  margin: 0.75rem 0 0.6rem;
+  font-weight: 650;
+}
+.form-description {
+  color: var(--muted);
+  margin: 0 0 2.25rem;
+  font-size: 0.95rem;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.field {
+  margin-bottom: 1.2rem;
+}
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 550;
+  margin-bottom: 0.55rem;
+}
+input {
+  width: 100%;
+  border: 1px solid #363b40;
+  background: var(--surface);
+  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 3rem;
+}
+input::placeholder {
+  color: #92969a;
+}
+input[aria-invalid='true'] {
+  border-color: var(--error);
+}
+.hint,
+.field-error {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin-top: 0.4rem;
+}
+.hint {
+  color: var(--muted);
+}
+.field-error {
+  color: var(--error);
+}
+.field-error:empty {
+  display: none;
+}
+.password-input {
+  position: relative;
+}
+.password-input input {
+  padding-right: 3.2rem;
+}
+.show-password {
+  position: absolute;
+  right: 0.25rem;
+  top: 0.15rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.submit {
+  margin-top: 0.3rem;
+  width: 100%;
+  gap: 0.8rem;
+}
+.submit > span:last-child:not(.spinner) {
+  margin-left: auto;
+}
+.switch-form {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 1.6rem 0 2.2rem;
+}
+.switch-form a {
+  margin-left: 0.25rem;
+}
+.privacy-note {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 1.4rem;
+  font-size: 0.73rem;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+.privacy-note svg {
+  flex-shrink: 0;
+}
+@media (min-width: 1440px) {
+  .introduction {
+    padding-left: max(4rem, calc((100vw - 1200px) / 2));
+  }
+}
+@media (max-width: 800px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+  .introduction {
+    padding: 1.5rem;
+    border: 0;
+    background: var(--background);
+  }
+  .intro-body,
+  .intro-footer {
+    display: none;
+  }
+  .form-section {
+    padding: 1.2rem 1.5rem 2.5rem;
+    align-items: start;
+  }
+  h2 {
+    font-size: 1.85rem;
+  }
+}

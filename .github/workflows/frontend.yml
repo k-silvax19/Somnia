@@ -1,0 +1,50 @@
+name: Build e testes do frontend
+
+on:
+  push:
+    paths:
+      - "client/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "client/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Obter código
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Configurar Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Conferir formatação
+        run: npm run format:check
+      - name: Compilar aplicação
+        run: npm run build
+      - name: Testar sessão e guards
+        run: npm test -- --watch=false
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Testar fluxos no navegador
+        run: npm run test:e2e

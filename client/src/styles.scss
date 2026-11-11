@@ -1,0 +1,136 @@
+:root {
+  color-scheme: dark;
+  --background: #121416;
+  --surface: #1c2024;
+  --text: #f2eee8;
+  --muted: #a5a6a8;
+  --accent: #d99a3d;
+  --border: #2b2f33;
+  --error: #f4a39b;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  color: var(--text);
+  background: var(--background);
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+a:hover {
+  color: #edb866;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+input:focus-visible {
+  outline-offset: 2px;
+}
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+}
+.button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 650;
+  border: 1px solid transparent;
+  cursor: pointer;
+  line-height: 1.35;
+}
+.primary {
+  background: var(--accent);
+  color: #1c1711;
+}
+.primary:hover:not(:disabled) {
+  background: #e7ab51;
+}
+.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: #454b51;
+}
+.secondary:hover:not(:disabled) {
+  background: #292f34;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.message {
+  border: 1px solid #45515a;
+  background: #20272b;
+  padding: 0.9rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  border-radius: 0.5rem;
+  margin: 0 0 1.5rem;
+  overflow-wrap: anywhere;
+}
+.message.error {
+  color: var(--error);
+  background: #2b1e1e;
+  border-color: #6f3b37;
+}
+.message.success {
+  color: #b8d9b8;
+  background: #1d2b23;
+  border-color: #3f644c;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
