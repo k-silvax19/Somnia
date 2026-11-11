@@ -131,14 +131,17 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
     }
-    options.AddPolicy("catalog", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 60,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
+    foreach (var nome in new[] { "catalog", "community" })
+    {
+        options.AddPolicy(nome, context => RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    }
     options.AddPolicy("avatar", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions

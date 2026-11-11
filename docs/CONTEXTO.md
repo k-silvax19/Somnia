@@ -349,6 +349,14 @@ o acesso que existia naquele momento, sem garantir quotas futuras.
   resenha sem nota e catálogo desligado. A suíte completa HTTPS/SQL/RabbitMQ
   também passou, incluindo regressões de avaliações, relações, avatar e mensageria.
 - Contratos e escolhas operacionais em [Comunidade](../server/COMUNIDADE.md).
+- Revisão de segurança solicitada pelo usuário: sem bypass de autenticação ou
+  exposição de campos privados identificado no diff. Acrescentada política
+  `community`, com 60 consultas/minuto por usuário/instância compartilhadas
+  entre feed e descoberta. Testes HTTP adicionais para JWTs adulterados,
+  expirados/revogados, vinculação de sessão, parâmetros inválidos e throttling.
+  NuGet não reportou vulnerabilidades conhecidas nesta consulta. Limites do
+  escopo e evidências em [Revisão de segurança](../server/REVISAO_SEGURANCA_COMUNIDADE.md).
+  Build, 176 testes unitários e smoke completo com os novos casos passaram.
 
 ## Próximos passos em ordem
 

@@ -21,6 +21,7 @@ from pathlib import Path
 from avaliacoes_smoke import validar_avaliacoes
 from relacoes_smoke import validar_relacoes
 from comunidade_smoke import validar_comunidade
+from comunidade_security_smoke import validar_seguranca_comunidade
 
 api = Path(__file__).resolve().parents[2] / 'src' / 'Api'
 worker_path = api.parent / 'Worker'
@@ -418,6 +419,7 @@ try:
     validar_avaliacoes(request, sql, database, env, restart_api, original, bob)
     validar_relacoes(request, sql, database, restart_api, original, bob)
     validar_comunidade(request, sql, database, env, restart_api, original, bob)
+    validar_seguranca_comunidade(request, sql, database, env, restart_api, original, bob)
 
     if os.environ.get('SOMNIA_TEST_SPOTIFY_LIVE') == '1':
         env['MusicCatalog__Provider'] = 'Spotify'

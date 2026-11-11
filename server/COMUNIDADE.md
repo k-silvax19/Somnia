@@ -15,6 +15,11 @@ Ambos exigem JWT Bearer e retornam `Cache-Control: no-store`. Visitantes sem
 JWT ou apenas com cookie de refresh recebem `401`. As consultas não recebem
 corpo e não permitem selecionar o titular do feed por parâmetro: ele vem do JWT.
 
+As duas rotas compartilham cota de 60 consultas/minuto por usuário e instância.
+Excesso retorna `429` e `Retry-After`. A cota é local, em memória, sem fila;
+não substitui proteção de infraestrutura. Detalhes e testes adicionais em
+[Revisão de segurança](REVISAO_SEGURANCA_COMUNIDADE.md).
+
 Exemplos para o Swagger, após autenticar e autorizar o Bearer:
 
 ```http

@@ -3,6 +3,7 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Somnia.Api.Compartilhado.Http;
 using Somnia.Aplicacao.Modulos.Avaliacoes;
 using Somnia.Dominio.Modulos.Avaliacoes;
@@ -11,6 +12,7 @@ namespace Somnia.Api.Modulos.Avaliacoes;
 
 [ApiController]
 [Authorize]
+[EnableRateLimiting("community")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [Route("api")]
 public sealed class ComunidadeController(IMediator mediator) : ControllerBase
