@@ -70,6 +70,13 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
             await Projetar(consulta.Where(x => x.UsuarioId == usuarioId)).SingleOrDefaultAsync(ct));
     }
 
+    public Task<PaginaAvaliacoesDto> ListarFeedAsync(Guid usuarioId, int limit, int offset, CancellationToken ct) =>
+        PaginarAsync(db.Avaliacoes.AsNoTracking().Where(avaliacao => db.RelacoesSeguir.Any(
+            relacao => relacao.SeguidorId == usuarioId && relacao.SeguidoId == avaliacao.UsuarioId)), limit, offset, ct);
+
+    public Task<PaginaAvaliacoesDto> ListarDescobertaAsync(int limit, int offset, CancellationToken ct) =>
+        PaginarAsync(db.Avaliacoes.AsNoTracking(), limit, offset, ct);
+
     private async Task<PaginaAvaliacoesDto> PaginarAsync(IQueryable<Avaliacao> consulta, int limit, int offset, CancellationToken ct)
     {
         var total = await consulta.CountAsync(ct);

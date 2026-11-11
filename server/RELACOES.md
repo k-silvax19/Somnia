@@ -2,7 +2,7 @@
 
 Entrega do vínculo social previsto no RF08 do PRD v1.2: seguir/deixar de
 seguir sem aprovação, consultar contagens e listar seguidores/seguidos.
-Feed e descoberta serão implementados na próxima etapa.
+Feed e descoberta estão implementados em [COMUNIDADE.md](COMUNIDADE.md).
 
 ## Endpoints
 
@@ -94,7 +94,7 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-A suíte unitária tem 170 testes; os novos casos cobrem validação, identidade,
+A suíte unitária tem 176 testes; os casos de relações cobrem validação, identidade,
 auto-seguimento, perfil inexistente, titularidade dos comandos e paginação.
 O smoke chama `relacoes_smoke.py` e cobre HTTPS/SQL com três perfis, oito PUTs
 simultâneos, oito DELETEs simultâneos, vínculos reversos independentes,
