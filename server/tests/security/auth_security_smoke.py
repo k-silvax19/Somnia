@@ -19,6 +19,7 @@ from contextlib import closing
 from http.cookies import SimpleCookie
 from pathlib import Path
 from avaliacoes_smoke import validar_avaliacoes
+from relacoes_smoke import validar_relacoes
 
 api = Path(__file__).resolve().parents[2] / 'src' / 'Api'
 worker_path = api.parent / 'Worker'
@@ -412,6 +413,7 @@ try:
     assert request('GET', '/api/me', session=original)[0] == 200
     print('Catalog checks passed: authenticated endpoints, type isolation, pagination, album-track links, validation, controlled outage and per-user rate limit.', flush=True)
     validar_avaliacoes(request, sql, database, env, restart_api, original, bob)
+    validar_relacoes(request, sql, database, restart_api, original, bob)
 
     if os.environ.get('SOMNIA_TEST_SPOTIFY_LIVE') == '1':
         env['MusicCatalog__Provider'] = 'Spotify'

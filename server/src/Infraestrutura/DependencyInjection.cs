@@ -6,6 +6,8 @@ using Somnia.Dominio.Compartilhado;
 using Somnia.Dominio.Modulos.Perfis;
 using Somnia.Dominio.Modulos.Avaliacoes;
 using Somnia.Infraestrutura.Modulos.Avaliacoes;
+using Somnia.Dominio.Modulos.Relacoes;
+using Somnia.Infraestrutura.Modulos.Relacoes;
 using Somnia.Infraestrutura.Modulos.Perfis;
 using Somnia.Infraestrutura.Compartilhado.Auth;
 using Somnia.Infraestrutura.Compartilhado.Orm;
@@ -48,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IRepositorioPerfil, RepositorioPerfilEmOrm>();
         services.AddScoped<IRepositorioAvatar, RepositorioAvatarEmOrm>();
         services.AddScoped<IRepositorioAvaliacao, RepositorioAvaliacaoEmOrm>();
+        services.AddScoped<IRepositorioRelacao, RepositorioRelacaoEmOrm>();
 
         return services;
     }

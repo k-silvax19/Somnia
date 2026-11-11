@@ -317,6 +317,31 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Somnia.Dominio.Modulos.Relacoes.RelacaoSeguir", b =>
+                {
+                    b.Property<Guid>("SeguidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SeguidoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("SeguidorId", "SeguidoId");
+
+                    b.HasIndex("SeguidoId", "CreatedAt", "SeguidorId")
+                        .IsDescending(false, true, true);
+
+                    b.HasIndex("SeguidorId", "CreatedAt", "SeguidoId")
+                        .IsDescending(false, true, true);
+
+                    b.ToTable("RelacoesSeguir", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RelacoesSeguir_UsuariosDistintos", "[SeguidorId] <> [SeguidoId]");
+                        });
+                });
+
             modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.AvatarUsuario", b =>
                 {
                     b.Property<Guid>("UsuarioId")
@@ -566,6 +591,21 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Somnia.Dominio.Modulos.Relacoes.RelacaoSeguir", b =>
+                {
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
+                        .WithMany()
+                        .HasForeignKey("SeguidoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
+                        .WithMany()
+                        .HasForeignKey("SeguidorId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 

@@ -125,7 +125,7 @@ Os cenários incluem cookies seguros, CSRF forjado, origem não permitida, roubo
 reutilização de refresh token, concorrência, revogação de JWTs, logout global,
 expiração absoluta, armazenamento por hash e limites de requisições.
 
-A suíte possui 154 testes xUnit, incluindo avaliações. Além de
+A suíte possui 170 testes xUnit, incluindo avaliações e relações. Além de
 autenticação e perfil, o teste integrado verifica processamento assíncrono,
 substituição, remoção, concorrência e validação do avatar estático, incluindo
 titularidade, rejeição de APNG, recuperação do outbox, limites de username,
