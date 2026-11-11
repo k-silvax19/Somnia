@@ -14,8 +14,6 @@ public static class PerfilMapper
             usuario.Email!,
             usuario.UserName,
             usuario.Bio,
-            usuario.AvatarUrl,
-            usuario.DefaultScoreVisibility == Visibilidade.Privada ? "private" : "public",
-            usuario.DefaultReviewVisibility == Visibilidade.Privada ? "private" : "public");
+            usuario.AvatarUrl);
     }
 }

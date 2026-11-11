@@ -8,11 +8,7 @@ public sealed record AlteracaoPerfil(
     string? DisplayName,
     bool AlterarDisplayName,
     string? Bio,
-    bool AlterarBio,
-    string? DefaultScoreVisibility,
-    bool AlterarScoreVisibility,
-    string? DefaultReviewVisibility,
-    bool AlterarReviewVisibility
+    bool AlterarBio
 );
 
 public interface IRepositorioPerfil

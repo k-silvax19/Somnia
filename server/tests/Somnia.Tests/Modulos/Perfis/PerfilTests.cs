@@ -21,7 +21,6 @@ public sealed class PerfilTests
         Assert.True(limpar.InformouBio);
         Assert.Null(limpar.ToAlteracao().Bio);
         Assert.False(limpar.InformouDisplayName);
-        Assert.False(limpar.InformouScoreVisibility);
     }
 
     [Theory]
@@ -29,6 +28,8 @@ public sealed class PerfilTests
     [InlineData("{\"email\":\"outro@example.com\"}")]
     [InlineData("{\"username\":\"outro\"}")]
     [InlineData("{\"avatarUrl\":\"https://example.com/animated.gif\"}")]
+    [InlineData("{\"defaultScoreVisibility\":\"private\"}")]
+    [InlineData("{\"defaultReviewVisibility\":\"public\"}")]
     public void Patch_RejeitaCamposQueNaoPodemSerAlterados(string json)
     {
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<AtualizarPerfilRequest>(
@@ -39,8 +40,6 @@ public sealed class PerfilTests
     [InlineData("{}")]
     [InlineData("{\"displayName\":null}")]
     [InlineData("{\"displayName\":\" \"}")]
-    [InlineData("{\"defaultScoreVisibility\":\"friends\"}")]
-    [InlineData("{\"defaultReviewVisibility\":null}")]
     public async Task Atualizar_ComDadosInvalidos_NaoPersiste(string json)
     {
         var request = JsonSerializer.Deserialize<AtualizarPerfilRequest>(

@@ -6,9 +6,7 @@ public sealed record UsuarioDto(
     string Email,
     string? Username = null,
     string? Bio = null,
-    string? AvatarUrl = null,
-    string DefaultScoreVisibility = "private",
-    string DefaultReviewVisibility = "private"
+    string? AvatarUrl = null
 );
 public sealed record TokenDto(
     Guid UsuarioId,

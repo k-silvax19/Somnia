@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MassTransit;
+using Somnia.Dominio.Modulos.Avaliacoes;
 
 namespace Somnia.Infraestrutura.Compartilhado.Orm;
 
@@ -12,6 +13,7 @@ public sealed class SomniaDbContext(DbContextOptions<SomniaDbContext> options)
     public DbSet<TokenRevogado> TokensRevogados => Set<TokenRevogado>();
     public DbSet<AvatarUsuario> Avatares => Set<AvatarUsuario>();
     public DbSet<SolicitacaoAvatar> SolicitacoesAvatar => Set<SolicitacaoAvatar>();
+    public DbSet<Avaliacao> Avaliacoes => Set<Avaliacao>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
