@@ -3,13 +3,17 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  // Only our relative API paths may receive credentials. No absolute URLs or traversal.
-  if (
-    !/^\/api\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+(?:\?[^#]*)?$/.test(request.url) ||
-    request.url.startsWith('/api/auth/')
-  )
+  // Credentials go only to safe API paths, or to the configured local HTTPS API.
+  const safeRelativeApiPath = /^\/api\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+(?:\?[^#]*)?$/;
+  const safeLocalApiUrl =
+    /^https:\/\/localhost:\d+\/api\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+(?:\?[^#]*)?$/;
+  const relativeApiRequest = safeRelativeApiPath.test(request.url);
+  const configuredLocalApiRequest =
+    request.url.startsWith(`${environment.apiUrl}/`) && safeLocalApiUrl.test(request.url);
+  if ((!relativeApiRequest && !configuredLocalApiRequest) || request.url.includes('/api/auth/'))
     return next(request);
 
   const auth = inject(AuthService);

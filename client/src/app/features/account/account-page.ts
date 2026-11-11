@@ -6,6 +6,7 @@ import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { apiError } from '../../core/http/api-error';
 import { Brand } from '../../shared/brand';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-account-page',
@@ -172,7 +173,7 @@ export class AccountPage {
     this.loading.set(true);
     this.error.set('');
     this.http
-      .get<Account>('/api/me', { timeout: 15_000 })
+      .get<Account>(`${environment.apiUrl}/me`, { timeout: 15_000 })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (account) => {

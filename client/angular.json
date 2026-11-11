@@ -49,6 +49,23 @@
               "outputHashing": "all"
             },
             "development": {
+              "fileReplacements": [
+                {
+                  "replace": "src/app/environments/environment.ts",
+                  "with": "src/app/environments/environment.development.ts"
+                }
+              ],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            },
+            "e2e": {
+              "fileReplacements": [
+                {
+                  "replace": "src/app/environments/environment.ts",
+                  "with": "src/app/environments/environment.e2e.ts"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
@@ -61,8 +78,7 @@
           "options": {
             "host": "localhost",
             "port": 4200,
-            "ssl": true,
-            "proxyConfig": "proxy.conf.json"
+            "ssl": true
           },
           "configurations": {
             "production": {
@@ -70,6 +86,10 @@
             },
             "development": {
               "buildTarget": "somnia:build:development"
+            },
+            "e2e": {
+              "buildTarget": "somnia:build:e2e",
+              "proxyConfig": "e2e/proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

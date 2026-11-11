@@ -26,11 +26,15 @@ autossinado; permita esse certificado somente no ambiente local ou configure
 `ng serve --ssl-cert .certs/localhost.pem --ssl-key .certs/localhost-key.pem`
 com um certificado local confiável. `.certs` não é versionado.
 
-`proxy.conf.json` encaminha `/api/**` para `https://localhost:7201`. A API deve
-permitir a origem `https://localhost:4200` em `Cors:AllowedOrigins` (já presente
-na configuração Development). `secure: false` aceita o certificado de
-desenvolvimento da API **somente nesse proxy local**. Não desabilite HTTPS:
-os cookies `__Host-` exigem conexão segura. Segredos permanecem no backend.
+`src/app/environments/environment.development.ts` conecta o Angular diretamente
+a `https://localhost:7201/api`, endereço HTTPS do perfil local da API. O CORS
+da API já permite `https://localhost:4200`. Confie no certificado HTTPS local
+do .NET com `dotnet dev-certs https --trust`; os cookies `__Host-` exigem HTTPS.
+Não coloque segredos do backend no frontend.
+
+`environment.ts` usa `/api` para uma hospedagem na mesma origem. Testes de
+navegador também usam `/api`; o servidor de teste encaminha essa rota para a
+API isolada em `https://localhost:7301`.
 
 O build gera `dist/somnia/browser`. Uma hospedagem futura precisa encaminhar
 `/api` para a API na mesma origem e resolver as rotas do Angular com `index.html`.

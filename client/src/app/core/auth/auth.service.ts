@@ -3,9 +3,11 @@ import { HttpBackend, HttpClient, HttpErrorResponse, HttpHeaders } from '@angula
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Account, Credentials, Registration, Session } from './auth.models';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly apiUrl = environment.apiUrl;
   // Auth calls bypass the interceptor to avoid recursive refresh requests.
   private readonly http = new HttpClient(inject(HttpBackend));
   private readonly document = inject(DOCUMENT);
@@ -32,13 +34,15 @@ export class AuthService {
   }
 
   register(data: Registration): Promise<Account> {
-    return firstValueFrom(this.http.post<Account>('/api/auth/register', data, this.options()));
+    return firstValueFrom(
+      this.http.post<Account>(`${this.apiUrl}/auth/register`, data, this.options()),
+    );
   }
 
   async login(data: Credentials): Promise<void> {
     await this.withSessionLock(async () => {
       const session = await firstValueFrom(
-        this.http.post<Session>('/api/auth/login', data, this.options()),
+        this.http.post<Session>(`${this.apiUrl}/auth/login`, data, this.options()),
       );
       this.revision++;
       this.current.set(session);
@@ -70,7 +74,7 @@ export class AuthService {
       }
       try {
         const renewed = await firstValueFrom(
-          this.http.post<Session>('/api/auth/refresh', {}, this.options(csrf)),
+          this.http.post<Session>(`${this.apiUrl}/auth/refresh`, {}, this.options(csrf)),
         );
         if (revision !== this.revision) return this.current();
         this.current.set(renewed);
@@ -107,7 +111,7 @@ export class AuthService {
       const options = this.options(csrf);
       await firstValueFrom(
         this.http.post<void>(
-          '/api/auth/logout',
+          `${this.apiUrl}/auth/logout`,
           {},
           {
             ...options,

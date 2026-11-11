@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
 import { authInterceptor } from './auth.interceptor';
+import { environment } from '../../environments/environment';
 
 describe('authInterceptor', () => {
   const session = { accessToken: 'private-token' };
@@ -35,10 +36,11 @@ describe('authInterceptor', () => {
   afterEach(() => http.verify());
 
   it('adds bearer only after the session is ready', async () => {
-    const response = firstValueFrom(client.get('/api/me'));
-    http.expectNone('/api/me');
+    const url = `${environment.apiUrl}/me`;
+    const response = firstValueFrom(client.get(url));
+    http.expectNone(url);
     await Promise.resolve();
-    const request = http.expectOne('/api/me');
+    const request = http.expectOne(url);
     expect(request.request.headers.get('Authorization')).toBe('Bearer private-token');
     expect(request.request.withCredentials).toBe(true);
     request.flush({});
@@ -49,9 +51,9 @@ describe('authInterceptor', () => {
     'https://outside.test/api/me',
     '//outside.test/api/me',
     '/assets/icon.svg',
-    '/api/../outside',
-    '/api/%2e%2e/outside',
-    '/api/auth/login',
+    'https://localhost:7201/api/../outside',
+    'https://localhost:7201/api/%2e%2e/outside',
+    'https://localhost:7201/api/auth/login',
   ])('does not attach credentials to %s', async (url) => {
     const response = firstValueFrom(client.get(url));
     const request = http.expectOne(url);
@@ -64,20 +66,21 @@ describe('authInterceptor', () => {
 
   it('redirects an anonymous visitor without sending a protected request', async () => {
     auth.ensureSession.mockResolvedValue(null);
-    await expect(firstValueFrom(client.get('/api/me'))).rejects.toMatchObject({ status: 401 });
-    http.expectNone('/api/me');
+    const url = `${environment.apiUrl}/me`;
+    await expect(firstValueFrom(client.get(url))).rejects.toMatchObject({ status: 401 });
+    http.expectNone(url);
     expect(router.navigate).toHaveBeenCalledWith(['/entrar']);
   });
 
   it.each([401, 403, 503])('does not replay a failed mutation (%s)', async (status) => {
-    const result = firstValueFrom(client.post('/api/reviews', { review: 'test' }));
+    const result = firstValueFrom(client.post(`${environment.apiUrl}/reviews`, { review: 'test' }));
     const rejection = expect(result).rejects.toBeInstanceOf(HttpErrorResponse);
     await Promise.resolve();
-    http.expectOne('/api/reviews').flush({}, { status, statusText: 'Error' });
+    http.expectOne(`${environment.apiUrl}/reviews`).flush({}, { status, statusText: 'Error' });
     await rejection;
     expect(auth.invalidate).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
     expect(router.navigate).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
-    http.expectNone('/api/auth/refresh');
-    http.expectNone('/api/reviews');
+    http.expectNone(`${environment.apiUrl}/auth/refresh`);
+    http.expectNone(`${environment.apiUrl}/reviews`);
   });
 });

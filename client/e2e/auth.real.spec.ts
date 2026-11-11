@@ -4,6 +4,16 @@ test('real API: register, login, secure cookies, reload, two tabs and global log
   page,
   context,
 }) => {
+  page.on('response', async (response) => {
+    if (
+      response.url().includes('/api/auth/') &&
+      response.status() >= 400 &&
+      response.status() !== 401
+    ) {
+      const body = await response.json().catch(() => ({}));
+      console.error(`Auth API ${response.status()}: ${JSON.stringify(body)}`);
+    }
+  });
   const username = `auth_${Date.now()}`;
   const email = `${username}@example.test`;
   const password = 'BrowserAuth123!';
