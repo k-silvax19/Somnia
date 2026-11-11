@@ -4,7 +4,7 @@ API de avaliações musicais e recursos sociais. O MVP está em
 desenvolvimento: atualmente há autenticação e perfis com avatar estático,
 processado de forma assíncrona por RabbitMQ e um Worker separado, além de
 catálogo musical integrado ao Spotify, avaliações de álbuns/faixas, histórico
-no perfil e médias comunitárias.
+no perfil, médias comunitárias e seguir/deixar de seguir perfis.
 
 Para retomar o desenvolvimento, consulte [Contexto e próximos passos](docs/CONTEXTO.md).
 
@@ -29,7 +29,8 @@ arquivos em Downloads:
 | RF05/RF11 — Integração externa | Client Credentials, links oficiais e falhas externas controladas implementados; acesso real validado com o aplicativo local |
 | RF06/RF10 — Avaliações e média | CRUD autenticado, autoria, unicidade e média/quantidade implementados |
 | RF07 da API — Diário privado | Retirado do escopo pelo PRD v1.2; histórico paginado de avaliações implementado |
-| RF08/RF09 — Relações, feed e descoberta | Não implementado |
+| RF08 — Relações | Seguir/deixar de seguir, estado, contagens e listas paginadas implementados |
+| RF08/RF09 — Feed e descoberta | Não implementados |
 | CI | Workflow versionado com restore, build e testes unitários |
 | Deploy e Azure | Não configurados |
 | Premium | Fora do MVP técnico; não implementado |
@@ -40,6 +41,7 @@ Os documentos detalhados são [Autenticação](server/AUTENTICACAO.md) e
 [Cadastro](server/CADASTRO.md) e o contrato HTTP em [Erros](server/ERROS.md).
 As rotas de busca e detalhes estão em [Catálogo](server/CATALOGO.md).
 Os contratos de avaliações e médias estão em [Avaliações](server/AVALIACOES.md).
+As rotas de seguidores/seguidos estão em [Relações](server/RELACOES.md).
 Esses documentos descrevem o que existe e suas pendências;
 não representam homologação do MVP completo.
 
@@ -144,7 +146,7 @@ dotnet test server/tests/Somnia.Tests -c Release
 python server/tests/security/auth_security_smoke.py
 ```
 
-A suíte possui 154 testes xUnit, incluindo avaliações. O teste integrado
+A suíte possui 170 testes xUnit, incluindo avaliações e relações. O teste integrado
 exercita HTTPS, SQL e um broker real com API/consumer separados. O build da
 solução inclui o Worker. O avatar usa SkiaSharp com bibliotecas nativas para
 Windows, macOS e Linux. As migrations `AdicionarAvatares` e
@@ -160,8 +162,8 @@ O workflow `.github/workflows/ci.yml` executa restore, build e testes
 unitários em pushes/PRs que alteram o backend, além de execução manual.
 Não exige SQL Server, RabbitMQ ou Spotify para os testes unitários.
 A execução remota ocorrerá depois de enviar os commits ao GitHub.
-Os testes incluem avaliações, médias e histórico no perfil; relações sociais,
-frontend e homologação do MVP completo continuam pendentes. O smoke também
+Os testes incluem avaliações, médias, histórico no perfil e seguir perfis;
+feed, descoberta, frontend e homologação do MVP completo continuam pendentes. O smoke também
 verifica criação concorrente, autorização, paginação e acesso aos dados
 próprios durante indisponibilidade do catálogo.
 

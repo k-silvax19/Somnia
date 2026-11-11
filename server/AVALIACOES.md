@@ -149,4 +149,5 @@ Em 11/11/2026, build Release sem avisos/erros, 154 testes unitários e smoke
 completo HTTPS/SQL/RabbitMQ passaram. O modelo EF não tem alterações pendentes
 em relação à migration versionada.
 
-Seguir, feed, descoberta, frontend e deploy continuam pendentes.
+Seguir perfis foi implementado em [RELACOES.md](RELACOES.md).
+Feed, descoberta, frontend e deploy continuam pendentes.

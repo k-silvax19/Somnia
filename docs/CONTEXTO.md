@@ -7,8 +7,8 @@ etapa para não confundir requisitos planejados com código já entregue.
 ## Ponto de retomada
 
 **Autenticação, perfis, avatar assíncrono, catálogo Spotify, avaliações,
-médias e histórico no perfil estão implementados. Próxima etapa: seguir/deixar
-de seguir, feed e descoberta.**
+médias, histórico no perfil e seguir/deixar de seguir estão implementados.
+Próxima etapa: feed das pessoas seguidas e descoberta da comunidade.**
 
 O diário privado permanece fora do escopo. Não criar entidade de escuta,
 datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
@@ -21,7 +21,8 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 | Avaliações de álbuns/faixas | CRUD autenticado e autoria implementados |
 | Médias e quantidade de notas | Calculadas no SQL a partir das notas atuais |
 | Histórico no perfil | Implementado, paginado e com desempate estável |
-| Seguir, feed e descoberta | Não implementados |
+| Seguir/deixar de seguir, contagens e listas | Implementados |
+| Feed e descoberta | Não implementados |
 | Frontend integrado e deploy | Pendentes |
 | Premium | Fora da entrega do MVP gratuito |
 
@@ -31,10 +32,11 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 - Entregar mudanças por pull requests para revisão do usuário, em branches
   próprias, sem fazer merge automaticamente. Commits são a base técnica dos
   PRs; usar `add: descrição em português` e `fix: descrição em português`.
-- Base desta entrega: `v3/catalogo`; implementação em `feat/avaliacoes` e
-  documentação em `docs/avaliacoes`. Conferir branch e `git status` ao retomar.
-  O [PR de avaliações](https://github.com/k-silvax19/Somnia/pull/1) tem base
-  `v3/catalogo`; o PR de documentação é dependente, com base `feat/avaliacoes`.
+- Base desta entrega: `origin/feat/avaliacoes`, onde os PRs #1 e #2 já foram
+  integrados pelo usuário. Nova branch: `feat/seguir-perfis`; PR com base
+  `feat/avaliacoes` para preservar código e documentação revisados.
+  `v3/catalogo` contém o código do PR #1, mas ainda não a documentação do #2.
+  Conferir branch e `git status` ao retomar.
 - Seguir a organização das quatro camadas já existentes. O Worker é um host
   separado; não substitui essa separação.
 - Não colocar Client Secret, token Spotify, JWT ou senhas reais novas na
@@ -57,6 +59,7 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 | [Erros](../server/ERROS.md) | Contrato HTTP ProblemDetails |
 | [Catálogo](../server/CATALOGO.md) | Spotify, configuração, limites e verificação |
 | [Avaliações](../server/AVALIACOES.md) | CRUD, histórico, média e compatibilidade |
+| [Relações](../server/RELACOES.md) | Seguir perfis, listas, contagens e regras |
 
 Arquivos externos usados como referência:
 
@@ -300,22 +303,45 @@ o acesso que existia naquele momento, sem garantir quotas futuras.
   A suíte completa HTTPS/SQL/RabbitMQ passou, incluindo regressões de avatar,
   outbox, reinício de Worker, mensagens duplicadas e limites de requisição.
 
+## Entrega de relações em 11/11/2026
+
+- Módulo `Relacoes` nas quatro camadas, handlers MediatR e repositório EF.
+- `PUT/DELETE /api/users/{username}/follow`, sem corpo e com titular pelo JWT.
+- `GET /api/users/{username}/connections`: `isFollowing`, `followersCount`,
+  `followingCount`; estado personalizado ao visitante autenticado.
+- `GET /api/users/{username}/followers` e `following`: páginas com dados de
+  apresentação do perfil e data do vínculo, sem IDs internos/e-mail/credenciais.
+- PUT/DELETE idempotentes, ambos com `204`. Vínculos são direcionais,
+  sem aprovação. Auto-seguimento retorna `400`; alvo inexistente `404`.
+- Chave primária composta protege contra duplicidade concorrente; constraint
+  SQL impede auto-seguimento. Sem fila ou dependência do Spotify/RabbitMQ.
+- Listas por criação/outro usuário decrescentes, limit 1–50, offset 0–10.000.
+- Migration `AdicionarRelacoesSeguir` cria tabela e índices sem alterar contas
+  ou avaliações. FKs sem cascata: futura exclusão de conta deve remover relações
+  nas duas direções antes de excluir o usuário.
+- Build Release sem avisos/erros e 170 testes unitários aprovados.
+- Smoke completo HTTPS/SQL/RabbitMQ passou, incluindo relações com três perfis,
+  oito PUTs e oito DELETEs concorrentes, persistência após reinício, contagens,
+  paginação e regressões de avaliações, avatar, outbox e mensageria.
+- Escolhas operacionais: idempotência, proibição de auto-seguimento, limites
+  e ordenação das listas, documentadas em [Relações](../server/RELACOES.md).
+
 ## Próximos passos em ordem
 
-1. Implementar seguir/deixar de seguir com vínculo único por par e regras
-   para seguir a si mesmo e consultar relações.
-2. Implementar feed e descoberta paginados e autenticados, mostrando avaliações
-   atuais; edição não multiplica publicações e exclusão retira conteúdo.
-3. Integrar frontend: conta, busca, álbum/faixa, avaliação, histórico, perfis
-   e comunidade. Explicar visibilidade antes de salvar e diferenciar nota
-   pessoal, média e quantidade; manter acesso aos dados próprios em falhas.
-4. Homologar estados de erro/vazio/carregamento, 360 px/desktop, teclado e
-   critérios de aceite do PRD.
-5. Preparar deploy/piloto: migrations controladas, backups, retenção,
-   exclusão de conta, controle de convites/acesso e feedback dos amigos.
+1. Implementar feed e descoberta paginados e autenticados. Feed usa avaliações
+   atuais das pessoas seguidas; descoberta usa a comunidade. Edição não cria
+   publicações extras e exclusão retira o conteúdo. Mudanças nos vínculos devem
+   se refletir na próxima consulta do feed.
+2. Integrar frontend: conta, busca, álbum/faixa, avaliação, histórico, perfis,
+   estado/listas de relações e comunidade. Explicar visibilidade antes de
+   salvar e diferenciar nota pessoal, média e quantidade.
+3. Homologar erro/vazio/carregamento, 360 px/desktop, teclado e critérios de
+   aceite do PRD.
+4. Preparar deploy/piloto: migrations controladas, backups, retenção,
+   exclusão de conta (incluindo relações), controle de convites/acesso e feedback.
 
-Não reintroduzir diário nem antecipar Premium. O MVP completo ainda
-depende dos recursos sociais, frontend e homologação.
+Não reintroduzir diário nem antecipar Premium. O MVP completo ainda depende
+de feed, descoberta, frontend e homologação.
 
 ## Histórico de commits relevantes
 
@@ -350,5 +376,5 @@ limpeza global do Docker para repetir testes. O procedimento específico de
 recuperação e o builder isolado estão em Mensageria.
 
 O projeto ainda não está integralmente homologado como MVP. Avaliações,
-histórico e médias foram implementados; a continuidade é **relações sociais,
-feed e descoberta**.
+histórico, médias e relações foram implementados; a continuidade é **feed e
+descoberta**.
