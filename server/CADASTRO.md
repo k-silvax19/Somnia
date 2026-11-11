@@ -37,7 +37,7 @@ das contas existentes antes de mudar a política de login.
 
 “Público” significa visível aos demais participantes autenticados. Não há
 consulta anônima nem decisão de indexação na internet. O controller de perfis
-declara autorização explicitamente; e-mail, preferências privadas e status de
+declara autorização explicitamente; e-mail, credenciais e status de
 processamento não entram na projeção pública.
 
 Continuam pendentes a política de exclusão de conta, retenção de dados e
