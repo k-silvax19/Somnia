@@ -8,8 +8,6 @@ public sealed class AtualizarPerfilRequest
 {
     private string? displayName;
     private string? bio;
-    private string? defaultScoreVisibility;
-    private string? defaultReviewVisibility;
 
     public string? DisplayName
     {
@@ -23,30 +21,13 @@ public sealed class AtualizarPerfilRequest
         set { bio = value; InformouBio = true; }
     }
 
-    public string? DefaultScoreVisibility
-    {
-        get => defaultScoreVisibility;
-        set { defaultScoreVisibility = value; InformouScoreVisibility = true; }
-    }
-
-    public string? DefaultReviewVisibility
-    {
-        get => defaultReviewVisibility;
-        set { defaultReviewVisibility = value; InformouReviewVisibility = true; }
-    }
-
     [JsonIgnore]
     public bool InformouDisplayName { get; private set; }
     [JsonIgnore]
     public bool InformouBio { get; private set; }
-    [JsonIgnore]
-    public bool InformouScoreVisibility { get; private set; }
-    [JsonIgnore]
-    public bool InformouReviewVisibility { get; private set; }
 
     public AlteracaoPerfil ToAlteracao()
     {
-        return new AlteracaoPerfil(DisplayName, InformouDisplayName, Bio, InformouBio,
-            DefaultScoreVisibility, InformouScoreVisibility, DefaultReviewVisibility, InformouReviewVisibility);
+        return new AlteracaoPerfil(DisplayName, InformouDisplayName, Bio, InformouBio);
     }
 }

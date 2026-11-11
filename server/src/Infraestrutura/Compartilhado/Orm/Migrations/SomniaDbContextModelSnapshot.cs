@@ -256,6 +256,67 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Somnia.Dominio.Modulos.Avaliacoes.Avaliacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Review")
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "CreatedAt", "Id")
+                        .IsDescending(false, true, true);
+
+                    b.HasIndex("UsuarioId", "Provider", "Type", "ExternalId")
+                        .IsUnique();
+
+                    b.HasIndex("Provider", "Type", "ExternalId", "CreatedAt", "Id");
+
+                    b.ToTable("Avaliacoes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Avaliacoes_Conteudo", "[Score] IS NOT NULL OR LEN(LTRIM(RTRIM([Review]))) > 0 AND [Review] IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_Avaliacoes_Provider", "[Provider] IN ('spotify', 'simulated')");
+
+                            t.HasCheckConstraint("CK_Avaliacoes_Score", "[Score] IS NULL OR [Score] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_Avaliacoes_Type", "[Type] IN ('album', 'track')");
+                        });
+                });
+
             modelBuilder.Entity("Somnia.Infraestrutura.Compartilhado.Orm.AvatarUsuario", b =>
                 {
                     b.Property<Guid>("UsuarioId")
@@ -387,16 +448,6 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DefaultReviewVisibility")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("DefaultScoreVisibility")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -505,6 +556,15 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                     b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Somnia.Dominio.Modulos.Avaliacoes.Avaliacao", b =>
+                {
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

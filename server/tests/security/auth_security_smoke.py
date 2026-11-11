@@ -18,6 +18,7 @@ import zlib
 from contextlib import closing
 from http.cookies import SimpleCookie
 from pathlib import Path
+from avaliacoes_smoke import validar_avaliacoes
 
 api = Path(__file__).resolve().parents[2] / 'src' / 'Api'
 worker_path = api.parent / 'Worker'
@@ -322,7 +323,7 @@ try:
     assert request('GET', '/api/me', session=original)[0] == 200
     mine = request('GET', '/api/me', session=original)[1]
     assert mine['displayName'] == 'Security'
-    assert mine['defaultScoreVisibility'] == mine['defaultReviewVisibility'] == 'private'
+    assert 'defaultScoreVisibility' not in mine and 'defaultReviewVisibility' not in mine
     assert request('GET', '/api/users/security')[0] == 401
     assert request('PATCH', '/api/me/profile', {'bio': 'anonymous'})[0] == 401
     bob_registration = dict(registration, email='bob@example.com', username='bob', displayName='Bob')
@@ -345,9 +346,9 @@ try:
         assert 'AspNetUsers' not in json.dumps(internal) and parts['Password'] not in json.dumps(internal)
     finally:
         sql(f"USE [{database}]; EXEC sp_rename 'AspNetUsers_ErrorProbe', 'AspNetUsers';")
-    status, updated = request('PATCH', '/api/me/profile', {'bio': 'Minha bio', 'defaultScoreVisibility': 'public'}, session=original)
+    status, updated = request('PATCH', '/api/me/profile', {'bio': 'Minha bio'}, session=original)
     assert status == 200 and updated['bio'] == 'Minha bio'
-    assert updated['defaultScoreVisibility'] == 'public' and updated['defaultReviewVisibility'] == 'private'
+    assert 'defaultScoreVisibility' not in updated and 'defaultReviewVisibility' not in updated
     status, public = request('GET', '/api/users/SECURITY', session=bob)
     assert status == 200 and public['bio'] == 'Minha bio'
     assert set(public) == {'username', 'displayName', 'bio', 'avatarUrl'}, 'Private profile fields leaked'
@@ -361,7 +362,7 @@ try:
     assert request('PATCH', '/api/me/profile', {'displayName': None}, session=original)[0] == 400
     assert request('PATCH', '/api/me/profile', {}, session=original)[0] == 400
     status, cleared = request('PATCH', '/api/me/profile', {'bio': None}, session=original)
-    assert status == 200 and cleared['bio'] is None and cleared['defaultScoreVisibility'] == 'public'
+    assert status == 200 and cleared['bio'] is None
     assert request('GET', '/api/users/security', session=bob)[1]['bio'] is None
     assert request('GET', '/api/users/missing', session=bob)[0] == 404
 
@@ -410,6 +411,7 @@ try:
     assert request('GET', search_path, session=bob)[0] == 200, 'Catalog rate limit leaked to another user'
     assert request('GET', '/api/me', session=original)[0] == 200
     print('Catalog checks passed: authenticated endpoints, type isolation, pagination, album-track links, validation, controlled outage and per-user rate limit.', flush=True)
+    validar_avaliacoes(request, sql, database, env, restart_api, original, bob)
 
     if os.environ.get('SOMNIA_TEST_SPOTIFY_LIVE') == '1':
         env['MusicCatalog__Provider'] = 'Spotify'
@@ -568,7 +570,14 @@ try:
     assert 429 in throttled, 'Login rate limit not enforced'
     paths = request('GET', '/openapi/v1.json')[1]['paths']
     assert '/auth/login' not in paths and '/api/v1/auth/login' not in paths
-    print('Security checks passed: authentication, profile privacy, catalog, async RabbitMQ avatar consumer, broker-offline outbox, worker restart, invalid/APNG rejection, metadata stripping, supersession, duplicate delivery, deletion cancellation, attempt limits and rate limiting.')
+    print('Security checks passed: authentication, profile privacy, reviews, catalog, async RabbitMQ avatar consumer, broker-offline outbox, worker restart, invalid/APNG rejection, metadata stripping, supersession, duplicate delivery, deletion cancellation, attempt limits and rate limiting.')
+except Exception:
+    log.seek(0)
+    diagnostic = log.read().decode(errors='replace')[-10000:]
+    for secret in (parts['Password'], env['Jwt__SigningKey'], rabbit_password):
+        diagnostic = diagnostic.replace(secret, '[redacted]')
+    print(diagnostic, flush=True)
+    raise
 finally:
     stop_worker()
     process.terminate()

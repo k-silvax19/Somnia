@@ -27,10 +27,6 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
             usuario.Nome = alteracao.DisplayName!.Trim();
         if (alteracao.AlterarBio)
             usuario.Bio = string.IsNullOrWhiteSpace(alteracao.Bio) ? null : alteracao.Bio.Trim();
-        if (alteracao.AlterarScoreVisibility)
-            usuario.DefaultScoreVisibility = alteracao.DefaultScoreVisibility == "public" ? Visibilidade.Publica : Visibilidade.Privada;
-        if (alteracao.AlterarReviewVisibility)
-            usuario.DefaultReviewVisibility = alteracao.DefaultReviewVisibility == "public" ? Visibilidade.Publica : Visibilidade.Privada;
 
         await db.SaveChangesAsync(ct);
         return PerfilMapper.Privado(usuario);

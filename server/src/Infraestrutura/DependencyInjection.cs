@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Somnia.Dominio.Compartilhado;
 using Somnia.Dominio.Modulos.Perfis;
+using Somnia.Dominio.Modulos.Avaliacoes;
+using Somnia.Infraestrutura.Modulos.Avaliacoes;
 using Somnia.Infraestrutura.Modulos.Perfis;
 using Somnia.Infraestrutura.Compartilhado.Auth;
 using Somnia.Infraestrutura.Compartilhado.Orm;
@@ -45,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokens, RefreshTokensEmOrm>();
         services.AddScoped<IRepositorioPerfil, RepositorioPerfilEmOrm>();
         services.AddScoped<IRepositorioAvatar, RepositorioAvatarEmOrm>();
+        services.AddScoped<IRepositorioAvaliacao, RepositorioAvaliacaoEmOrm>();
 
         return services;
     }
