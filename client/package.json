@@ -3,13 +3,15 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "node scripts/setup-https.mjs",
     "start": "ng serve",
+    "start:e2e": "ng serve --configuration e2e --port 4300",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:e2e": "playwright test",
     "test:e2e:api": "python e2e/run-real-api.py",
-    "format:check": "prettier --check src e2e playwright.config.ts *.json *.md"
+    "format:check": "prettier --check src e2e scripts playwright.config.ts *.json *.md"
   },
   "private": true,
   "engines": {

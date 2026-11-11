@@ -21,10 +21,12 @@ npm ci
 npm start
 ```
 
-Abra **https://localhost:4200**. O servidor Angular usa certificado local
-autossinado; permita esse certificado somente no ambiente local ou configure
-`ng serve --ssl-cert .certs/localhost.pem --ssl-key .certs/localhost-key.pem`
-com um certificado local confiável. `.certs` não é versionado.
+Abra **https://localhost:4200**. Antes de iniciar o Angular, `npm start` prepara
+o certificado HTTPS de desenvolvimento do .NET e configura a confiança local.
+O Windows pode pedir confirmação na primeira instalação do certificado.
+O Angular usa esse certificado em `.certs/localhost.pem` e sua chave local;
+`.certs` não é versionado. É necessário ter o SDK .NET instalado.
+Use `localhost` no endereço para corresponder ao certificado.
 
 `src/app/environments/environment.ts` conecta o Angular diretamente
 a `https://localhost:7201/api`, endereço HTTPS do perfil local da API. O CORS
@@ -32,7 +34,7 @@ da API já permite `https://localhost:4200`. Confie no certificado HTTPS local
 do .NET com `dotnet dev-certs https --trust`; os cookies `__Host-` exigem HTTPS.
 Não coloque segredos do backend no frontend.
 
-`environment.ts` usa `/api` para uma hospedagem na mesma origem. Testes de
+`environment.production.ts` usa `/api` para uma hospedagem na mesma origem. Testes de
 navegador também usam `/api`; o servidor de teste encaminha essa rota para a
 API isolada em `https://localhost:7301`.
 

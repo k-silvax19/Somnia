@@ -85,7 +85,9 @@
               "buildTarget": "somnia:build:production"
             },
             "development": {
-              "buildTarget": "somnia:build:development"
+              "buildTarget": "somnia:build:development",
+              "sslCert": ".certs/localhost.pem",
+              "sslKey": ".certs/localhost.key"
             },
             "e2e": {
               "buildTarget": "somnia:build:e2e",

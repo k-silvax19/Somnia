@@ -16,7 +16,7 @@ export default defineConfig({
     channel: process.env['PLAYWRIGHT_CHANNEL'],
   },
   webServer: {
-    command: 'npm start -- --configuration e2e --port 4300',
+    command: 'npm run start:e2e',
     url: 'https://localhost:4300',
     ignoreHTTPSErrors: true,
     reuseExistingServer: false,
