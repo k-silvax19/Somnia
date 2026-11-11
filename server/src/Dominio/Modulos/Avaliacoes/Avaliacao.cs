@@ -52,6 +52,8 @@ public interface IRepositorioAvaliacao
     Task<bool> ExcluirAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task<PaginaAvaliacoesDto?> ListarPerfilAsync(string username, int limit, int offset, CancellationToken ct);
     Task<AvaliacoesItemDto> ListarItemAsync(ReferenciaItem item, Guid usuarioId, int limit, int offset, CancellationToken ct);
+    Task<PaginaAvaliacoesDto> ListarFeedAsync(Guid usuarioId, int limit, int offset, CancellationToken ct);
+    Task<PaginaAvaliacoesDto> ListarDescobertaAsync(int limit, int offset, CancellationToken ct);
 }
 
 public static class RegrasAvaliacao

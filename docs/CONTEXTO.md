@@ -7,8 +7,8 @@ etapa para não confundir requisitos planejados com código já entregue.
 ## Ponto de retomada
 
 **Autenticação, perfis, avatar assíncrono, catálogo Spotify, avaliações,
-médias, histórico no perfil e seguir/deixar de seguir estão implementados.
-Próxima etapa: feed das pessoas seguidas e descoberta da comunidade.**
+médias, histórico, relações, feed e descoberta estão implementados no backend.
+Próxima etapa: frontend integrado e homologação dos fluxos do MVP.**
 
 O diário privado permanece fora do escopo. Não criar entidade de escuta,
 datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
@@ -22,7 +22,7 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 | Médias e quantidade de notas | Calculadas no SQL a partir das notas atuais |
 | Histórico no perfil | Implementado, paginado e com desempate estável |
 | Seguir/deixar de seguir, contagens e listas | Implementados |
-| Feed e descoberta | Não implementados |
+| Feed e descoberta | Implementados, autenticados e paginados |
 | Frontend integrado e deploy | Pendentes |
 | Premium | Fora da entrega do MVP gratuito |
 
@@ -32,10 +32,9 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 - Entregar mudanças por pull requests para revisão do usuário, em branches
   próprias, sem fazer merge automaticamente. Commits são a base técnica dos
   PRs; usar `add: descrição em português` e `fix: descrição em português`.
-- Base desta entrega: `origin/feat/avaliacoes`, onde os PRs #1 e #2 já foram
-  integrados pelo usuário. Nova branch: `feat/seguir-perfis`; PR com base
-  `feat/avaliacoes` para preservar código e documentação revisados.
-  `v3/catalogo` contém o código do PR #1, mas ainda não a documentação do #2.
+- Base desta entrega: `origin/feat/avaliacoes`, onde os PRs #1, #2 e #3 já
+  foram integrados pelo usuário. Nova branch: `feat/feed-descoberta`; abrir PR
+  para `feat/avaliacoes`, preservando as entregas revisadas.
   Conferir branch e `git status` ao retomar.
 - Seguir a organização das quatro camadas já existentes. O Worker é um host
   separado; não substitui essa separação.
@@ -60,6 +59,7 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 | [Catálogo](../server/CATALOGO.md) | Spotify, configuração, limites e verificação |
 | [Avaliações](../server/AVALIACOES.md) | CRUD, histórico, média e compatibilidade |
 | [Relações](../server/RELACOES.md) | Seguir perfis, listas, contagens e regras |
+| [Comunidade](../server/COMUNIDADE.md) | Feed e descoberta: contratos, ordenação e atualização |
 
 Arquivos externos usados como referência:
 
@@ -326,22 +326,43 @@ o acesso que existia naquele momento, sem garantir quotas futuras.
 - Escolhas operacionais: idempotência, proibição de auto-seguimento, limites
   e ordenação das listas, documentadas em [Relações](../server/RELACOES.md).
 
+## Entrega de feed e descoberta em 11/11/2026
+
+- `GET /api/feed`: avaliações atuais das pessoas seguidas pelo titular do JWT.
+  Inclui avaliações anteriores ao vínculo; não inclui as próprias.
+- `GET /api/discover`: avaliações de toda a comunidade, incluindo o titular,
+  pessoas seguidas e não seguidas. Sem ranking ou recursos Premium.
+- Ambos exigem JWT, usam `no-store`, `PaginaAvaliacoesDto`, limit 1–50 e
+  offset 0–10.000. Ordenação por criação/ID decrescentes; edição não muda posição.
+- Reutilizam o repositório e a paginação de avaliações. Feed filtra por EXISTS
+  nas relações. Sem tabela de publicações, filas, cache ou cópia de avaliações.
+- Alterações/exclusões e seguir/deixar de seguir refletem na próxima consulta.
+  Projeção usa nome atual do autor; sem dados de segurança da conta.
+- Sem dependência de Spotify/RabbitMQ. Referências externas continuam acessíveis
+  mesmo com catálogo desligado; metadados não são copiados pelo feed.
+- Migration `IndexarDescobertaAvaliacoes` adiciona índice global decrescente
+  em `(CreatedAt, Id)`; não altera tabelas/dados existentes além do índice.
+- Build Release sem avisos/erros; 176 testes unitários passaram e EF confirmou
+  modelo alinhado às migrations.
+- Smoke de comunidade passou com três participantes, seleção pelo JWT,
+  paginação/desempate, edição/exclusão, alterações de vínculos, nome atualizado,
+  resenha sem nota e catálogo desligado. A suíte completa HTTPS/SQL/RabbitMQ
+  também passou, incluindo regressões de avaliações, relações, avatar e mensageria.
+- Contratos e escolhas operacionais em [Comunidade](../server/COMUNIDADE.md).
+
 ## Próximos passos em ordem
 
-1. Implementar feed e descoberta paginados e autenticados. Feed usa avaliações
-   atuais das pessoas seguidas; descoberta usa a comunidade. Edição não cria
-   publicações extras e exclusão retira o conteúdo. Mudanças nos vínculos devem
-   se refletir na próxima consulta do feed.
-2. Integrar frontend: conta, busca, álbum/faixa, avaliação, histórico, perfis,
-   estado/listas de relações e comunidade. Explicar visibilidade antes de
-   salvar e diferenciar nota pessoal, média e quantidade.
-3. Homologar erro/vazio/carregamento, 360 px/desktop, teclado e critérios de
-   aceite do PRD.
-4. Preparar deploy/piloto: migrations controladas, backups, retenção,
-   exclusão de conta (incluindo relações), controle de convites/acesso e feedback.
+1. Integrar frontend: conta, busca, álbum/faixa, avaliação, histórico, perfis,
+   relações, feed e descoberta. Preservar dados digitados nos erros e mostrar
+   carregamento/vazios/indisponibilidade. Informar visibilidade antes de salvar
+   e diferenciar nota pessoal, média e quantidade.
+2. Homologar fluxos completos em 360 px/desktop e por teclado, foco/rótulos/erros,
+   e critérios de aceite do PRD. O backend entregue não homologa a experiência visual.
+3. Preparar deploy/piloto: migrations controladas, backups, retenção, exclusão
+   de conta (incluindo relações), convites/acesso, viabilidade do catálogo e feedback.
 
 Não reintroduzir diário nem antecipar Premium. O MVP completo ainda depende
-de feed, descoberta, frontend e homologação.
+de frontend, homologação e preparação do piloto.
 
 ## Histórico de commits relevantes
 
@@ -376,5 +397,5 @@ limpeza global do Docker para repetir testes. O procedimento específico de
 recuperação e o builder isolado estão em Mensageria.
 
 O projeto ainda não está integralmente homologado como MVP. Avaliações,
-histórico, médias e relações foram implementados; a continuidade é **feed e
-descoberta**.
+histórico, médias, relações, feed e descoberta foram implementados no backend;
+a continuidade é **frontend integrado e homologação**.

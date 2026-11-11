@@ -24,6 +24,7 @@ public sealed class AvaliacaoConfiguration : IEntityTypeConfiguration<Avaliacao>
         builder.Property(x => x.Review).HasMaxLength(RegrasAvaliacao.ResenhaMaxima);
         builder.HasIndex(x => new { x.UsuarioId, x.Provider, x.Type, x.ExternalId }).IsUnique();
         builder.HasIndex(x => new { x.UsuarioId, x.CreatedAt, x.Id }).IsDescending(false, true, true);
+        builder.HasIndex(x => new { x.CreatedAt, x.Id }).IsDescending(true, true);
         builder.HasIndex(x => new { x.Provider, x.Type, x.ExternalId, x.CreatedAt, x.Id });
         builder.HasOne<SomniaUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Cascade);
     }

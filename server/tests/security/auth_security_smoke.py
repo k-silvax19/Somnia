@@ -20,6 +20,7 @@ from http.cookies import SimpleCookie
 from pathlib import Path
 from avaliacoes_smoke import validar_avaliacoes
 from relacoes_smoke import validar_relacoes
+from comunidade_smoke import validar_comunidade
 
 api = Path(__file__).resolve().parents[2] / 'src' / 'Api'
 worker_path = api.parent / 'Worker'
@@ -125,6 +126,8 @@ def request(method, path, body=None, session=None, csrf=True, origin=None, clien
     payload = json.loads(content) if content and 'json' in response.headers.get('Content-Type', '') else content or {}
     if response.status >= 400:
         assert_problem(response, payload)
+    if response.status == 200 and path.split('?')[0] in ('/api/feed', '/api/discover'):
+        assert 'no-store' in response.headers.get('Cache-Control', '')
     if content and response.headers.get('Content-Type') == 'image/png':
         assert 'no-store' in response.headers.get('Cache-Control', '')
         assert response.headers.get('X-Content-Type-Options') == 'nosniff'
@@ -414,6 +417,7 @@ try:
     print('Catalog checks passed: authenticated endpoints, type isolation, pagination, album-track links, validation, controlled outage and per-user rate limit.', flush=True)
     validar_avaliacoes(request, sql, database, env, restart_api, original, bob)
     validar_relacoes(request, sql, database, restart_api, original, bob)
+    validar_comunidade(request, sql, database, env, restart_api, original, bob)
 
     if os.environ.get('SOMNIA_TEST_SPOTIFY_LIVE') == '1':
         env['MusicCatalog__Provider'] = 'Spotify'

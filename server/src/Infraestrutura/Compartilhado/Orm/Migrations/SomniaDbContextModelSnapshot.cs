@@ -297,6 +297,9 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt", "Id")
+                        .IsDescending();
+
                     b.HasIndex("UsuarioId", "CreatedAt", "Id")
                         .IsDescending(false, true, true);
 

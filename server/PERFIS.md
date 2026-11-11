@@ -133,7 +133,8 @@ do escopo da especificação técnica do MVP gratuito.
 - Histórico de avaliações já possui endpoint próprio, descrito em
   [AVALIACOES.md](AVALIACOES.md); sua apresentação no frontend está pendente.
 - Seguir/deixar de seguir, estado e listas têm endpoints próprios descritos em
-  [RELACOES.md](RELACOES.md). Feed e descoberta continuam pendentes.
+  [RELACOES.md](RELACOES.md). Feed e descoberta estão descritos em
+  [COMUNIDADE.md](COMUNIDADE.md); a interface permanece pendente.
 
 Os limites adotados nesta etapa são bio de até 300 e nome de exibição de
 1 a 256 caracteres. O PDF sugere o primeiro; o segundo é uma escolha de
@@ -148,7 +149,7 @@ HTTPS/SQL em `tests/security/auth_security_smoke.py` usa dois usuários e verifi
 titularidade, normalização do username, edição parcial, rejeição de preferências antigas e
 ausência de dados privados nas respostas públicas.
 
-A suíte possui 170 testes xUnit. A migration
+A suíte possui 176 testes xUnit. A migration
 `AdicionarAvatares` cria a imagem publicada; `ProcessarAvataresAssincronos`
 adiciona solicitações, versão atual do avatar e tabelas de outbox.
 
@@ -157,5 +158,5 @@ inválido, imagem truncada, GIF/APNG, metadados, acesso autenticado, titularidad
 substituição, remoção repetida e uploads concorrentes. O teste integrado
 também cobre o broker indisponível, reinícios e mensagens duplicadas/antigas,
 conforme [MENSAGERIA.md](MENSAGERIA.md). Avaliações foram implementadas em
-11/11/2026; seguir perfis também foi implementado. Feed, descoberta e homologação
-completa do MVP permanecem pendentes.
+11/11/2026; seguir perfis, feed e descoberta também foram implementados.
+Frontend e homologação completa do MVP permanecem pendentes.

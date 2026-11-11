@@ -150,4 +150,5 @@ completo HTTPS/SQL/RabbitMQ passaram. O modelo EF não tem alterações pendente
 em relação à migration versionada.
 
 Seguir perfis foi implementado em [RELACOES.md](RELACOES.md).
-Feed, descoberta, frontend e deploy continuam pendentes.
+Feed e descoberta foram implementados em [COMUNIDADE.md](COMUNIDADE.md).
+Frontend e deploy continuam pendentes.
