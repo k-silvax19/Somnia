@@ -2,7 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: process.env['SOMNIA_REAL_API'] ? 'auth.real.spec.ts' : 'auth.spec.ts',
+  testMatch: process.env['SOMNIA_REAL_API']
+    ? 'auth.real.spec.ts'
+    : ['auth.spec.ts', 'home.spec.ts'],
   fullyParallel: false,
   workers: 1,
   retries: 0,
