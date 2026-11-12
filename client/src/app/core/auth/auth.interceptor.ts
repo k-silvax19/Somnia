@@ -6,14 +6,14 @@ import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  // Credentials go only to safe API paths, or to the configured local HTTPS API.
-  const safeRelativeApiPath = /^\/api\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+(?:\?[^#]*)?$/;
-  const safeLocalApiUrl =
-    /^https:\/\/localhost:\d+\/api\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+(?:\?[^#]*)?$/;
-  const relativeApiRequest = safeRelativeApiPath.test(request.url);
-  const configuredLocalApiRequest =
-    request.url.startsWith(`${environment.apiUrl}/`) && safeLocalApiUrl.test(request.url);
-  if ((!relativeApiRequest && !configuredLocalApiRequest) || request.url.includes('/api/auth/'))
+  // Match the configured API exactly, including its path boundary. Usernames may contain dots.
+  if (!request.url.startsWith(`${environment.apiUrl}/`)) return next(request);
+  const path = request.url.slice(environment.apiUrl.length).split('?')[0];
+  if (
+    !/^\/(?:[a-zA-Z0-9._-]+\/)*[a-zA-Z0-9._-]+$/.test(path) ||
+    path.split('/').some((segment) => segment === '.' || segment === '..') ||
+    path.startsWith('/auth/')
+  )
     return next(request);
 
   const auth = inject(AuthService);

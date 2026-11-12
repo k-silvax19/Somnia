@@ -23,6 +23,11 @@ export const routes: Routes = [
     children: [
       {
         path: 'inicio',
+        title: 'Início · Somnia',
+        loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),
+      },
+      {
+        path: 'conta',
         title: 'Sua conta · Somnia',
         loadComponent: () => import('./features/account/account-page').then((m) => m.AccountPage),
       },

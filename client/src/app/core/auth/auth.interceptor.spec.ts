@@ -35,6 +35,16 @@ describe('authInterceptor', () => {
   });
   afterEach(() => http.verify());
 
+  it('authenticates profile paths containing valid username punctuation', async () => {
+    const url = `${environment.apiUrl}/users/ana.teste-1/connections`;
+    const result = firstValueFrom(client.get(url));
+    await Promise.resolve();
+    const request = http.expectOne(url);
+    expect(request.request.headers.get('Authorization')).toBe('Bearer private-token');
+    request.flush({});
+    await result;
+  });
+
   it('adds bearer only after the session is ready', async () => {
     const url = `${environment.apiUrl}/me`;
     const response = firstValueFrom(client.get(url));

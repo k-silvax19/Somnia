@@ -19,6 +19,12 @@ async function mockApi(context: BrowserContext) {
     if (path === '/api/me') {
       expect(request.headers()['authorization']).toBe('Bearer fake-access-token');
       await route.fulfill({ json: account });
+    } else if (path === '/api/feed' || path === '/api/discover' || path.endsWith('/reviews')) {
+      expect(request.headers()['authorization']).toBe('Bearer fake-access-token');
+      await route.fulfill({ json: { items: [], total: 0, offset: 0, limit: 10, hasMore: false } });
+    } else if (path.endsWith('/connections')) {
+      expect(request.headers()['authorization']).toBe('Bearer fake-access-token');
+      await route.fulfill({ json: { isFollowing: false, followersCount: 0, followingCount: 0 } });
     } else if (path === '/api/auth/register') {
       expect(request.headers()['x-somnia-client']).toBe('web');
       await route.fulfill({ status: 201, json: account });
@@ -62,7 +68,7 @@ async function enter(page: Page) {
   await page.getByLabel('E-mail', { exact: true }).fill(account.email);
   await page.getByLabel('Senha', { exact: true }).fill('Password123!');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Olá, Ana Teste.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Seu universo musical' })).toBeVisible();
 }
 
 test('direct URL, login, reload restoration, guest guard and logout', async ({ page, context }) => {
