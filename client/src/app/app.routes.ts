@@ -22,6 +22,11 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       {
+        path: 'musica/:provider/:type/:externalId',
+        title: 'Detalhes e avaliações · Somnia',
+        loadComponent: () => import('./features/music/music-page').then((m) => m.MusicPage),
+      },
+      {
         path: 'inicio',
         title: 'Início · Somnia',
         loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),

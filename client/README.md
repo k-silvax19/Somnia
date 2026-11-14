@@ -1,7 +1,7 @@
 # Somnia — frontend
 
 Frontend Angular 22, standalone, com Reactive Forms, signals e SCSS. Esta entrega
-implementa **autenticação, guards e tela inicial**, seguindo as cores carvão e âmbar da
+implementa **autenticação, início, detalhes musicais e avaliações**, seguindo as cores carvão e âmbar da
 referência visual. O projeto é uma demo/TCC da Academia do Programador.
 
 ## Executar
@@ -44,13 +44,14 @@ Este PR não publica a aplicação nem configura hospedagem.
 
 ## Rotas e comportamento
 
-| Rota                      | Acesso           | Comportamento                                                          |
-| ------------------------- | ---------------- | ---------------------------------------------------------------------- |
-| `/entrar`                 | `guestGuard`     | Login por e-mail/senha; autenticado segue para `/inicio`               |
-| `/cadastro`               | `guestGuard`     | Nome, username, e-mail, senha e confirmação; retorna ao login após 201 |
-| `/inicio`                 | `authGuard`      | Feed, descoberta, busca musical e resumo da conta                      |
-| `/conta`                  | `authGuard`      | Consulta da conta e logout global                                      |
-| `/` e rotas desconhecidas | redirecionamento | Passam por `/inicio` e suas guards                                     |
+| Rota                                  | Acesso           | Comportamento                                                          |
+| ------------------------------------- | ---------------- | ---------------------------------------------------------------------- |
+| `/entrar`                             | `guestGuard`     | Login por e-mail/senha; autenticado segue para `/inicio`               |
+| `/cadastro`                           | `guestGuard`     | Nome, username, e-mail, senha e confirmação; retorna ao login após 201 |
+| `/inicio`                             | `authGuard`      | Feed, descoberta, busca musical e resumo da conta                      |
+| `/conta`                              | `authGuard`      | Consulta da conta e logout global                                      |
+| `/musica/:provider/:type/:externalId` | `authGuard`      | Detalhes de álbum/faixa, comunidade e avaliação do titular             |
+| `/` e rotas desconhecidas             | redirecionamento | Passam por `/inicio` e suas guards                                     |
 
 O grupo privado usa `canActivate` e `canActivateChild`. Novas páginas privadas
 devem entrar nesse grupo. As guards aguardam restauração antes de renderizar a
@@ -80,13 +81,46 @@ pequenas, a navegação fica em um menu expansível e o resumo vem depois do fee
   O avatar do titular é carregado com Bearer como blob; o endereço temporário
   é revogado ao sair. Autores dos cards usam iniciais, pois o feed não inclui avatar.
 - A busca consulta álbuns ou músicas com paginação e links oficiais Spotify.
-  Não há formulário para publicar avaliações, detalhes de item nem edição de
-  perfil nesta etapa. “Minha conta” abre a tela existente em `/conta`.
+  Títulos da busca e dos cards abrem os detalhes do item. “Minha conta” abre
+  a tela existente em `/conta`; edição de perfil permanece pendente.
 - Há estados de carregamento, vazio, falha e nova tentativa. Limites 429 no
   feed e na busca respeitam Retry-After, com fallback de 60 segundos.
 
 Capturas em `docs/home-desktop.png` e `docs/home-mobile.png` usam respostas
 controladas dos testes; esses participantes e avaliações não são dados de produção.
+
+## Detalhes e avaliações
+
+- A rota identifica o item por provedor, tipo e ID. Referências inválidas não
+  disparam consultas. Metadados de outro provedor são descartados. A página
+  mostra capa, artistas, link oficial Spotify, faixas do álbum e ligação da
+  música para seu álbum. Links internos funcionam na busca e no feed.
+- O catálogo e as avaliações carregam separadamente. Mesmo sem Spotify, a
+  consulta, edição e exclusão de avaliações continuam disponíveis; criar uma
+  avaliação depende da validação do item pelo backend.
+- A média comunitária tem uma casa decimal e informa a quantidade de notas.
+  Nota zero permanece zero; resenhas sem nota não entram na média. O formulário
+  mostra separadamente a avaliação pessoal, obtida de `myReview` pelo JWT.
+- Publicação usa POST `/reviews`; edição usa PUT com **ambos** os campos,
+  inclusive `null` para remover nota ou resenha. Nota inteira de 0 a 100,
+  resenha até 5.000 caracteres; ao menos um campo deve estar preenchido.
+- Exclusão usa DELETE somente depois de confirmação na própria tela.
+  Escritas enviam Bearer e `X-Somnia-Client: web`, sem replay automático.
+  A API continua sendo responsável por validar origem, autoria e duplicatas.
+- Falhas preservam o rascunho; erros de campos são apresentados. Duplicata
+  (`409`) pede carregamento explícito da avaliação existente antes da edição.
+  `429` e `503` bloqueiam novas tentativas por Retry-After (ou 60 segundos
+  quando o cabeçalho não é acessível). Cancelar edição ou sair da página
+  descarta o rascunho; ele não é salvo em storage do navegador.
+- Após salvar/excluir, a primeira página e o resumo são consultados novamente.
+  Falha nessa consulta é apresentada separadamente da confirmação de gravação.
+  Paginação deduplica por ID; trocar de item cancela consultas anteriores e
+  reinicia o formulário. Não há atualização automática entre abas nem controle
+  de versão: edições simultâneas seguem a última gravação, conforme a API.
+
+Capturas `docs/music-desktop.png` e `docs/music-mobile.png` usam dados fictícios
+dos testes. Perfis públicos, histórico no perfil e seguir/deixar de seguir
+permanecem como próximas telas.
 
 ## Sessão
 
@@ -107,7 +141,7 @@ controladas dos testes; esses participantes e avaliações não são dados de pr
   falha de rede. `401` protegido também encerra o estado local, sem replay de POST.
 - Falha de logout não é apresentada como revogação bem-sucedida; a tela permite
   tentar novamente. `429` em login/cadastro bloqueia o envio por `Retry-After`.
-- O interceptor só acrescenta Bearer às rotas relativas `/api/...` permitidas.
+- O interceptor só acrescenta Bearer às rotas permitidas da API configurada no environment.
   Chamadas auth usam um HttpClient separado para evitar recursão de refresh.
 
 ## Verificar
@@ -125,6 +159,10 @@ expiração, CSRF, falhas sem retry, logout e restrição do interceptor. Os tes
 Playwright usam respostas controladas exclusivamente em `e2e`, cobrindo cadastro,
 login, recarga, navegação direta, sessão expirada, erros, teclado, 360 px e abas.
 O workflow `frontend.yml` executa build, formatação, unitários e navegador.
+Os testes de detalhes cobrem CRUD, nota zero, resenha sem nota, texto escapado,
+falhas, duplicatas, limites, navegação entre itens e paginação. O teste integrado
+executa o CRUD pela interface contra HTTPS/SQL reais e catálogo simulado,
+sem criar avaliações no banco de desenvolvimento nem consumir quota Spotify.
 
 Para usar o Edge já instalado no Windows:
 

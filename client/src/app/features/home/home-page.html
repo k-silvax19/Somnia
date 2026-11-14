@@ -163,7 +163,11 @@
               }
               <div>
                 <span class="result-type">{{ item.type === 'album' ? 'Álbum' : 'Música' }}</span>
-                <h3>{{ item.title }}</h3>
+                <h3>
+                  <a [routerLink]="['/musica', item.provider, item.type, item.externalId]">{{
+                    item.title
+                  }}</a>
+                </h3>
                 <p>{{ item.artists.join(', ') }}</p>
                 @if (spotifyUrl(item); as url) {
                   <a [href]="url" target="_blank" rel="noopener noreferrer"

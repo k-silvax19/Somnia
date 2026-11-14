@@ -1,0 +1,225 @@
+:host {
+  display: block;
+}
+.hero {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr) 10rem;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem 0 2.5rem;
+}
+.artwork {
+  aspect-ratio: 1;
+  background: #252b2f;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  color: #bda078;
+}
+.artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.artwork app-icon {
+  width: 4rem;
+  height: 4rem;
+}
+h1 {
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0.7rem 0 1rem;
+  overflow-wrap: anywhere;
+}
+.artists {
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+.album {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.spotify {
+  display: inline-block;
+  margin-top: 0.7rem;
+  font-size: 0.85rem;
+}
+.rating {
+  border-left: 1px solid var(--border);
+  padding: 1rem 0 1rem 1.5rem;
+  text-align: center;
+}
+.rating span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+.rating strong {
+  display: block;
+  font-size: 3.4rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0.3rem 0;
+}
+.rating p {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 0.7fr);
+  gap: 2rem;
+  align-items: start;
+}
+.listening {
+  min-width: 0;
+}
+h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+.tracks {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.4rem;
+  margin-bottom: 2rem;
+}
+.tracks ol {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  max-height: 30rem;
+  overflow-y: auto;
+}
+.tracks a {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 0.3rem;
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.tracks a:hover {
+  background: #262b30;
+}
+.tracks a > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tracks strong {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.tracks small {
+  display: block;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+.track-number {
+  color: var(--muted);
+  font-size: 0.8rem;
+  min-width: 1.5rem;
+}
+.tracks app-icon {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 1rem;
+  color: var(--accent);
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+.refresh {
+  background: transparent;
+  color: var(--accent);
+  border: 0;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+app-review-card {
+  display: block;
+  margin-bottom: 1rem;
+}
+.empty {
+  text-align: center;
+  border: 1px dashed #454b51;
+  border-radius: 1rem;
+  padding: 2rem 1rem;
+}
+.empty app-icon {
+  color: var(--accent);
+}
+.empty h3 {
+  font-size: 1.05rem;
+}
+.empty p,
+.status {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.more {
+  display: flex;
+  margin: 1.5rem auto;
+}
+@media (max-width: 900px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  .your-review {
+    grid-row: 1;
+  }
+  .hero {
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: 1.3rem;
+  }
+  .rating {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    padding: 1rem 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    flex-wrap: wrap;
+  }
+  .rating strong {
+    font-size: 2rem;
+  }
+}
+@media (max-width: 480px) {
+  .hero {
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1.5rem 0;
+  }
+  h1 {
+    font-size: 1.65rem;
+  }
+  .artists {
+    font-size: 0.9rem;
+  }
+  .tracks {
+    padding: 1rem;
+  }
+  .details-grid {
+    gap: 1.5rem;
+  }
+}
