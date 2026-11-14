@@ -68,7 +68,11 @@ async function enter(page: Page) {
   await page.getByLabel('E-mail', { exact: true }).fill(account.email);
   await page.getByLabel('Senha', { exact: true }).fill('Password123!');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Seu universo musical' })).toBeVisible();
+  // The login hero also starts with "Seu universo musical"; wait for authenticated navigation.
+  await expect(page).toHaveURL(/\/inicio$/);
+  await expect(
+    page.getByRole('heading', { name: 'Seu universo musical', exact: true }),
+  ).toBeVisible();
 }
 
 test('direct URL, login, reload restoration, guest guard and logout', async ({ page, context }) => {
@@ -78,19 +82,7 @@ test('direct URL, login, reload restoration, guest guard and logout', async ({ p
   expect(calls).toHaveLength(0);
   await enter(page);
   await page.reload();
-  await expect(page.getByText('@ana.teste', { exact: true }))
-    .toBeVisible()
-    .catch(async (error) => {
-      console.error(
-        '[DEBUG-auth-reload]',
-        JSON.stringify({
-          path: new URL(page.url()).pathname,
-          content: await page.locator('main').innerText(),
-          calls: calls.map((call) => call.path),
-        }),
-      );
-      throw error;
-    });
+  await expect(page.getByText('@ana.teste', { exact: true })).toBeVisible();
   expect(calls.filter((call) => call.path.endsWith('/refresh'))).toHaveLength(1);
   await page.goto('/cadastro');
   await expect(page).toHaveURL(/\/inicio$/);
