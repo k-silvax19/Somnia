@@ -1,10 +1,11 @@
 import { Component, computed, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Icon } from '../../shared/icon';
 import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
 
 @Component({
   selector: 'app-review-card',
-  imports: [Icon],
+  imports: [Icon, RouterLink],
   template: `
     <article>
       <header>
@@ -40,7 +41,21 @@ import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
             <div>
               <p class="type">{{ review().item.type === 'album' ? 'Álbum' : 'Música' }}</p>
               <h2>
-                {{ item()?.title || (pending() ? 'Carregando título…' : 'Título indisponível') }}
+                @if (linkToItem()) {
+                  <a
+                    [routerLink]="[
+                      '/musica',
+                      review().item.provider,
+                      review().item.type,
+                      review().item.externalId,
+                    ]"
+                    >{{
+                      item()?.title || (pending() ? 'Carregando título…' : 'Título indisponível')
+                    }}</a
+                  >
+                } @else {
+                  {{ item()?.title || (pending() ? 'Carregando título…' : 'Título indisponível') }}
+                }
               </h2>
               @if (item(); as music) {
                 <p class="artist">{{ music.artists.join(', ') || 'Artista não informado' }}</p>
@@ -89,6 +104,7 @@ export class ReviewCard {
   readonly review = input.required<Review>();
   readonly item = input<MusicItem | null>(null);
   readonly pending = input(false);
+  readonly linkToItem = input(true);
   protected readonly expanded = signal(false);
   protected readonly imageFailed = signal(false);
   protected readonly cover = computed(() => coverUrl(this.item()?.coverUrl ?? null));

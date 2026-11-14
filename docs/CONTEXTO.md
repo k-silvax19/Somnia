@@ -360,17 +360,20 @@ o acesso que existia naquele momento, sem garantir quotas futuras.
 
 ## Próximos passos em ordem
 
-### Atualização de frontend — 12/11/2026
+### Atualização de frontend — 14/11/2026
 
 Autenticação Angular concluída no PR #5. A tela `/inicio` agora integra feed,
 descoberta, paginação, busca de álbuns/músicas e resumo da conta, seguindo a
 referência carvão/âmbar. `/conta` preserva a consulta do titular. Metadados são
-obtidos separadamente; falha do catálogo não esconde avaliações. Detalhes de
-item, publicação/edição de avaliações, perfil e relações no frontend continuam
-como próximas entregas. Contrato e execução em [client/README.md](../client/README.md).
+obtidos separadamente; falha do catálogo não esconde avaliações.
+A rota `/musica/:provider/:type/:externalId` agora mostra detalhes de álbum/faixa,
+faixas e álbum relacionado, média comunitária, avaliações paginadas e formulário
+para publicar, editar e excluir a avaliação do titular. Edição/exclusão continuam
+disponíveis sem catálogo; falhas preservam o rascunho e exclusão exige confirmação.
+Contrato e execução em [client/README.md](../client/README.md).
 
-1. Concluir frontend: detalhes de álbum/faixa, publicação/edição de avaliação,
-   histórico, perfis e relações. Preservar dados digitados nos erros e mostrar
+1. Concluir frontend: histórico, perfis públicos, edição de perfil e relações.
+   Preservar dados digitados nos erros e mostrar
    carregamento/vazios/indisponibilidade. Informar visibilidade antes de salvar
    e diferenciar nota pessoal, média e quantidade.
 2. Homologar fluxos completos em 360 px/desktop e por teclado, foco/rótulos/erros,
@@ -415,5 +418,5 @@ recuperação e o builder isolado estão em Mensageria.
 
 O projeto ainda não está integralmente homologado. Avaliações, histórico,
 médias, relações, feed e descoberta foram implementados no backend. O frontend
-integra autenticação, início, busca e consultas da comunidade; a continuidade
-é **detalhes musicais, avaliações, perfis, relações e homologação**.
+integra autenticação, início, busca, detalhes, avaliações e consultas da comunidade;
+a continuidade é **perfis, histórico, relações e homologação**.

@@ -1,0 +1,140 @@
+<section class="editor" aria-labelledby="my-review-title">
+  <p class="eyebrow">SUA EXPERIÊNCIA</p>
+  <h2 id="my-review-title">Sua avaliação</h2>
+  <p class="hint">
+    Compartilhe uma nota, uma resenha ou as duas. Visível apenas para participantes autenticados.
+  </p>
+  @if (success()) {
+    <p class="message success" role="status">{{ success() }}</p>
+  }
+  @if (error()) {
+    <div class="message error" role="alert">
+      <p>{{ error() }}</p>
+      @for (field of ['score', 'review', 'catalog']; track field) {
+        @if (fields()[field]) {
+          <p>{{ fields()[field] }}</p>
+        }
+      }
+      @if (conflict()) {
+        <p>Ao atualizar, o rascunho deste formulário será descartado.</p>
+        <button class="button secondary" type="button" (click)="reload()">
+          Carregar avaliação existente
+        </button>
+      }
+    </div>
+  }
+  @if (current() && !editing()) {
+    <div class="saved">
+      <p class="score">
+        {{ current()!.score === null ? 'Sem nota' : current()!.score + ' / 100' }}
+      </p>
+      @if (current()!.review) {
+        <p class="review">{{ current()!.review }}</p>
+      }
+    </div>
+    @if (!confirming()) {
+      <div class="actions">
+        <button type="button" class="button primary" (click)="edit()" [disabled]="busy()">
+          Editar avaliação
+        </button>
+        <button
+          type="button"
+          class="button secondary"
+          (click)="confirming.set(true)"
+          [disabled]="busy()"
+        >
+          Excluir avaliação
+        </button>
+      </div>
+    } @else {
+      <div class="confirmation" role="group" aria-label="Confirmar exclusão">
+        <p>
+          Excluir sua avaliação? A nota e a resenha serão removidas. Essa ação não pode ser
+          desfeita.
+        </p>
+        <div class="actions">
+          <button
+            type="button"
+            class="button danger"
+            (click)="remove()"
+            [disabled]="busy() || refreshing() || wait() > 0 || conflict()"
+          >
+            {{ busy() ? 'Excluindo…' : 'Confirmar exclusão' }}
+          </button>
+          <button
+            type="button"
+            class="button secondary"
+            (click)="confirming.set(false)"
+            [disabled]="busy()"
+          >
+            Cancelar exclusão
+          </button>
+        </div>
+      </div>
+    }
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <fieldset [disabled]="busy()">
+        <label for="review-score">Nota <span>(opcional)</span></label>
+        <div class="score-field">
+          <input
+            id="review-score"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            formControlName="score"
+            aria-describedby="score-help score-error"
+            [attr.aria-invalid]="form.controls.score.touched && form.controls.score.invalid"
+          /><span>/ 100</span>
+        </div>
+        <p id="score-help" class="hint">
+          Um número inteiro de 0 a 100. Deixe vazio para publicar só a resenha.
+        </p>
+        <p id="score-error" class="validation">
+          @if (form.controls.score.touched && form.controls.score.invalid) {
+            Informe uma nota inteira entre 0 e 100.
+          }
+        </p>
+        <label for="review-text">Resenha <span>(opcional)</span></label>
+        <textarea
+          id="review-text"
+          rows="7"
+          maxlength="5000"
+          formControlName="review"
+          placeholder="O que você achou?"
+          aria-describedby="review-help review-error"
+          [attr.aria-invalid]="form.controls.review.touched && form.controls.review.invalid"
+        ></textarea>
+        <p id="review-help" class="hint counter">
+          {{ form.controls.review.value.length }} / 5.000 caracteres
+        </p>
+        <p id="review-error" class="validation">
+          @if (form.controls.review.touched && form.controls.review.invalid) {
+            A resenha pode ter até 5.000 caracteres.
+          }
+        </p>
+        @if (form.touched && form.hasError('empty')) {
+          <p class="validation" role="alert">Preencha uma nota ou escreva uma resenha.</p>
+        }
+        <div class="actions">
+          <button
+            class="button primary"
+            type="submit"
+            [disabled]="busy() || refreshing() || wait() > 0 || conflict()"
+          >
+            {{ busy() ? 'Salvando…' : editing() ? 'Salvar alterações' : 'Publicar avaliação' }}
+          </button>
+          @if (editing()) {
+            <button class="button secondary" type="button" (click)="cancel()">
+              Cancelar edição
+            </button>
+          }
+        </div>
+      </fieldset>
+    </form>
+  }
+  @if (wait()) {
+    <p class="hint" role="status">Aguarde {{ wait() }}s antes de tentar novamente.</p>
+  }
+</section>

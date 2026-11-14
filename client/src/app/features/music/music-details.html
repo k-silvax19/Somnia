@@ -1,0 +1,153 @@
+<section class="hero" aria-label="Detalhes musicais">
+  <div class="artwork">
+    @if (cover(); as url) {
+      @if (!imageFailed()) {
+        <img [src]="url" alt="" referrerpolicy="no-referrer" (error)="imageFailed.set(true)" />
+      } @else {
+        <app-icon name="music" />
+      }
+    } @else {
+      <app-icon name="music" />
+    }
+  </div>
+  <div class="identity">
+    <p class="eyebrow">{{ reference().type === 'album' ? 'ÁLBUM' : 'MÚSICA' }}</p>
+    <h1>
+      {{
+        item()?.title ||
+          (metadataLoading() ? 'Carregando detalhes…' : 'Item indisponível no catálogo')
+      }}
+    </h1>
+    @if (item(); as music) {
+      <p class="artists">{{ music.artists.join(', ') || 'Artista não informado' }}</p>
+      @if (music.album; as album) {
+        <p class="album">
+          Do álbum <a [routerLink]="musicRoute(album)">{{ album.title }}</a>
+        </p>
+      }
+      @if (music.tracks; as tracks) {
+        <p class="album">{{ tracks.length }} {{ tracks.length === 1 ? 'faixa' : 'faixas' }}</p>
+      }
+    }
+    @if (spotify(); as url) {
+      <a class="spotify" [href]="url" target="_blank" rel="noopener noreferrer"
+        >Abrir no Spotify ↗<span class="sr-only"> (nova aba)</span></a
+      >
+    }
+  </div>
+  <aside class="rating" aria-label="Média da comunidade">
+    <span>COMUNIDADE</span><strong>{{ average() }}</strong
+    ><span>de 100</span>
+    @if (summary(); as value) {
+      <p>{{ value.count }} {{ value.count === 1 ? 'nota' : 'notas' }}</p>
+    } @else {
+      <p>Média ainda não carregada</p>
+    }
+  </aside>
+</section>
+@if (metadataError()) {
+  <div class="message error" role="alert">
+    <p>{{ metadataError() }}</p>
+    <button
+      class="button secondary"
+      (click)="loadMetadata()"
+      [disabled]="metadataLoading() || catalogWait() > 0"
+    >
+      {{ catalogWait() ? 'Aguarde ' + catalogWait() + 's' : 'Tentar carregar catálogo' }}
+    </button>
+  </div>
+}
+<div class="details-grid">
+  <div class="listening">
+    @if (item()?.tracks; as tracks) {
+      <section class="tracks" aria-labelledby="tracks-title">
+        <h2 id="tracks-title">Faixas do álbum</h2>
+        <ol>
+          @for (track of tracks; track $index) {
+            <li>
+              <a [routerLink]="musicRoute(track)"
+                ><span class="track-number">{{ track.trackNumber }}</span
+                ><span
+                  ><strong>{{ track.title }}</strong
+                  ><small>{{ track.artists.join(', ') }}</small></span
+                ><app-icon name="arrow"
+              /></a>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+    <section class="community" aria-labelledby="community-title">
+      <div class="section-heading">
+        <h2 id="community-title">Avaliações da comunidade</h2>
+        <button
+          class="refresh"
+          (click)="loadReviews()"
+          [disabled]="loading() || writing() || reviewsWait() > 0"
+        >
+          Atualizar avaliações
+        </button>
+      </div>
+      @if (reviewError()) {
+        <div class="message error" role="alert">
+          <p>{{ reviewError() }}</p>
+          <button
+            class="button secondary"
+            (click)="loadReviews(retryAppend())"
+            [disabled]="loading() || writing() || reviewsWait() > 0"
+          >
+            {{ reviewsWait() ? 'Aguarde ' + reviewsWait() + 's' : 'Tentar carregar avaliações' }}
+          </button>
+        </div>
+      }
+      @for (review of reviews(); track review.id) {
+        <app-review-card
+          [review]="review"
+          [item]="item()"
+          [pending]="metadataLoading()"
+          [linkToItem]="false"
+        />
+      }
+      @if (loading()) {
+        <p class="status" role="status">
+          <span class="spinner" aria-hidden="true"></span>Carregando avaliações…
+        </p>
+      } @else if (loaded() && !reviews().length && !reviewError()) {
+        <div class="empty">
+          <app-icon name="music" />
+          <h3>A primeira impressão pode ser sua</h3>
+          <p>Este item ainda não recebeu avaliações. Conte o que achou.</p>
+        </div>
+      }
+      @if (hasMore() && !reviewError()) {
+        <button
+          class="button secondary more"
+          (click)="loadReviews(true)"
+          [disabled]="loading() || writing()"
+        >
+          Carregar mais avaliações
+        </button>
+      }
+    </section>
+  </div>
+  <aside class="your-review" aria-label="Sua avaliação deste item">
+    @if (loaded()) {
+      <app-review-editor
+        [item]="reference()"
+        [current]="mine()"
+        [refreshing]="loading()"
+        (changed)="onChanged($event)"
+        (busyChange)="onBusy($event)"
+        (refresh)="loadReviews()"
+      />
+    } @else {
+      <p class="message">
+        {{
+          loading()
+            ? 'Carregando sua avaliação…'
+            : 'Carregue as avaliações para publicar ou editar a sua.'
+        }}
+      </p>
+    }
+  </aside>
+</div>

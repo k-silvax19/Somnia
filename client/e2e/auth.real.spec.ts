@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('real API: register, login, secure cookies, reload, two tabs and global logout', async ({
+test('real API: auth, review CRUD, album and track navigation, reload and global logout', async ({
   page,
   context,
 }) => {
@@ -31,28 +31,36 @@ test('real API: register, login, secure cookies, reload, two tabs and global log
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('E-mail ou senha incorretos');
   await page.getByLabel('Senha', { exact: true }).fill(password);
-  const loginResponse = page.waitForResponse(
-    (response) => response.url().endsWith('/api/auth/login') && response.status() === 200,
-  );
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
   await expect(page.getByText('Seu feed está começando')).toBeVisible();
-  const session = await (await loginResponse).json();
-  const reviewResponse = await context.request.post('https://localhost:7301/api/reviews', {
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`,
-      'X-Somnia-Client': 'web',
-      Origin: 'https://localhost:7301',
-    },
-    data: {
-      provider: 'simulated',
-      type: 'album',
-      externalId: 'somnia-demo-album-aurora',
-      score: 92,
-      review: 'Resenha do teste integrado da tela inicial.',
-    },
-  });
-  expect(reviewResponse.status()).toBe(201);
+  await page.getByRole('searchbox').fill('Somnia');
+  await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
+  await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: /Horizonte/ }).click();
+  await expect(page.getByRole('heading', { name: 'Horizonte', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await page.getByLabel('Nota (opcional)', { exact: true }).fill('0');
+  await page.getByRole('button', { name: 'Publicar avaliação' }).click();
+  await expect(page.getByText('Avaliação salva.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('0,0');
+  await page.getByRole('button', { name: 'Editar avaliação' }).click();
+  await page.getByLabel('Nota (opcional)', { exact: true }).fill('');
+  await page
+    .getByLabel('Resenha (opcional)', { exact: true })
+    .fill('Resenha sem nota no banco real.');
+  await page.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(page.getByText('Avaliação salva.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('0 notas');
+  await page.getByRole('button', { name: 'Editar avaliação' }).click();
+  await page.getByLabel('Nota (opcional)', { exact: true }).fill('92');
+  await page
+    .getByLabel('Resenha (opcional)', { exact: true })
+    .fill('Resenha do teste integrado da tela inicial.');
+  await page.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('92,0');
+  await page.getByRole('link', { name: 'Voltar ao início', exact: false }).click();
   await page.getByRole('button', { name: 'Descobrir', exact: true }).click();
   await expect(page.getByText('Resenha do teste integrado da tela inicial.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Aurora', exact: true })).toBeVisible();
@@ -60,6 +68,14 @@ test('real API: register, login, secure cookies, reload, two tabs and global log
   await page.getByRole('searchbox').fill('Somnia');
   await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Noturno', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await page.getByRole('button', { name: 'Excluir avaliação', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar exclusão', exact: true }).click();
+  await expect(page.getByText('Avaliação excluída.', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Publicar avaliação' })).toBeVisible();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('0 notas');
+  await page.getByRole('link', { name: 'Voltar ao início', exact: false }).click();
   const cookies = await context.cookies();
   expect(cookies.find((cookie) => cookie.name === '__Host-somnia-refresh')).toMatchObject({
     httpOnly: true,
