@@ -31,8 +31,35 @@ test('real API: register, login, secure cookies, reload, two tabs and global log
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('E-mail ou senha incorretos');
   await page.getByLabel('Senha', { exact: true }).fill(password);
+  const loginResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/auth/login') && response.status() === 200,
+  );
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+  await expect(page.getByText('Seu feed está começando')).toBeVisible();
+  const session = await (await loginResponse).json();
+  const reviewResponse = await context.request.post('https://localhost:7301/api/reviews', {
+    headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      'X-Somnia-Client': 'web',
+      Origin: 'https://localhost:7301',
+    },
+    data: {
+      provider: 'simulated',
+      type: 'album',
+      externalId: 'somnia-demo-album-aurora',
+      score: 92,
+      review: 'Resenha do teste integrado da tela inicial.',
+    },
+  });
+  expect(reviewResponse.status()).toBe(201);
+  await page.getByRole('button', { name: 'Descobrir', exact: true }).click();
+  await expect(page.getByText('Resenha do teste integrado da tela inicial.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Aurora', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Nota 92 de 100')).toBeVisible();
+  await page.getByRole('searchbox').fill('Somnia');
+  await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Noturno', exact: true })).toBeVisible();
   const cookies = await context.cookies();
   expect(cookies.find((cookie) => cookie.name === '__Host-somnia-refresh')).toMatchObject({
     httpOnly: true,

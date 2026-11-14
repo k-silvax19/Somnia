@@ -360,8 +360,17 @@ o acesso que existia naquele momento, sem garantir quotas futuras.
 
 ## Próximos passos em ordem
 
-1. Integrar frontend: conta, busca, álbum/faixa, avaliação, histórico, perfis,
-   relações, feed e descoberta. Preservar dados digitados nos erros e mostrar
+### Atualização de frontend — 12/11/2026
+
+Autenticação Angular concluída no PR #5. A tela `/inicio` agora integra feed,
+descoberta, paginação, busca de álbuns/músicas e resumo da conta, seguindo a
+referência carvão/âmbar. `/conta` preserva a consulta do titular. Metadados são
+obtidos separadamente; falha do catálogo não esconde avaliações. Detalhes de
+item, publicação/edição de avaliações, perfil e relações no frontend continuam
+como próximas entregas. Contrato e execução em [client/README.md](../client/README.md).
+
+1. Concluir frontend: detalhes de álbum/faixa, publicação/edição de avaliação,
+   histórico, perfis e relações. Preservar dados digitados nos erros e mostrar
    carregamento/vazios/indisponibilidade. Informar visibilidade antes de salvar
    e diferenciar nota pessoal, média e quantidade.
 2. Homologar fluxos completos em 360 px/desktop e por teclado, foco/rótulos/erros,
@@ -404,6 +413,7 @@ novo build Linux nessa etapa. Não apagar volumes de banco nem executar
 limpeza global do Docker para repetir testes. O procedimento específico de
 recuperação e o builder isolado estão em Mensageria.
 
-O projeto ainda não está integralmente homologado como MVP. Avaliações,
-histórico, médias, relações, feed e descoberta foram implementados no backend;
-a continuidade é **frontend integrado e homologação**.
+O projeto ainda não está integralmente homologado. Avaliações, histórico,
+médias, relações, feed e descoberta foram implementados no backend. O frontend
+integra autenticação, início, busca e consultas da comunidade; a continuidade
+é **detalhes musicais, avaliações, perfis, relações e homologação**.

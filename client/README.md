@@ -1,7 +1,7 @@
 # Somnia — frontend
 
 Frontend Angular 22, standalone, com Reactive Forms, signals e SCSS. Esta entrega
-implementa **somente autenticação e guards**, seguindo as cores carvão e âmbar da
+implementa **autenticação, guards e tela inicial**, seguindo as cores carvão e âmbar da
 referência visual. O projeto é uma demo/TCC da Academia do Programador.
 
 ## Executar
@@ -48,7 +48,8 @@ Este PR não publica a aplicação nem configura hospedagem.
 | ------------------------- | ---------------- | ---------------------------------------------------------------------- |
 | `/entrar`                 | `guestGuard`     | Login por e-mail/senha; autenticado segue para `/inicio`               |
 | `/cadastro`               | `guestGuard`     | Nome, username, e-mail, senha e confirmação; retorna ao login após 201 |
-| `/inicio`                 | `authGuard`      | Confirma a conta com `GET /api/me` e permite logout global             |
+| `/inicio`                 | `authGuard`      | Feed, descoberta, busca musical e resumo da conta                      |
+| `/conta`                  | `authGuard`      | Consulta da conta e logout global                                      |
 | `/` e rotas desconhecidas | redirecionamento | Passam por `/inicio` e suas guards                                     |
 
 O grupo privado usa `canActivate` e `canActivateChild`. Novas páginas privadas
@@ -56,8 +57,36 @@ devem entrar nesse grupo. As guards aguardam restauração antes de renderizar a
 página; são controle de navegação. A autorização continua sendo imposta pela API
 em cada chamada, inclusive para tokens revogados.
 
-Não há feed, catálogo, edição de perfil, avaliação nem recuperação de senha no
-frontend desta etapa. A tela após login mostra apenas dados reais da conta.
+## Tela inicial
+
+A composição segue `somnia-layout.jpg`: navegação lateral, fundo carvão,
+detalhes em âmbar, avaliações no centro e resumo da conta à direita. Em telas
+pequenas, a navegação fica em um menu expansível e o resumo vem depois do feed.
+
+- Seguindo consulta `/api/feed`; Descobrir consulta `/api/discover`.
+  As páginas têm dez avaliações, com ação para carregar mais. Duplicatas entre
+  páginas são descartadas pelo ID; respostas de abas anteriores são canceladas.
+- Títulos, artistas, capas e links são consultados no catálogo, com no máximo
+  três consultas de metadados simultâneas, cache de dois minutos limitado a
+  cem itens por instância da página e pausa após 429/503. A referência completa
+  `(provider, type, externalId)` identifica cada item. O cache guarda somente
+  campos usados no card, não as faixas do álbum, e é descartado ao sair da tela.
+- Falha no catálogo mantém autor, data, nota e resenha visíveis. Sem capa,
+  mostra-se um ícone; sem nota, o card indica “Sem nota”. Zero é uma nota válida.
+  Resenhas são texto simples, com expansão de textos longos. A nota mostrada é
+  do autor; não é média comunitária.
+- O resumo consulta `/api/me`, relações e total de avaliações do titular.
+  Falhas aparecem como informação indisponível, sem inventar contagens zero.
+  O avatar do titular é carregado com Bearer como blob; o endereço temporário
+  é revogado ao sair. Autores dos cards usam iniciais, pois o feed não inclui avatar.
+- A busca consulta álbuns ou músicas com paginação e links oficiais Spotify.
+  Não há formulário para publicar avaliações, detalhes de item nem edição de
+  perfil nesta etapa. “Minha conta” abre a tela existente em `/conta`.
+- Há estados de carregamento, vazio, falha e nova tentativa. Limites 429 no
+  feed e na busca respeitam Retry-After, com fallback de 60 segundos.
+
+Capturas em `docs/home-desktop.png` e `docs/home-mobile.png` usam respostas
+controladas dos testes; esses participantes e avaliações não são dados de produção.
 
 ## Sessão
 

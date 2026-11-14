@@ -1,0 +1,311 @@
+@if (auth.session()) {
+  <a class="skip-link" href="#feed-content">Ir para o conteúdo</a>
+  <header class="mobile-header">
+    <app-brand /><button
+      class="icon-button"
+      (click)="menuOpen.set(!menuOpen())"
+      [attr.aria-expanded]="menuOpen()"
+      aria-controls="sidebar"
+      aria-label="Abrir navegação"
+    >
+      <app-icon name="menu" />
+    </button>
+  </header>
+  <aside id="sidebar" class="sidebar" [class.open]="menuOpen()">
+    <a class="brand-link" routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
+    <nav aria-label="Navegação principal">
+      <button
+        [class.active]="!searchActive()"
+        [attr.aria-current]="!searchActive() ? 'page' : null"
+        (click)="selectTab(tab())"
+      >
+        <app-icon name="home" />Início
+      </button>
+      <button [class.active]="searchActive()" (click)="openSearch()">
+        <app-icon name="search" />Busca
+      </button>
+      <a routerLink="/conta"><app-icon name="user" />Minha conta</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a routerLink="/conta" class="current-account"
+        ><span class="avatar small" aria-hidden="true">{{ initial() }}</span
+        ><span>{{ displayName() }}</span
+        ><app-icon name="user"
+      /></a>
+      <button
+        class="logout"
+        (click)="logout()"
+        [disabled]="loggingOut()"
+        aria-label="Sair de todos os dispositivos"
+      >
+        <app-icon name="exit" />{{ loggingOut() ? 'Saindo…' : 'Sair' }}
+      </button>
+    </div>
+  </aside>
+
+  <main id="feed-content" tabindex="-1">
+    <div class="intro">
+      <p class="visibility">
+        <app-icon name="info" />Avaliações visíveis apenas para participantes autenticados.
+      </p>
+      <h1>Seu universo musical</h1>
+      <form class="search-form" [formGroup]="searchForm" (ngSubmit)="search()" role="search">
+        <div class="search-field">
+          <app-icon name="search" /><label for="music-search" class="sr-only"
+            >Buscar álbuns ou músicas</label
+          ><input
+            #searchInput
+            id="music-search"
+            type="search"
+            formControlName="query"
+            maxlength="200"
+            placeholder="Buscar álbuns ou músicas"
+            aria-describedby="search-validation"
+            [attr.aria-invalid]="
+              searchForm.controls.query.touched && searchForm.controls.query.invalid
+            "
+          />
+        </div>
+        <label for="music-type" class="sr-only">Tipo de busca</label
+        ><select id="music-type" formControlName="type">
+          <option value="album">Álbuns</option>
+          <option value="track">Músicas</option>
+        </select>
+        <button
+          class="search-submit"
+          type="submit"
+          [disabled]="searchLoading() || searchWait() > 0"
+          aria-label="Pesquisar"
+        >
+          <app-icon name="arrow" />
+        </button>
+      </form>
+      <p id="search-validation" class="validation">
+        @if (searchForm.controls.query.touched && searchForm.controls.query.invalid) {
+          Digite de 1 a 200 caracteres para buscar.
+        }
+      </p>
+    </div>
+    @if (logoutError()) {
+      <p class="message error" role="alert">{{ logoutError() }}</p>
+    }
+
+    <div class="tabs" aria-label="Selecionar avaliações">
+      <button
+        [class.selected]="tab() === 'following' && !searchActive()"
+        [attr.aria-pressed]="tab() === 'following' && !searchActive()"
+        [disabled]="feedWait() > 0"
+        (click)="selectTab('following')"
+      >
+        Seguindo
+      </button>
+      <button
+        [class.selected]="tab() === 'discover' && !searchActive()"
+        [attr.aria-pressed]="tab() === 'discover' && !searchActive()"
+        [disabled]="feedWait() > 0"
+        (click)="selectTab('discover')"
+      >
+        Descobrir
+      </button>
+      @if (!searchActive()) {
+        <button class="refresh" (click)="loadFeed()" [disabled]="loading() || feedWait() > 0">
+          Atualizar
+        </button>
+      }
+    </div>
+
+    <div class="home-grid">
+      <section
+        class="timeline"
+        [attr.aria-label]="
+          searchActive()
+            ? 'Resultados da busca'
+            : tab() === 'following'
+              ? 'Avaliações de quem você segue'
+              : 'Avaliações da comunidade'
+        "
+      >
+        @if (searchActive()) {
+          @if (searched()) {
+            <h2 class="results-title">Resultados para “{{ submittedQuery() }}”</h2>
+          } @else {
+            <div class="empty">
+              <app-icon name="search" />
+              <h2>Encontre seu próximo play</h2>
+              <p>Busque um álbum ou uma música pelo nome ou artista.</p>
+            </div>
+          }
+          @if (searchError()) {
+            <div class="message error" role="alert">
+              <p>{{ searchError() }}</p>
+              <button
+                class="button secondary"
+                (click)="search(results().length > 0)"
+                [disabled]="searchWait() > 0"
+              >
+                {{ searchWait() ? 'Aguarde ' + searchWait() + 's' : 'Tentar novamente' }}
+              </button>
+            </div>
+          }
+          @for (item of results(); track musicKey(item)) {
+            <article class="search-result">
+              @if (coverUrl(item.coverUrl); as url) {
+                <img
+                  #resultCover
+                  [src]="url"
+                  alt=""
+                  loading="lazy"
+                  referrerpolicy="no-referrer"
+                  (error)="resultCover.hidden = true"
+                />
+              } @else {
+                <div class="album-placeholder" aria-hidden="true"><app-icon name="music" /></div>
+              }
+              <div>
+                <span class="result-type">{{ item.type === 'album' ? 'Álbum' : 'Música' }}</span>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.artists.join(', ') }}</p>
+                @if (spotifyUrl(item); as url) {
+                  <a [href]="url" target="_blank" rel="noopener noreferrer"
+                    >Abrir no Spotify ↗<span class="sr-only"> (nova aba)</span></a
+                  >
+                }
+              </div>
+            </article>
+          }
+          @if (searchLoading()) {
+            <p class="loading" role="status">
+              <span class="spinner" aria-hidden="true"></span>Buscando músicas…
+            </p>
+          }
+          @if (searched() && !searchLoading() && !searchError() && results().length === 0) {
+            <div class="empty">
+              <h2>Nenhum resultado encontrado</h2>
+              <p>Tente outro nome de álbum, música ou artista.</p>
+            </div>
+          }
+          @if (searchHasMore() && !searchError()) {
+            <button
+              class="button secondary load-more"
+              (click)="search(true)"
+              [disabled]="searchLoading()"
+            >
+              Carregar mais resultados
+            </button>
+          }
+        } @else {
+          @if (feedError()) {
+            <div class="message error" role="alert">
+              <p>{{ feedError() }}</p>
+              <button
+                class="button secondary"
+                (click)="loadFeed(reviews().length > 0)"
+                [disabled]="feedWait() > 0"
+              >
+                {{ feedWait() ? 'Aguarde ' + feedWait() + 's' : 'Tentar novamente' }}
+              </button>
+            </div>
+          }
+          @for (review of reviews(); track review.id) {
+            <app-review-card
+              [review]="review"
+              [item]="metadata()[musicKey(review.item)] ?? null"
+              [pending]="metadata()[musicKey(review.item)] === undefined"
+            />
+          }
+          @if (loading()) {
+            <div class="loading" role="status">
+              <span class="spinner" aria-hidden="true"></span>Carregando avaliações…
+            </div>
+            @if (reviews().length === 0) {
+              <div class="skeleton" aria-hidden="true"></div>
+              <div class="skeleton" aria-hidden="true"></div>
+            }
+          }
+          @if (!loading() && !feedError() && reviews().length === 0) {
+            <div class="empty">
+              <app-icon name="music" />
+              <h2>
+                {{
+                  tab() === 'following' ? 'Seu feed está começando' : 'A primeira descoberta vem aí'
+                }}
+              </h2>
+              <p>
+                {{
+                  tab() === 'following'
+                    ? 'As avaliações das pessoas que você segue aparecerão aqui. Enquanto isso, explore o que a comunidade está ouvindo.'
+                    : 'A comunidade ainda não publicou avaliações. Que tal encontrar um álbum para ouvir?'
+                }}
+              </p>
+              @if (tab() === 'following') {
+                <button class="button primary" (click)="selectTab('discover')">
+                  Explorar a comunidade<app-icon name="arrow" />
+                </button>
+              } @else {
+                <button class="button primary" (click)="openSearch()">
+                  Buscar músicas<app-icon name="search" />
+                </button>
+              }
+            </div>
+          }
+          @if (hasMore() && !feedError()) {
+            <button
+              class="button secondary load-more"
+              (click)="loadFeed(true)"
+              [disabled]="loading()"
+            >
+              Carregar mais avaliações
+            </button>
+          }
+          @if (!hasMore() && !loading() && !feedError() && reviews().length) {
+            <p class="end">Você chegou ao fim das avaliações disponíveis.</p>
+          }
+        }
+      </section>
+
+      <aside class="profile" aria-label="Resumo da sua conta">
+        <div class="profile-heading">
+          <span class="avatar large" aria-hidden="true">
+            @if (avatarUrl(); as url) {
+              <img [src]="url" alt="" />
+            } @else {
+              {{ initial() }}
+            }
+          </span>
+          <div>
+            <h2>{{ displayName() }}</h2>
+            @if (account()?.username; as username) {
+              <p>{{ '@' + username }}</p>
+            }
+          </div>
+        </div>
+        <dl>
+          <div>
+            <dt>Avaliações</dt>
+            <dd>{{ reviewCount() ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Seguidores</dt>
+            <dd>{{ connections()?.followersCount ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Seguindo</dt>
+            <dd>{{ connections()?.followingCount ?? '—' }}</dd>
+          </div>
+        </dl>
+        @if (profileLoading()) {
+          <p class="profile-note" role="status">Carregando sua conta…</p>
+        }
+        @if (profileError()) {
+          <p class="profile-note" role="status">{{ profileError() }}</p>
+          <button class="retry-profile" (click)="loadProfile()" [disabled]="profileLoading()">
+            Tentar novamente
+          </button>
+        }
+        <div class="profile-action">
+          <button class="button primary" (click)="openSearch()">Buscar álbuns e músicas</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+}

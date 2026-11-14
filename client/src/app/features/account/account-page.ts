@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { apiError } from '../../core/http/api-error';
@@ -10,12 +10,13 @@ import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-account-page',
-  imports: [Brand],
+  imports: [Brand, RouterLink],
   template: `
     <header>
       <app-brand /><span class="status"><i></i> Conta conectada</span>
     </header>
     <main>
+      <p><a routerLink="/inicio">← Voltar ao início</a></p>
       @if (auth.session()) {
         <section aria-labelledby="account-title">
           <div class="avatar" aria-hidden="true">{{ initial() }}</div>
