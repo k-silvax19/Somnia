@@ -78,7 +78,19 @@ test('direct URL, login, reload restoration, guest guard and logout', async ({ p
   expect(calls).toHaveLength(0);
   await enter(page);
   await page.reload();
-  await expect(page.getByText('@ana.teste', { exact: true })).toBeVisible();
+  await expect(page.getByText('@ana.teste', { exact: true }))
+    .toBeVisible()
+    .catch(async (error) => {
+      console.error(
+        '[DEBUG-auth-reload]',
+        JSON.stringify({
+          path: new URL(page.url()).pathname,
+          content: await page.locator('main').innerText(),
+          calls: calls.map((call) => call.path),
+        }),
+      );
+      throw error;
+    });
   expect(calls.filter((call) => call.path.endsWith('/refresh'))).toHaveLength(1);
   await page.goto('/cadastro');
   await expect(page).toHaveURL(/\/inicio$/);
