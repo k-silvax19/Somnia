@@ -1,0 +1,229 @@
+<a class="skip-link" href="#profile-content">Ir para o conteúdo</a>
+<header class="site-header">
+  <a routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
+  <nav aria-label="Navegação principal">
+    <a routerLink="/inicio">Início</a>
+    <a routerLink="/conta">Minha conta</a>
+  </nav>
+</header>
+
+<main id="profile-content" tabindex="-1">
+  @if (loading()) {
+    <p role="status">Carregando perfil…</p>
+  } @else if (error()) {
+    <div class="message error" role="alert">{{ error() }}</div>
+    <button class="button secondary" (click)="retryProfile()">Tentar novamente</button>
+  } @else if (profile(); as user) {
+    <section class="profile-header" aria-labelledby="profile-title">
+      <div class="avatar" aria-hidden="true">
+        @if (avatarUrl(); as url) {
+          <img [src]="url" alt="" />
+        } @else {
+          {{ initial() }}
+        }
+      </div>
+      <div class="identity">
+        <p class="eyebrow">{{ own ? 'SEU PERFIL' : 'PERFIL MUSICAL' }}</p>
+        <h1 id="profile-title">{{ user.displayName }}</h1>
+        <p class="username">{{ '@' + user.username }}</p>
+        @if (user.bio) {
+          <p class="bio">{{ user.bio }}</p>
+        }
+        @if (own && account()?.email; as email) {
+          <p class="private-email">E-mail da conta: {{ email }}</p>
+        }
+      </div>
+      @if (
+        !own &&
+          selfLoaded() &&
+          user.username.toLowerCase() !== selfUsername().toLowerCase() &&
+          connections();
+        as relation
+      ) {
+        <button
+          class="button"
+          [class.primary]="!relation.isFollowing"
+          [class.secondary]="relation.isFollowing"
+          [disabled]="following()"
+          (click)="toggleFollow()"
+        >
+          {{ following() ? 'Atualizando…' : relation.isFollowing ? 'Deixar de seguir' : 'Seguir' }}
+        </button>
+      }
+    </section>
+
+    <p class="visibility">Perfil e avaliações visíveis apenas para participantes autenticados.</p>
+    @if (connectionError()) {
+      <div class="message error" role="alert">
+        {{ connectionError() }}
+        <button class="text-button" (click)="loadConnections()">Tentar novamente</button>
+      </div>
+    }
+    <div class="counts" aria-label="Números do perfil">
+      <span
+        ><strong>{{ reviewTotal() ?? '—' }}</strong> avaliações</span
+      >
+      <button (click)="changeSection('followers')">
+        <strong>{{ connections()?.followersCount ?? '—' }}</strong> seguidores
+      </button>
+      <button (click)="changeSection('following')">
+        <strong>{{ connections()?.followingCount ?? '—' }}</strong> seguindo
+      </button>
+    </div>
+
+    @if (own) {
+      <section class="editor" aria-labelledby="edit-title">
+        <h2 id="edit-title">Editar perfil</h2>
+        <p>Nome, bio e avatar aparecem para os participantes autenticados.</p>
+        <form [formGroup]="editForm" (ngSubmit)="save()">
+          <label for="display-name">Nome de exibição</label>
+          <input
+            id="display-name"
+            formControlName="displayName"
+            maxlength="256"
+            [attr.aria-invalid]="
+              editForm.controls.displayName.touched && editForm.controls.displayName.invalid
+            "
+            aria-describedby="display-name-error"
+          />
+          <p id="display-name-error" class="field-error">
+            @if (editForm.controls.displayName.touched && editForm.controls.displayName.invalid) {
+              Informe um nome de até 256 caracteres.
+            }
+          </p>
+          <label for="bio">Bio</label>
+          <textarea
+            id="bio"
+            formControlName="bio"
+            rows="3"
+            maxlength="300"
+            [attr.aria-invalid]="editForm.controls.bio.touched && editForm.controls.bio.invalid"
+            aria-describedby="bio-error"
+          ></textarea>
+          <p id="bio-error" class="field-error">
+            @if (editForm.controls.bio.touched && editForm.controls.bio.invalid) {
+              A bio deve ter até 300 caracteres.
+            }
+          </p>
+          @if (saveError()) {
+            <p class="message error" role="alert">{{ saveError() }}</p>
+          }
+          @if (saved()) {
+            <p class="message success" role="status">Perfil salvo.</p>
+          }
+          <button class="button primary" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
+          </button>
+        </form>
+        <div class="avatar-editor">
+          <label for="avatar-file">Avatar (PNG ou JPEG, até 2 MiB)</label>
+          <input
+            id="avatar-file"
+            type="file"
+            accept="image/png,image/jpeg"
+            (change)="selectAvatar($event)"
+            [disabled]="avatarBusy()"
+          />
+          @if (user.avatarUrl) {
+            <button class="button secondary" (click)="removeAvatar()" [disabled]="avatarBusy()">
+              Remover avatar
+            </button>
+          }
+          @if (avatarMessage()) {
+            <p role="status">{{ avatarMessage() }}</p>
+          }
+          @if (avatarError()) {
+            <p class="message error" role="alert">{{ avatarError() }}</p>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="activity" aria-labelledby="activity-title">
+      <h2 id="activity-title">Atividade</h2>
+      <div class="tabs" aria-label="Conteúdo do perfil">
+        <button
+          [attr.aria-pressed]="section() === 'reviews'"
+          [class.active]="section() === 'reviews'"
+          (click)="changeSection('reviews')"
+        >
+          Avaliações
+        </button>
+        <button
+          [attr.aria-pressed]="section() === 'followers'"
+          [class.active]="section() === 'followers'"
+          (click)="changeSection('followers')"
+        >
+          Seguidores
+        </button>
+        <button
+          [attr.aria-pressed]="section() === 'following'"
+          [class.active]="section() === 'following'"
+          (click)="changeSection('following')"
+        >
+          Seguindo
+        </button>
+      </div>
+      @if (listError()) {
+        <div class="message error" role="alert">{{ listError() }}</div>
+        <button
+          class="button secondary"
+          (click)="loadList(reviews().length > 0 || related().length > 0)"
+        >
+          Tentar novamente
+        </button>
+      }
+      @if (section() === 'reviews') {
+        @for (review of reviews(); track review.id) {
+          <app-review-card
+            [review]="review"
+            [item]="metadata()[musicKey(review.item)] ?? null"
+            [pending]="metadata()[musicKey(review.item)] === undefined"
+          />
+        }
+      } @else {
+        @for (person of related(); track person.username) {
+          <article class="related">
+            <div class="mini-avatar" aria-hidden="true">
+              {{ person.displayName.slice(0, 1).toUpperCase() }}
+            </div>
+            <div>
+              <a [routerLink]="['/perfil', person.username]">{{ person.displayName }}</a>
+              <p>{{ '@' + person.username }}</p>
+              @if (person.bio) {
+                <p>{{ person.bio }}</p>
+              }
+            </div>
+          </article>
+        }
+      }
+      @if (listLoading()) {
+        <p role="status">Carregando {{ section() === 'reviews' ? 'avaliações' : 'perfis' }}…</p>
+      }
+      @if (!listLoading() && !listError() && listTotal() === 0) {
+        <p class="empty">
+          {{
+            section() === 'reviews' ? 'Nenhuma avaliação publicada.' : 'Nenhum perfil nesta lista.'
+          }}
+        </p>
+      }
+      @if (listMore() && !listError()) {
+        <button class="button secondary more" (click)="loadList(true)" [disabled]="listLoading()">
+          Carregar mais
+        </button>
+      }
+    </section>
+
+    @if (own) {
+      <section class="logout">
+        @if (logoutError()) {
+          <p class="message error" role="alert">{{ logoutError() }}</p>
+        }
+        <button class="button secondary" (click)="logout()" [disabled]="loggingOut()">
+          {{ loggingOut() ? 'Saindo…' : 'Sair de todos os dispositivos' }}
+        </button>
+        <p>Ao sair, todas as suas sessões serão encerradas.</p>
+      </section>
+    }
+  }
+</main>

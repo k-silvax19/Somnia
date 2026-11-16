@@ -141,8 +141,8 @@ test('home hydrates metadata, preserves zero and no-score, switches tabs and ope
   expect(calls.filter((url) => url === '/api/catalog/albums/aurora')).toHaveLength(1);
   await page.getByRole('link', { name: 'Minha conta', exact: true }).click();
   await expect(page).toHaveURL(/\/conta$/);
-  await expect(page.getByRole('heading', { name: 'Olá, Marina Costa.' })).toBeVisible();
-  await page.getByRole('link', { name: 'Voltar ao início', exact: false }).click();
+  await expect(page.getByRole('heading', { name: 'Marina Costa', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: 'Início', exact: true }).click();
   await expect(page).toHaveURL(/\/inicio$/);
 });
 

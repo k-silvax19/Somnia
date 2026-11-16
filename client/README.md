@@ -1,7 +1,7 @@
 # Somnia — frontend
 
 Frontend Angular 22, standalone, com Reactive Forms, signals e SCSS. Esta entrega
-implementa **autenticação, início, detalhes musicais e avaliações**, seguindo as cores carvão e âmbar da
+implementa **autenticação, início, detalhes musicais, avaliações e perfis**, seguindo as cores carvão e âmbar da
 referência visual. O projeto é uma demo/TCC da Academia do Programador.
 
 ## Executar
@@ -49,7 +49,8 @@ Este PR não publica a aplicação nem configura hospedagem.
 | `/entrar`                             | `guestGuard`     | Login por e-mail/senha; autenticado segue para `/inicio`               |
 | `/cadastro`                           | `guestGuard`     | Nome, username, e-mail, senha e confirmação; retorna ao login após 201 |
 | `/inicio`                             | `authGuard`      | Feed, descoberta, busca musical e resumo da conta                      |
-| `/conta`                              | `authGuard`      | Consulta da conta e logout global                                      |
+| `/conta`                              | `authGuard`      | Histórico, relações, edição de perfil/avatar e logout global           |
+| `/perfil/:username`                   | `authGuard`      | Perfil, histórico, seguidores/seguidos e seguir/deixar de seguir       |
 | `/musica/:provider/:type/:externalId` | `authGuard`      | Detalhes de álbum/faixa, comunidade e avaliação do titular             |
 | `/` e rotas desconhecidas             | redirecionamento | Passam por `/inicio` e suas guards                                     |
 
@@ -82,7 +83,7 @@ pequenas, a navegação fica em um menu expansível e o resumo vem depois do fee
   é revogado ao sair. Autores dos cards usam iniciais, pois o feed não inclui avatar.
 - A busca consulta álbuns ou músicas com paginação e links oficiais Spotify.
   Títulos da busca e dos cards abrem os detalhes do item. “Minha conta” abre
-  a tela existente em `/conta`; edição de perfil permanece pendente.
+  a tela `/conta`, que apresenta histórico, relações e edição de perfil.
 - Há estados de carregamento, vazio, falha e nova tentativa. Limites 429 no
   feed e na busca respeitam Retry-After, com fallback de 60 segundos.
 
@@ -119,8 +120,23 @@ controladas dos testes; esses participantes e avaliações não são dados de pr
   de versão: edições simultâneas seguem a última gravação, conforme a API.
 
 Capturas `docs/music-desktop.png` e `docs/music-mobile.png` usam dados fictícios
-dos testes. Perfis públicos, histórico no perfil e seguir/deixar de seguir
-permanecem como próximas telas.
+dos testes. O nome do autor nas avaliações abre seu perfil.
+
+## Perfis e relações
+
+- `/conta` mostra os dados do titular, histórico paginado de avaliações,
+  seguidores e seguidos. `/perfil/:username` mostra os dados públicos e permite
+  seguir/deixar de seguir outro participante. As listas são paginadas e mantêm
+  o conteúdo carregado quando uma nova página falha.
+- O histórico continua visível se o catálogo musical estiver indisponível.
+  Títulos e capas são enriquecidos separadamente, com no máximo três consultas
+  simultâneas. A nota do card é pessoal; não representa a média comunitária.
+- Nome e bio são texto simples. O formulário informa a visibilidade antes de
+  salvar, valida os limites da API e preserva o rascunho em caso de erro.
+- O avatar aceita PNG/JPEG de até 2 MiB. Após o envio, a tela consulta o status
+  do processamento assíncrono; erros de validação da imagem são apresentados
+  quando o Worker os devolver. Remoção também cancela solicitações pendentes.
+  A imagem é buscada com Bearer e sua URL temporária é liberada ao sair.
 
 ## Sessão
 
@@ -160,8 +176,10 @@ Playwright usam respostas controladas exclusivamente em `e2e`, cobrindo cadastro
 login, recarga, navegação direta, sessão expirada, erros, teclado, 360 px e abas.
 O workflow `frontend.yml` executa build, formatação, unitários e navegador.
 Os testes de detalhes cobrem CRUD, nota zero, resenha sem nota, texto escapado,
-falhas, duplicatas, limites, navegação entre itens e paginação. O teste integrado
-executa o CRUD pela interface contra HTTPS/SQL reais e catálogo simulado,
+falhas, duplicatas, limites, navegação entre itens e paginação. Os testes de perfil
+cobrem edição com erro, histórico, relações, avatar assíncrono, teclado e 360 px.
+O teste integrado executa o CRUD, edição de perfil, histórico e relações entre
+dois participantes pela interface contra HTTPS/SQL reais e catálogo simulado,
 sem criar avaliações no banco de desenvolvimento nem consumir quota Spotify.
 
 Para usar o Edge já instalado no Windows:

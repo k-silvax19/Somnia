@@ -136,8 +136,9 @@ O arquivo base mantém `Disabled`: para produção, configure explicitamente
 Configuração, limites e atribuição estão em [CATALOGO.md](server/CATALOGO.md).
 
 As migrations em `server/src/Infraestrutura/Compartilhado/Orm/Migrations`
-são aplicadas automaticamente na inicialização em Development. Produção
-precisa de uma etapa controlada de migração, ainda não configurada no repo.
+são aplicadas automaticamente na inicialização em Development. Para produção,
+o gerador de SQL idempotente e as decisões operacionais estão em
+[Preparação do piloto](docs/PILOTO.md). A aplicação do SQL permanece controlada.
 
 ## Verificação
 
@@ -164,7 +165,7 @@ unitários em pushes/PRs que alteram o backend, além de execução manual.
 Não exige SQL Server, RabbitMQ ou Spotify para os testes unitários.
 A execução remota ocorrerá depois de enviar os commits ao GitHub.
 Os testes incluem avaliações, médias, histórico, relações, feed e descoberta;
-frontend e homologação do MVP completo continuam pendentes. O smoke também
+homologação do frontend e do MVP completo continua pendente. O smoke também
 verifica criação concorrente, autorização, paginação e acesso aos dados
 próprios durante indisponibilidade do catálogo.
 

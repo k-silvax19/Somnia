@@ -1,6 +1,6 @@
 # Somnia — contexto e próximos passos
 
-Atualizado em **11/11/2026**. Este documento registra o estado da implementação,
+Atualizado em **15/11/2026**. Este documento registra o estado da implementação,
 as decisões da conversa e o ponto de retomada. Atualize-o ao concluir cada
 etapa para não confundir requisitos planejados com código já entregue.
 
@@ -8,7 +8,8 @@ etapa para não confundir requisitos planejados com código já entregue.
 
 **Autenticação, perfis, avatar assíncrono, catálogo Spotify, avaliações,
 médias, histórico, relações, feed e descoberta estão implementados no backend.
-Próxima etapa: frontend integrado e homologação dos fluxos do MVP.**
+O frontend integra esses fluxos. Próxima etapa: homologação completa e preparação
+do piloto.**
 
 O diário privado permanece fora do escopo. Não criar entidade de escuta,
 datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
@@ -23,7 +24,8 @@ datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
 | Histórico no perfil | Implementado, paginado e com desempate estável |
 | Seguir/deixar de seguir, contagens e listas | Implementados |
 | Feed e descoberta | Implementados, autenticados e paginados |
-| Frontend integrado e deploy | Pendentes |
+| Frontend de autenticação, catálogo, avaliações, perfis e relações | Implementado; homologação completa pendente |
+| Deploy | Pendente |
 | Premium | Fora da entrega do MVP gratuito |
 
 ## Como trabalhar neste projeto
@@ -372,17 +374,21 @@ para publicar, editar e excluir a avaliação do titular. Edição/exclusão con
 disponíveis sem catálogo; falhas preservam o rascunho e exclusão exige confirmação.
 Contrato e execução em [client/README.md](../client/README.md).
 
-1. Concluir frontend: histórico, perfis públicos, edição de perfil e relações.
-   Preservar dados digitados nos erros e mostrar
-   carregamento/vazios/indisponibilidade. Informar visibilidade antes de salvar
-   e diferenciar nota pessoal, média e quantidade.
+1. Frontend de histórico, perfis públicos, edição de nome/bio/avatar e relações
+   implementado nesta etapa. O histórico usa os contratos da API, mantém
+   avaliações visíveis durante falhas do catálogo e preserva o rascunho de edição
+   nos erros. A integração foi verificada com respostas controladas no navegador;
+   edição, histórico e relações também passaram com API/SQL reais em banco
+   descartável. A homologação completa dos critérios do PRD permanece pendente.
 2. Homologar fluxos completos em 360 px/desktop e por teclado, foco/rótulos/erros,
    e critérios de aceite do PRD. O backend entregue não homologa a experiência visual.
 3. Preparar deploy/piloto: migrations controladas, backups, retenção, exclusão
    de conta (incluindo relações), convites/acesso, viabilidade do catálogo e feedback.
+   O gerador de SQL idempotente e as decisões pendentes estão em
+   [Preparação do piloto](PILOTO.md); nenhum banco publicado foi alterado.
 
 Não reintroduzir diário nem antecipar Premium. O MVP completo ainda depende
-de frontend, homologação e preparação do piloto.
+de homologação e preparação do piloto.
 
 ## Histórico de commits relevantes
 
@@ -419,4 +425,4 @@ recuperação e o builder isolado estão em Mensageria.
 O projeto ainda não está integralmente homologado. Avaliações, histórico,
 médias, relações, feed e descoberta foram implementados no backend. O frontend
 integra autenticação, início, busca, detalhes, avaliações e consultas da comunidade;
-a continuidade é **perfis, histórico, relações e homologação**.
+a continuidade é **homologação completa e preparação do piloto**.

@@ -34,7 +34,13 @@ export const routes: Routes = [
       {
         path: 'conta',
         title: 'Sua conta · Somnia',
-        loadComponent: () => import('./features/account/account-page').then((m) => m.AccountPage),
+        data: { own: true },
+        loadComponent: () => import('./features/profile/profile-page').then((m) => m.ProfilePage),
+      },
+      {
+        path: 'perfil/:username',
+        title: 'Perfil · Somnia',
+        loadComponent: () => import('./features/profile/profile-page').then((m) => m.ProfilePage),
       },
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
     ],

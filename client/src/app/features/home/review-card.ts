@@ -13,9 +13,11 @@ import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
           review().author.displayName.slice(0, 1).toUpperCase()
         }}</span>
         <div class="author">
-          <strong>{{ review().author.displayName }}</strong><span>{{
-            '@' + review().author.username
-          }}</span>
+          <strong
+            ><a [routerLink]="['/perfil', review().author.username]">{{
+              review().author.displayName
+            }}</a></strong
+          ><span>{{ '@' + review().author.username }}</span>
         </div>
         <time [attr.datetime]="review().createdAt">{{ date() }}</time>
       </header>
