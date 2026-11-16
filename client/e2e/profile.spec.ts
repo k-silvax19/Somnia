@@ -126,6 +126,9 @@ test('own profile keeps edits after a failed save and shows the saved bio', asyn
   await expect(page.getByRole('heading', { name: 'Marina', level: 1 })).toBeVisible();
   await expect(page.getByText('marina@example.test')).toBeVisible();
   await expect(page.getByText('Nenhuma avaliação publicada.')).toBeVisible();
+  await page.screenshot({ path: 'test-results/profile-desktop.png', fullPage: true });
+  await page.getByRole('tab', { name: 'Editar usuário' }).click();
+  await page.screenshot({ path: 'test-results/profile-edit-desktop.png', fullPage: true });
   await page.getByLabel('Nome de exibição').fill('Marina Nova');
   await page.getByLabel('Bio', { exact: true }).fill('Outra bio');
   state.failEdit = true;
@@ -137,6 +140,9 @@ test('own profile keeps edits after a failed save and shows the saved bio', asyn
   await expect(page.getByRole('heading', { name: 'Marina Nova', level: 1 })).toBeVisible();
   await expect(page.getByText('Perfil salvo.')).toBeVisible();
   expect(state.edits[1]).toEqual({ displayName: 'Marina Nova', bio: 'Outra bio' });
+  await page.setViewportSize({ width: 360, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/profile-edit-mobile.png', fullPage: true });
 });
 
 test('public profile shows history, follows and lists followers', async ({ page, context }) => {
@@ -159,6 +165,7 @@ test('public profile shows history, follows and lists followers', async ({ page,
 test('avatar upload waits for processing and can be removed', async ({ page, context }) => {
   const state = await fixture(context);
   await page.goto('/conta');
+  await page.getByRole('tab', { name: 'Editar usuário' }).click();
   await page.getByLabel('Avatar (PNG ou JPEG, até 2 MiB)').setInputFiles({
     name: 'avatar.png',
     mimeType: 'image/png',
@@ -170,6 +177,11 @@ test('avatar upload waits for processing and can be removed', async ({ page, con
   await expect(page.getByText('Avatar atualizado.')).toBeVisible();
   await expect(page.locator('.profile-header .avatar img')).toBeVisible();
   expect(state.uploads).toBe(1);
+  await page.getByRole('link', { name: 'Início', exact: true }).click();
+  await expect(page.locator('.sidebar-footer .avatar img')).toBeVisible();
+  await page.getByRole('link', { name: 'Minha conta', exact: true }).click();
+  await expect(page.locator('.profile-header .avatar img')).toBeVisible();
+  await page.getByRole('tab', { name: 'Editar usuário' }).click();
   await page.getByRole('button', { name: 'Remover avatar' }).click();
   await expect(page.getByText('Avatar removido.')).toBeVisible();
   await expect(page.locator('.profile-header .avatar img')).toHaveCount(0);

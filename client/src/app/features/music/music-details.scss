@@ -223,3 +223,68 @@ app-review-card {
     gap: 1.5rem;
   }
 }
+
+.hero {
+  grid-template-columns: 15rem minmax(0, 1fr) 10rem;
+  gap: 2.4rem;
+  padding: 2rem 0 2.8rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+.artwork {
+  background: #302845;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  box-shadow: 0 1.4rem 3rem #08061166;
+}
+.artwork img {
+  object-fit: cover;
+}
+h1 {
+  font-weight: 550;
+  letter-spacing: -0.055em;
+}
+.artists {
+  color: #ded6ef;
+}
+.album {
+  color: var(--muted);
+}
+.rating {
+  border-color: var(--border);
+}
+.rating strong {
+  color: var(--accent);
+  font-weight: 550;
+}
+.details-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.65fr);
+}
+.tracks {
+  background: var(--surface);
+  border-color: var(--border);
+}
+.tracks a:hover {
+  background: #302845;
+}
+.empty {
+  border-color: var(--border);
+  background: var(--surface);
+}
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 10rem minmax(0, 1fr);
+  }
+  .rating {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .hero {
+    grid-template-columns: 6rem minmax(0, 1fr);
+  }
+}

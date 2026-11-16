@@ -255,3 +255,374 @@ h2 {
     font-size: 2rem;
   }
 }
+
+/* Profile composition from the Figma reference. */
+main {
+  max-width: 1180px;
+  margin-left: 15.25rem;
+  padding: 0 6rem 5rem 7.5rem;
+}
+.profile-banner {
+  height: 235px;
+  margin: 0 -6rem 0 -7.5rem;
+  background:
+    linear-gradient(90deg, #3c2863a8, #1714286b),
+    url('/visuals/nocturne.jpg') center 35% / cover;
+  border-bottom: 1px solid var(--border);
+}
+.profile-header {
+  position: relative;
+  margin-top: -3rem;
+  padding: 0 0 1.4rem;
+  align-items: end;
+  border-bottom: 1px solid var(--border);
+}
+.avatar {
+  width: 7rem;
+  height: 7rem;
+  border: 6px solid var(--background);
+  background: #886fae;
+  color: var(--text);
+  font-size: 2.2rem;
+}
+.identity {
+  padding: 3rem 0 0.1rem;
+}
+.identity .eyebrow {
+  display: none;
+}
+h1 {
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+}
+h2 {
+  font-weight: 550;
+}
+.username {
+  margin: 0.2rem 0;
+  color: var(--accent);
+  font-size: 0.84rem;
+}
+.bio {
+  margin: 0.6rem 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.private-email {
+  color: #8d82a9;
+}
+.edit-toggle {
+  align-self: end;
+}
+.visibility {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.74rem;
+}
+.counts {
+  border: 0;
+  padding: 0 0 1.5rem;
+  gap: 1.1rem;
+}
+.counts > * {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: 0.25rem 0;
+  font-size: 0.82rem;
+}
+.counts strong {
+  color: var(--text);
+}
+.counts button:hover {
+  color: var(--accent);
+}
+.profile-sections {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-top: 1rem;
+}
+.profile-sections button {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 0.9rem 0.3rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.profile-sections button.active {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.editor {
+  max-width: 45rem;
+  background: var(--surface);
+  margin: 2rem 0;
+  border-color: var(--border);
+  border-radius: 1rem;
+}
+.editor input:not([type='file']),
+.editor textarea {
+  background: #151225;
+  color: var(--text);
+  border-color: #4a4163;
+}
+.activity {
+  margin-top: 2rem;
+}
+.tabs button.active {
+  color: var(--accent);
+}
+.related {
+  border-color: var(--border);
+}
+.mini-avatar {
+  background: #886fae;
+  color: var(--text);
+}
+.empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.logout {
+  border-color: var(--border);
+}
+.reviewed-albums {
+  margin: 2rem 0 2.5rem;
+}
+.reviewed-albums h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.reviewed-albums p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0.4rem 0 1.3rem;
+}
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.album-tile {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+.album-tile:hover {
+  color: var(--accent);
+}
+.album-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  width: 100%;
+  background: #302845;
+  color: var(--accent);
+  font-size: 2rem;
+  border-radius: 0.45rem;
+  overflow: hidden;
+}
+.album-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.album-tile strong {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.album-tile small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor {
+  max-width: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.editor-heading h2 {
+  margin: 0.5rem 0 0;
+  font-size: 2rem;
+  font-weight: 500;
+}
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.6fr);
+  align-items: start;
+  gap: 2.8rem;
+}
+.editor-fields,
+.profile-preview {
+  min-width: 0;
+}
+.editor-fields form,
+.editor-fields input,
+.editor-fields textarea,
+.avatar-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+.editor-fields h3 {
+  font-size: 1rem;
+  font-weight: 550;
+}
+.editor-fields > p {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.editor-fields form {
+  gap: 0.55rem;
+}
+.editor-fields form label {
+  margin-top: 0.6rem;
+}
+.editor input:not([type='file']),
+.editor textarea {
+  background: var(--background);
+  border-color: var(--border);
+  border-radius: 0.6rem;
+}
+.avatar-editor {
+  background: var(--surface);
+  border: 1px dashed #5e507c;
+  border-radius: 0.8rem;
+  padding: 1.3rem;
+  margin-top: 1.5rem;
+}
+.profile-preview > .eyebrow {
+  margin: 0 0 0.7rem;
+}
+.preview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  text-align: center;
+  padding-bottom: 1.5rem;
+  display: grid;
+  justify-items: center;
+}
+.preview-banner {
+  height: 8rem;
+  width: 100%;
+  background:
+    linear-gradient(90deg, #b49bfa55, #201a36b3),
+    url('/visuals/nocturne.jpg') center / cover;
+}
+.preview-avatar {
+  width: 6.7rem;
+  height: 6.7rem;
+  border-radius: 50%;
+  border: 5px solid var(--surface);
+  background: #886fae;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  margin-top: -3.3rem;
+  font-size: 1.7rem;
+}
+.preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.preview-card > strong {
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+.preview-card > small {
+  color: var(--accent);
+}
+.preview-card > p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 0 1rem;
+}
+.preview-counts {
+  display: flex;
+  gap: 0.8rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.preview-counts b {
+  color: var(--text);
+}
+@media (max-width: 1100px) {
+  main {
+    margin-left: 13rem;
+    padding: 0 1.5rem 5rem;
+  }
+  .profile-banner {
+    margin: 0 -1.5rem;
+  }
+}
+@media (max-width: 850px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-preview {
+    max-width: 28rem;
+  }
+}
+@media (max-width: 600px) {
+  main {
+    margin-left: 0;
+    padding: 0 1rem 3rem;
+  }
+  .profile-banner {
+    height: 145px;
+    margin: 0 -1rem;
+  }
+  .profile-header {
+    margin-top: -2.2rem;
+    gap: 0.8rem;
+  }
+  .avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+    border-width: 4px;
+  }
+  .identity {
+    padding-top: 2.4rem;
+  }
+  .edit-toggle {
+    width: 100%;
+  }
+  .profile-sections {
+    overflow-x: auto;
+  }
+  .profile-sections button {
+    white-space: nowrap;
+  }
+  .album-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .editor-heading {
+    align-items: start;
+  }
+  .editor-heading h2 {
+    font-size: 1.5rem;
+  }
+  .editor-heading .button {
+    font-size: 0.75rem;
+    padding: 0.6rem;
+  }
+}

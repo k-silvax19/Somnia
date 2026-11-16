@@ -1,11 +1,5 @@
 <a class="skip-link" href="#profile-content">Ir para o conteúdo</a>
-<header class="site-header">
-  <a routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
-  <nav aria-label="Navegação principal">
-    <a routerLink="/inicio">Início</a>
-    <a routerLink="/conta">Minha conta</a>
-  </nav>
-</header>
+<app-shell-sidebar />
 
 <main id="profile-content" tabindex="-1">
   @if (loading()) {
@@ -14,6 +8,7 @@
     <div class="message error" role="alert">{{ error() }}</div>
     <button class="button secondary" (click)="retryProfile()">Tentar novamente</button>
   } @else if (profile(); as user) {
+    <div class="profile-banner" aria-hidden="true"></div>
     <section class="profile-header" aria-labelledby="profile-title">
       <div class="avatar" aria-hidden="true">
         @if (avatarUrl(); as url) {
@@ -33,6 +28,15 @@
           <p class="private-email">E-mail da conta: {{ email }}</p>
         }
       </div>
+      @if (own) {
+        <button
+          class="button secondary edit-toggle"
+          (click)="editing.set(!editing())"
+          [attr.aria-expanded]="editing()"
+        >
+          {{ editing() ? 'Fechar edição' : 'Editar perfil' }}
+        </button>
+      }
       @if (
         !own &&
           selfLoaded() &&
@@ -71,148 +75,242 @@
       </button>
     </div>
 
-    @if (own) {
-      <section class="editor" aria-labelledby="edit-title">
-        <h2 id="edit-title">Editar perfil</h2>
-        <p>Nome, bio e avatar aparecem para os participantes autenticados.</p>
-        <form [formGroup]="editForm" (ngSubmit)="save()">
-          <label for="display-name">Nome de exibição</label>
-          <input
-            id="display-name"
-            formControlName="displayName"
-            maxlength="256"
-            [attr.aria-invalid]="
-              editForm.controls.displayName.touched && editForm.controls.displayName.invalid
-            "
-            aria-describedby="display-name-error"
-          />
-          <p id="display-name-error" class="field-error">
-            @if (editForm.controls.displayName.touched && editForm.controls.displayName.invalid) {
-              Informe um nome de até 256 caracteres.
-            }
-          </p>
-          <label for="bio">Bio</label>
-          <textarea
-            id="bio"
-            formControlName="bio"
-            rows="3"
-            maxlength="300"
-            [attr.aria-invalid]="editForm.controls.bio.touched && editForm.controls.bio.invalid"
-            aria-describedby="bio-error"
-          ></textarea>
-          <p id="bio-error" class="field-error">
-            @if (editForm.controls.bio.touched && editForm.controls.bio.invalid) {
-              A bio deve ter até 300 caracteres.
-            }
-          </p>
-          @if (saveError()) {
-            <p class="message error" role="alert">{{ saveError() }}</p>
-          }
-          @if (saved()) {
-            <p class="message success" role="status">Perfil salvo.</p>
-          }
-          <button class="button primary" type="submit" [disabled]="saving()">
-            {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
-          </button>
-        </form>
-        <div class="avatar-editor">
-          <label for="avatar-file">Avatar (PNG ou JPEG, até 2 MiB)</label>
-          <input
-            id="avatar-file"
-            type="file"
-            accept="image/png,image/jpeg"
-            (change)="selectAvatar($event)"
-            [disabled]="avatarBusy()"
-          />
-          @if (user.avatarUrl) {
-            <button class="button secondary" (click)="removeAvatar()" [disabled]="avatarBusy()">
-              Remover avatar
-            </button>
-          }
-          @if (avatarMessage()) {
-            <p role="status">{{ avatarMessage() }}</p>
-          }
-          @if (avatarError()) {
-            <p class="message error" role="alert">{{ avatarError() }}</p>
+    @if (!editing() && reviewedAlbums().length) {
+      <section class="reviewed-albums" aria-labelledby="reviewed-albums-title">
+        <h2 id="reviewed-albums-title">Álbuns avaliados</h2>
+        <p>Discos que fazem parte das suas conversas.</p>
+        <div class="album-grid">
+          @for (album of reviewedAlbums(); track musicKey(album)) {
+            <a
+              [routerLink]="['/musica', album.provider, album.type, album.externalId]"
+              class="album-tile"
+            >
+              <span class="album-art">
+                @if (coverUrl(album.coverUrl); as url) {
+                  <img [src]="url" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                } @else {
+                  <span aria-hidden="true">♫</span>
+                }
+              </span>
+              <strong>{{ album.title }}</strong><small>{{ album.artists.join(', ') }}</small>
+            </a>
           }
         </div>
       </section>
     }
 
-    <section class="activity" aria-labelledby="activity-title">
-      <h2 id="activity-title">Atividade</h2>
-      <div class="tabs" aria-label="Conteúdo do perfil">
+    @if (own) {
+      <div class="profile-sections" role="tablist" aria-label="Seções do seu perfil">
         <button
-          [attr.aria-pressed]="section() === 'reviews'"
-          [class.active]="section() === 'reviews'"
-          (click)="changeSection('reviews')"
+          role="tab"
+          [attr.aria-selected]="!editing()"
+          aria-controls="activity-panel"
+          [class.active]="!editing()"
+          (click)="editing.set(false)"
         >
-          Avaliações
+          Avaliações e relações
         </button>
         <button
-          [attr.aria-pressed]="section() === 'followers'"
-          [class.active]="section() === 'followers'"
-          (click)="changeSection('followers')"
+          role="tab"
+          [attr.aria-selected]="editing()"
+          aria-controls="edit-panel"
+          [class.active]="editing()"
+          (click)="editing.set(true)"
         >
-          Seguidores
-        </button>
-        <button
-          [attr.aria-pressed]="section() === 'following'"
-          [class.active]="section() === 'following'"
-          (click)="changeSection('following')"
-        >
-          Seguindo
+          Editar usuário
         </button>
       </div>
-      @if (listError()) {
-        <div class="message error" role="alert">{{ listError() }}</div>
-        <button
-          class="button secondary"
-          (click)="loadList(reviews().length > 0 || related().length > 0)"
-        >
-          Tentar novamente
-        </button>
-      }
-      @if (section() === 'reviews') {
-        @for (review of reviews(); track review.id) {
-          <app-review-card
-            [review]="review"
-            [item]="metadata()[musicKey(review.item)] ?? null"
-            [pending]="metadata()[musicKey(review.item)] === undefined"
-          />
-        }
-      } @else {
-        @for (person of related(); track person.username) {
-          <article class="related">
-            <div class="mini-avatar" aria-hidden="true">
-              {{ person.displayName.slice(0, 1).toUpperCase() }}
-            </div>
-            <div>
-              <a [routerLink]="['/perfil', person.username]">{{ person.displayName }}</a>
-              <p>{{ '@' + person.username }}</p>
-              @if (person.bio) {
-                <p>{{ person.bio }}</p>
+    }
+    @if (own && editing()) {
+      <section id="edit-panel" class="editor" aria-labelledby="edit-title" role="tabpanel">
+        <div class="editor-heading">
+          <div>
+            <p class="eyebrow">SEU ESPAÇO, DO SEU JEITO</p>
+            <h2 id="edit-title">Personalizar perfil</h2>
+          </div>
+          <button
+            class="button secondary"
+            form="profile-edit-form"
+            type="submit"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
+          </button>
+        </div>
+        <div class="editor-grid">
+          <div class="editor-fields">
+            <h3>Informações básicas</h3>
+            <p>Nome, bio e avatar aparecem para os participantes autenticados.</p>
+            <form id="profile-edit-form" [formGroup]="editForm" (ngSubmit)="save()">
+              <label for="display-name">Nome de exibição</label>
+              <input
+                id="display-name"
+                formControlName="displayName"
+                maxlength="256"
+                [attr.aria-invalid]="
+                  editForm.controls.displayName.touched && editForm.controls.displayName.invalid
+                "
+                aria-describedby="display-name-error"
+              />
+              <p id="display-name-error" class="field-error">
+                @if (
+                  editForm.controls.displayName.touched && editForm.controls.displayName.invalid
+                ) {
+                  Informe um nome de até 256 caracteres.
+                }
+              </p>
+              <label for="bio">Bio</label>
+              <textarea
+                id="bio"
+                formControlName="bio"
+                rows="3"
+                maxlength="300"
+                [attr.aria-invalid]="editForm.controls.bio.touched && editForm.controls.bio.invalid"
+                aria-describedby="bio-error"
+              ></textarea>
+              <p id="bio-error" class="field-error">
+                @if (editForm.controls.bio.touched && editForm.controls.bio.invalid) {
+                  A bio deve ter até 300 caracteres.
+                }
+              </p>
+              @if (saveError()) {
+                <p class="message error" role="alert">{{ saveError() }}</p>
+              }
+              @if (saved()) {
+                <p class="message success" role="status">Perfil salvo.</p>
+              }
+            </form>
+            <div class="avatar-editor">
+              <label for="avatar-file">Avatar (PNG ou JPEG, até 2 MiB)</label>
+              <input
+                id="avatar-file"
+                type="file"
+                accept="image/png,image/jpeg"
+                (change)="selectAvatar($event)"
+                [disabled]="avatarBusy()"
+              />
+              @if (user.avatarUrl) {
+                <button class="button secondary" (click)="removeAvatar()" [disabled]="avatarBusy()">
+                  Remover avatar
+                </button>
+              }
+              @if (avatarMessage()) {
+                <p role="status">{{ avatarMessage() }}</p>
+              }
+              @if (avatarError()) {
+                <p class="message error" role="alert">{{ avatarError() }}</p>
               }
             </div>
-          </article>
+          </div>
+          <aside class="profile-preview" aria-label="Prévia do perfil">
+            <p class="eyebrow">PRÉVIA EM TEMPO REAL</p>
+            <div class="preview-card">
+              <div class="preview-banner"></div>
+              <div class="preview-avatar" aria-hidden="true">
+                @if (avatarUrl(); as url) {
+                  <img [src]="url" alt="" />
+                } @else {
+                  {{ initial() }}
+                }
+              </div>
+              <strong>{{
+                editForm.controls.displayName.value || user.displayName
+              }}</strong><small>{{ '@' + user.username }}</small>
+              <p>{{ editForm.controls.bio.value || 'Sua bio aparecerá aqui.' }}</p>
+              <div class="preview-counts">
+                <span
+                  ><b>{{ connections()?.followersCount ?? '—' }}</b> seguidores</span
+                ><span
+                  ><b>{{ connections()?.followingCount ?? '—' }}</b> seguindo</span
+                >
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    } @else {
+      <section
+        id="activity-panel"
+        class="activity"
+        aria-labelledby="activity-title"
+        role="tabpanel"
+      >
+        <h2 id="activity-title">Atividade</h2>
+        <div class="tabs" aria-label="Conteúdo do perfil">
+          <button
+            [attr.aria-pressed]="section() === 'reviews'"
+            [class.active]="section() === 'reviews'"
+            (click)="changeSection('reviews')"
+          >
+            Avaliações
+          </button>
+          <button
+            [attr.aria-pressed]="section() === 'followers'"
+            [class.active]="section() === 'followers'"
+            (click)="changeSection('followers')"
+          >
+            Seguidores
+          </button>
+          <button
+            [attr.aria-pressed]="section() === 'following'"
+            [class.active]="section() === 'following'"
+            (click)="changeSection('following')"
+          >
+            Seguindo
+          </button>
+        </div>
+        @if (listError()) {
+          <div class="message error" role="alert">{{ listError() }}</div>
+          <button
+            class="button secondary"
+            (click)="loadList(reviews().length > 0 || related().length > 0)"
+          >
+            Tentar novamente
+          </button>
         }
-      }
-      @if (listLoading()) {
-        <p role="status">Carregando {{ section() === 'reviews' ? 'avaliações' : 'perfis' }}…</p>
-      }
-      @if (!listLoading() && !listError() && listTotal() === 0) {
-        <p class="empty">
-          {{
-            section() === 'reviews' ? 'Nenhuma avaliação publicada.' : 'Nenhum perfil nesta lista.'
-          }}
-        </p>
-      }
-      @if (listMore() && !listError()) {
-        <button class="button secondary more" (click)="loadList(true)" [disabled]="listLoading()">
-          Carregar mais
-        </button>
-      }
-    </section>
+        @if (section() === 'reviews') {
+          @for (review of reviews(); track review.id) {
+            <app-review-card
+              [review]="review"
+              [item]="metadata()[musicKey(review.item)] ?? null"
+              [pending]="metadata()[musicKey(review.item)] === undefined"
+            />
+          }
+        } @else {
+          @for (person of related(); track person.username) {
+            <article class="related">
+              <div class="mini-avatar" aria-hidden="true">
+                {{ person.displayName.slice(0, 1).toUpperCase() }}
+              </div>
+              <div>
+                <a [routerLink]="['/perfil', person.username]">{{ person.displayName }}</a>
+                <p>{{ '@' + person.username }}</p>
+                @if (person.bio) {
+                  <p>{{ person.bio }}</p>
+                }
+              </div>
+            </article>
+          }
+        }
+        @if (listLoading()) {
+          <p role="status">Carregando {{ section() === 'reviews' ? 'avaliações' : 'perfis' }}…</p>
+        }
+        @if (!listLoading() && !listError() && listTotal() === 0) {
+          <p class="empty">
+            {{
+              section() === 'reviews'
+                ? 'Nenhuma avaliação publicada.'
+                : 'Nenhum perfil nesta lista.'
+            }}
+          </p>
+        }
+        @if (listMore() && !listError()) {
+          <button class="button secondary more" (click)="loadList(true)" [disabled]="listLoading()">
+            Carregar mais
+          </button>
+        }
+      </section>
+    }
 
     @if (own) {
       <section class="logout">

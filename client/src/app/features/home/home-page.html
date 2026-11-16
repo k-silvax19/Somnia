@@ -15,20 +15,32 @@
     <a class="brand-link" routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
     <nav aria-label="Navegação principal">
       <button
-        [class.active]="!searchActive()"
-        [attr.aria-current]="!searchActive() ? 'page' : null"
-        (click)="selectTab(tab())"
+        [class.active]="!searchActive() && tab() === 'following'"
+        [attr.aria-current]="!searchActive() && tab() === 'following' ? 'page' : null"
+        (click)="selectTab('following')"
       >
         <app-icon name="home" />Início
       </button>
-      <button [class.active]="searchActive()" (click)="openSearch()">
-        <app-icon name="search" />Busca
+      <button
+        [class.active]="!searchActive() && tab() === 'discover'"
+        [attr.aria-current]="!searchActive() && tab() === 'discover' ? 'page' : null"
+        (click)="selectTab('discover')"
+      >
+        <app-icon name="compass" />Descobrir
       </button>
-      <a routerLink="/conta"><app-icon name="user" />Minha conta</a>
+      <button [class.active]="searchActive()" (click)="openSearch()">
+        <app-icon name="search" />Buscar
+      </button>
+      <a routerLink="/conta" aria-label="Minha conta"><app-icon name="user" />Perfil</a>
     </nav>
     <div class="sidebar-footer">
       <a routerLink="/conta" class="current-account"
-        ><span class="avatar small" aria-hidden="true">{{ initial() }}</span
+        ><span class="avatar small" aria-hidden="true">
+          @if (avatarUrl(); as url) {
+            <img [src]="url" alt="" />
+          } @else {
+            {{ initial() }}
+          }</span
         ><span>{{ displayName() }}</span
         ><app-icon name="user"
       /></a>
@@ -44,77 +56,134 @@
   </aside>
 
   <main id="feed-content" tabindex="-1">
-    <div class="intro">
-      <p class="visibility">
-        <app-icon name="info" />Avaliações visíveis apenas para participantes autenticados.
-      </p>
-      <h1>Seu universo musical</h1>
-      <form class="search-form" [formGroup]="searchForm" (ngSubmit)="search()" role="search">
-        <div class="search-field">
-          <app-icon name="search" /><label for="music-search" class="sr-only"
-            >Buscar álbuns ou músicas</label
-          ><input
-            #searchInput
-            id="music-search"
-            type="search"
-            formControlName="query"
-            maxlength="200"
-            placeholder="Buscar álbuns ou músicas"
-            aria-describedby="search-validation"
-            [attr.aria-invalid]="
-              searchForm.controls.query.touched && searchForm.controls.query.invalid
-            "
-          />
-        </div>
-        <label for="music-type" class="sr-only">Tipo de busca</label
-        ><select id="music-type" formControlName="type">
-          <option value="album">Álbuns</option>
-          <option value="track">Músicas</option>
-        </select>
-        <button
-          class="search-submit"
-          type="submit"
-          [disabled]="searchLoading() || searchWait() > 0"
-          aria-label="Pesquisar"
-        >
-          <app-icon name="arrow" />
+    <div class="intro" [class.discover-intro]="!searchActive() && tab() === 'discover'">
+      @if (!searchActive() && tab() === 'discover') {
+        <p class="eyebrow">OUÇA ALÉM DO ÓBVIO</p>
+      } @else {
+        <p class="visibility">
+          <app-icon name="info" />Avaliações visíveis apenas para participantes autenticados.
+        </p>
+      }
+      <h1>
+        {{
+          searchActive() ? 'Buscar' : tab() === 'discover' ? 'Descobrir' : 'Seu universo musical'
+        }}
+      </h1>
+      @if (!searchActive() && tab() === 'discover') {
+        <button class="button secondary discover-search" (click)="openSearch()">
+          <app-icon name="search" />Buscar música
         </button>
-      </form>
-      <p id="search-validation" class="validation">
-        @if (searchForm.controls.query.touched && searchForm.controls.query.invalid) {
-          Digite de 1 a 200 caracteres para buscar.
-        }
-      </p>
+      } @else {
+        <form class="search-form" [formGroup]="searchForm" (ngSubmit)="search()" role="search">
+          <div class="search-field">
+            <app-icon name="search" /><label for="music-search" class="sr-only"
+              >Buscar álbuns ou músicas</label
+            ><input
+              #searchInput
+              id="music-search"
+              type="search"
+              formControlName="query"
+              maxlength="200"
+              placeholder="Buscar álbuns ou músicas"
+              aria-describedby="search-validation"
+              [attr.aria-invalid]="
+                searchForm.controls.query.touched && searchForm.controls.query.invalid
+              "
+            />
+          </div>
+          <label for="music-type" class="sr-only">Tipo de busca</label
+          ><select id="music-type" formControlName="type">
+            <option value="album">Álbuns</option>
+            <option value="track">Músicas</option>
+          </select>
+          <button
+            class="search-submit"
+            type="submit"
+            [disabled]="searchLoading() || searchWait() > 0"
+            aria-label="Pesquisar"
+          >
+            <app-icon name="arrow" />
+          </button>
+        </form>
+        <p id="search-validation" class="validation">
+          @if (searchForm.controls.query.touched && searchForm.controls.query.invalid) {
+            Digite de 1 a 200 caracteres para buscar.
+          }
+        </p>
+      }
     </div>
     @if (logoutError()) {
       <p class="message error" role="alert">{{ logoutError() }}</p>
     }
 
-    <div class="tabs" aria-label="Selecionar avaliações">
-      <button
-        [class.selected]="tab() === 'following' && !searchActive()"
-        [attr.aria-pressed]="tab() === 'following' && !searchActive()"
-        [disabled]="feedWait() > 0"
-        (click)="selectTab('following')"
-      >
-        Seguindo
-      </button>
-      <button
-        [class.selected]="tab() === 'discover' && !searchActive()"
-        [attr.aria-pressed]="tab() === 'discover' && !searchActive()"
-        [disabled]="feedWait() > 0"
-        (click)="selectTab('discover')"
-      >
-        Descobrir
-      </button>
-      @if (!searchActive()) {
-        <button class="refresh" (click)="loadFeed()" [disabled]="loading() || feedWait() > 0">
-          Atualizar
-        </button>
-      }
-    </div>
+    @if (!searchActive() && tab() === 'discover' && featuredAlbums().length) {
+      <section class="featured" aria-labelledby="featured-title">
+        <div class="featured-heading">
+          <div>
+            <h2 id="featured-title">Em alta na comunidade</h2>
+            <p>Álbuns que estão gerando conversa agora.</p>
+          </div>
+        </div>
+        <div class="featured-grid">
+          @for (featured of featuredAlbums(); track musicKey(featured.item)) {
+            <a
+              [routerLink]="[
+                '/musica',
+                featured.item.provider,
+                featured.item.type,
+                featured.item.externalId,
+              ]"
+              class="featured-album"
+            >
+              <span class="featured-cover">
+                @if (coverUrl(featured.item.coverUrl); as url) {
+                  <img [src]="url" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                } @else {
+                  <app-icon name="music" />
+                }
+                @if (featured.review.score !== null) {
+                  <small>{{ featured.review.score }}</small>
+                }
+              </span>
+              <strong>{{ featured.item.title }}</strong><span>{{
+                featured.item.artists.join(', ')
+              }}</span>
+            </a>
+          }
+        </div>
+      </section>
+    }
 
-    <div class="home-grid">
+    @if (!searchActive()) {
+      @if (tab() === 'discover') {
+        <h2 class="voices-title">Vozes da comunidade</h2>
+      }
+      <div class="tabs" aria-label="Selecionar avaliações">
+        <button
+          [class.selected]="tab() === 'following' && !searchActive()"
+          [attr.aria-pressed]="tab() === 'following' && !searchActive()"
+          [disabled]="feedWait() > 0"
+          (click)="selectTab('following')"
+        >
+          Seguindo
+        </button>
+        <button
+          [class.selected]="tab() === 'discover' && !searchActive()"
+          [attr.aria-pressed]="tab() === 'discover' && !searchActive()"
+          [disabled]="feedWait() > 0"
+          (click)="selectTab('discover')"
+        >
+          Para você
+        </button>
+        @if (!searchActive()) {
+          <button class="refresh" (click)="loadFeed()" [disabled]="loading() || feedWait() > 0">
+            Atualizar
+          </button>
+        }
+      </div>
+    }
+
+    <div class="home-grid" [class.search-layout]="searchActive()">
       <section
         class="timeline"
         [attr.aria-label]="
@@ -267,49 +336,67 @@
         }
       </section>
 
-      <aside class="profile" aria-label="Resumo da sua conta">
-        <div class="profile-heading">
-          <span class="avatar large" aria-hidden="true">
-            @if (avatarUrl(); as url) {
-              <img [src]="url" alt="" />
-            } @else {
-              {{ initial() }}
-            }
-          </span>
-          <div>
-            <h2>{{ displayName() }}</h2>
-            @if (account()?.username; as username) {
-              <p>{{ '@' + username }}</p>
-            }
+      @if (!searchActive() && tab() === 'discover') {
+        <aside class="suggestions" aria-label="Perfis para conhecer">
+          <h2>Perfis para conhecer</h2>
+          @for (person of suggestedProfiles(); track person.username) {
+            <a [routerLink]="['/perfil', person.username]" class="suggestion">
+              <span class="avatar small" aria-hidden="true">{{
+                person.displayName.slice(0, 1).toUpperCase()
+              }}</span>
+              <span
+                ><strong>{{ person.displayName }}</strong
+                ><small>{{ '@' + person.username }}</small></span
+              >
+              <span class="suggestion-arrow" aria-hidden="true">+</span>
+            </a>
+          }
+        </aside>
+      } @else if (!searchActive()) {
+        <aside class="profile" aria-label="Resumo da sua conta">
+          <div class="profile-heading">
+            <span class="avatar large" aria-hidden="true">
+              @if (avatarUrl(); as url) {
+                <img [src]="url" alt="" />
+              } @else {
+                {{ initial() }}
+              }
+            </span>
+            <div>
+              <h2>{{ displayName() }}</h2>
+              @if (account()?.username; as username) {
+                <p>{{ '@' + username }}</p>
+              }
+            </div>
           </div>
-        </div>
-        <dl>
-          <div>
-            <dt>Avaliações</dt>
-            <dd>{{ reviewCount() ?? '—' }}</dd>
+          <dl>
+            <div>
+              <dt>Avaliações</dt>
+              <dd>{{ reviewCount() ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Seguidores</dt>
+              <dd>{{ connections()?.followersCount ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Seguindo</dt>
+              <dd>{{ connections()?.followingCount ?? '—' }}</dd>
+            </div>
+          </dl>
+          @if (profileLoading()) {
+            <p class="profile-note" role="status">Carregando sua conta…</p>
+          }
+          @if (profileError()) {
+            <p class="profile-note" role="status">{{ profileError() }}</p>
+            <button class="retry-profile" (click)="loadProfile()" [disabled]="profileLoading()">
+              Tentar novamente
+            </button>
+          }
+          <div class="profile-action">
+            <button class="button primary" (click)="openSearch()">Buscar álbuns e músicas</button>
           </div>
-          <div>
-            <dt>Seguidores</dt>
-            <dd>{{ connections()?.followersCount ?? '—' }}</dd>
-          </div>
-          <div>
-            <dt>Seguindo</dt>
-            <dd>{{ connections()?.followingCount ?? '—' }}</dd>
-          </div>
-        </dl>
-        @if (profileLoading()) {
-          <p class="profile-note" role="status">Carregando sua conta…</p>
-        }
-        @if (profileError()) {
-          <p class="profile-note" role="status">{{ profileError() }}</p>
-          <button class="retry-profile" (click)="loadProfile()" [disabled]="profileLoading()">
-            Tentar novamente
-          </button>
-        }
-        <div class="profile-action">
-          <button class="button primary" (click)="openSearch()">Buscar álbuns e músicas</button>
-        </div>
-      </aside>
+        </aside>
+      }
     </div>
   </main>
 }

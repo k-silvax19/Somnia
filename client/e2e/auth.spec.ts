@@ -190,6 +190,7 @@ test('responsive forms support keyboard input and reveal password', async ({ pag
   await page.goto('/entrar');
   await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible();
   await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
   await expect(page.getByLabel('E-mail', { exact: true })).toBeFocused();
   await page.keyboard.type(account.email);
   await page.keyboard.press('Tab');
@@ -205,6 +206,6 @@ test('responsive forms support keyboard input and reveal password', async ({ pag
   await page.screenshot({ path: 'test-results/register-mobile.png', fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/entrar');
-  await expect(page.getByRole('heading', { name: 'Entre no Somnia' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Entre no seu espaço.' })).toBeVisible();
   await page.screenshot({ path: 'test-results/auth-desktop.png', fullPage: true });
 });

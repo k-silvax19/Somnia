@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: process.env['SOMNIA_REAL_API']
     ? ['auth.real.spec.ts', 'profile.real.spec.ts']
-    : ['auth.spec.ts', 'home.spec.ts', 'music.spec.ts', 'profile.spec.ts'],
+    : ['auth.spec.ts', 'home.spec.ts', 'landing.spec.ts', 'music.spec.ts', 'profile.spec.ts'],
   fullyParallel: false,
   workers: 1,
   retries: 0,

@@ -7,15 +7,15 @@ import { Observable, Subscription, from, mergeMap, tap } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { apiError } from '../../core/http/api-error';
-import { Brand } from '../../shared/brand';
+import { ShellSidebar } from '../../shared/shell-sidebar';
 import { HomeApi } from '../home/home-api';
-import { MusicItem, Review, musicKey } from '../home/home.models';
+import { MusicItem, Review, coverUrl, musicKey } from '../home/home.models';
 import { ReviewCard } from '../home/review-card';
 import { AvatarRequest, ProfileApi, PublicProfile, RelatedProfile } from './profile-api';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [Brand, RouterLink, ReactiveFormsModule, ReviewCard],
+  imports: [ShellSidebar, RouterLink, ReactiveFormsModule, ReviewCard],
   providers: [ProfileApi, HomeApi],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
@@ -51,6 +51,7 @@ export class ProfilePage {
   protected readonly listError = signal('');
   protected readonly connectionError = signal('');
   protected readonly saving = signal(false);
+  protected readonly editing = signal(false);
   protected readonly saveError = signal('');
   protected readonly saved = signal(false);
   protected readonly following = signal(false);
@@ -60,9 +61,24 @@ export class ProfilePage {
   protected readonly loggingOut = signal(false);
   protected readonly logoutError = signal('');
   protected readonly musicKey = musicKey;
+  protected readonly coverUrl = coverUrl;
   protected readonly initial = computed(() =>
     (this.profile()?.displayName || 'S').slice(0, 1).toUpperCase(),
   );
+  protected readonly reviewedAlbums = computed(() => {
+    const seen = new Set<string>();
+    return this.reviews()
+      .filter((review) => review.item.type === 'album')
+      .map((review) => this.metadata()[musicKey(review.item)])
+      .filter((item): item is MusicItem => !!item)
+      .filter((item) => {
+        const key = musicKey(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 4);
+  });
   protected readonly editForm = inject(FormBuilder).nonNullable.group({
     displayName: ['', [Validators.required, Validators.maxLength(256), Validators.pattern(/\S/)]],
     bio: ['', [Validators.maxLength(300)]],
@@ -115,6 +131,7 @@ export class ProfilePage {
     this.connectionError.set('');
     this.avatarMessage.set('');
     this.avatarError.set('');
+    this.editing.set(false);
     this.currentUsername = '';
     this.selfUsername.set('');
     this.selfLoaded.set(false);
@@ -191,7 +208,9 @@ export class ProfilePage {
         if (old) URL.revokeObjectURL(old);
       },
       error: () => {
-        /* Initial remains visible. */
+        this.avatarError.set(
+          'A foto foi processada, mas não pôde ser carregada. Atualize o perfil.',
+        );
       },
     });
     this.requests.add(this.avatarRequest);
@@ -208,6 +227,7 @@ export class ProfilePage {
   }
 
   protected changeSection(section: 'reviews' | 'followers' | 'following'): void {
+    this.editing.set(false);
     if (this.section() === section) return;
     this.listRequest?.unsubscribe();
     this.listLoading.set(false);

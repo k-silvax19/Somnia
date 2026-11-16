@@ -1,8 +1,9 @@
 # Somnia — frontend
 
-Frontend Angular 22, standalone, com Reactive Forms, signals e SCSS. Esta entrega
-implementa **autenticação, início, detalhes musicais, avaliações e perfis**, seguindo as cores carvão e âmbar da
-referência visual. O projeto é uma demo/TCC da Academia do Programador.
+Frontend Angular 22, standalone, com Reactive Forms, signals, Tailwind CSS, Lucide e SCSS.
+Inclui página pública, autenticação, feed, busca, detalhes musicais, avaliações e perfis.
+O visual segue o [protótipo do Figma](https://rank-splash-97976218.figma.site/), adaptado
+às funções existentes do Somnia e sem a seção “Meu Diário”.
 
 ## Executar
 
@@ -11,6 +12,13 @@ Na raiz do repositório, inicie a API conforme a configuração local existente:
 
 ```powershell
 dotnet run --project server/src/Api --launch-profile https
+```
+
+Para que fotos de perfil sejam processadas, inicie também o RabbitMQ e o Worker
+em outro terminal, conforme o [guia de mensageria](../docs/MENSAGERIA.md):
+
+```powershell
+dotnet run --project server/src/Worker
 ```
 
 Em outro terminal:
@@ -46,13 +54,14 @@ Este PR não publica a aplicação nem configura hospedagem.
 
 | Rota                                  | Acesso           | Comportamento                                                          |
 | ------------------------------------- | ---------------- | ---------------------------------------------------------------------- |
+| `/`                                   | público          | Apresentação do Somnia e acesso a cadastro/login                       |
 | `/entrar`                             | `guestGuard`     | Login por e-mail/senha; autenticado segue para `/inicio`               |
 | `/cadastro`                           | `guestGuard`     | Nome, username, e-mail, senha e confirmação; retorna ao login após 201 |
 | `/inicio`                             | `authGuard`      | Feed, descoberta, busca musical e resumo da conta                      |
 | `/conta`                              | `authGuard`      | Histórico, relações, edição de perfil/avatar e logout global           |
 | `/perfil/:username`                   | `authGuard`      | Perfil, histórico, seguidores/seguidos e seguir/deixar de seguir       |
 | `/musica/:provider/:type/:externalId` | `authGuard`      | Detalhes de álbum/faixa, comunidade e avaliação do titular             |
-| `/` e rotas desconhecidas             | redirecionamento | Passam por `/inicio` e suas guards                                     |
+| Rotas desconhecidas                   | redirecionamento | Retornam à página pública `/`                                          |
 
 O grupo privado usa `canActivate` e `canActivateChild`. Novas páginas privadas
 devem entrar nesse grupo. As guards aguardam restauração antes de renderizar a
@@ -61,8 +70,8 @@ em cada chamada, inclusive para tokens revogados.
 
 ## Tela inicial
 
-A composição segue `somnia-layout.jpg`: navegação lateral, fundo carvão,
-detalhes em âmbar, avaliações no centro e resumo da conta à direita. Em telas
+A composição segue o Figma: navegação lateral, fundo roxo escuro,
+detalhes em lilás, avaliações no centro e resumo da conta à direita. Em telas
 pequenas, a navegação fica em um menu expansível e o resumo vem depois do feed.
 
 - Seguindo consulta `/api/feed`; Descobrir consulta `/api/discover`.
@@ -131,7 +140,7 @@ dos testes. O nome do autor nas avaliações abre seu perfil.
 - O histórico continua visível se o catálogo musical estiver indisponível.
   Títulos e capas são enriquecidos separadamente, com no máximo três consultas
   simultâneas. A nota do card é pessoal; não representa a média comunitária.
-- Nome e bio são texto simples. O formulário informa a visibilidade antes de
+- A aba “Editar usuário” reúne nome, bio e foto de perfil. Nome e bio são texto simples. O formulário informa a visibilidade antes de
   salvar, valida os limites da API e preserva o rascunho em caso de erro.
 - O avatar aceita PNG/JPEG de até 2 MiB. Após o envio, a tela consulta o status
   do processamento assíncrono; erros de validação da imagem são apresentados

@@ -11,7 +11,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription, catchError, forkJoin, map, mergeMap, of } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -41,6 +41,7 @@ export class HomePage {
   protected readonly auth = inject(AuthService);
   private readonly api = inject(HomeApi);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly account = signal<Account | null>(null);
   protected readonly connections = signal<Connections | null>(null);
@@ -70,6 +71,31 @@ export class HomePage {
   protected readonly displayName = computed(
     () => this.account()?.displayName || this.auth.session()?.nome || 'Sua conta',
   );
+  protected readonly featuredAlbums = computed(() => {
+    const seen = new Set<string>();
+    return this.reviews()
+      .filter((review) => review.item.type === 'album')
+      .map((review) => ({ review, item: this.metadata()[musicKey(review.item)] }))
+      .filter((entry): entry is { review: Review; item: MusicItem } => !!entry.item)
+      .filter(({ item }) => {
+        const key = musicKey(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 5);
+  });
+  protected readonly suggestedProfiles = computed(() => {
+    const seen = new Set<string>();
+    return this.reviews()
+      .map((review) => review.author)
+      .filter((author) => {
+        if (author.username === this.account()?.username || seen.has(author.username)) return false;
+        seen.add(author.username);
+        return true;
+      })
+      .slice(0, 3);
+  });
   protected readonly initial = computed(() => this.displayName().slice(0, 1).toUpperCase());
   protected readonly searchForm = inject(FormBuilder).nonNullable.group({
     query: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(/\S/)]],
@@ -108,6 +134,11 @@ export class HomePage {
     });
     this.loadProfile();
     this.loadFeed();
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const view = params.get('view');
+      if (view === 'discover') this.selectTab('discover');
+      else if (view === 'search') this.openSearch();
+    });
   }
 
   protected loadProfile(): void {
@@ -218,7 +249,7 @@ export class HomePage {
   protected openSearch(): void {
     this.searchActive.set(true);
     this.menuOpen.set(false);
-    this.searchInput()?.nativeElement.focus();
+    setTimeout(() => this.searchInput()?.nativeElement.focus());
   }
 
   protected search(more = false): void {

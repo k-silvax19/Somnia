@@ -2,22 +2,17 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
-import { Brand } from '../../shared/brand';
+import { ShellSidebar } from '../../shared/shell-sidebar';
 import { MusicReference, musicKey } from '../home/home.models';
 import { validReference } from './music-api';
 import { MusicDetailsView } from './music-details';
 
 @Component({
   selector: 'app-music-page',
-  imports: [RouterLink, Brand, MusicDetailsView],
+  imports: [RouterLink, ShellSidebar, MusicDetailsView],
   template: `
     @if (auth.session()) {
-      <header>
-        <a routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
-        <nav aria-label="Navegação principal">
-          <a routerLink="/inicio">Início</a><a routerLink="/conta">Minha conta</a>
-        </nav>
-      </header>
+      <app-shell-sidebar />
       <main>
         <a class="back" routerLink="/inicio">← Voltar ao início</a>
         @for (item of selection(); track musicKey(item)) {
@@ -30,36 +25,26 @@ import { MusicDetailsView } from './music-details';
     }
   `,
   styles: `
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 1.2rem max(1rem, calc((100vw - 1200px) / 2));
-      border-bottom: 1px solid var(--border);
-      background: #191d21;
-    }
-    header > a {
-      text-decoration: none;
-    }
-    nav {
-      display: flex;
-      gap: 1.5rem;
-      font-size: 0.85rem;
-    }
-    nav a {
-      color: var(--text);
-      text-decoration: none;
-    }
     main {
-      max-width: 1232px;
-      padding: 1.5rem 1rem 4rem;
-      margin: auto;
+      max-width: 1180px;
+      margin-left: 15.25rem;
+      padding: 2.5rem 2.2rem 4rem;
     }
     .back {
       font-size: 0.85rem;
       text-decoration: none;
       color: var(--muted);
+    }
+    @media (max-width: 1100px) {
+      main {
+        margin-left: 13rem;
+      }
+    }
+    @media (max-width: 600px) {
+      main {
+        margin-left: 0;
+        padding: 1.5rem 1rem 4rem;
+      }
     }
   `,
 })

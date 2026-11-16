@@ -3,6 +3,12 @@ import { authGuard, guestGuard } from './core/auth/auth.guards';
 
 export const routes: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    title: 'Somnia · Histórias através da música',
+    loadComponent: () => import('./features/landing/landing-page').then((m) => m.LandingPage),
+  },
+  {
     path: 'entrar',
     title: 'Entrar · Somnia',
     canActivate: [guestGuard],
@@ -42,8 +48,7 @@ export const routes: Routes = [
         title: 'Perfil · Somnia',
         loadComponent: () => import('./features/profile/profile-page').then((m) => m.ProfilePage),
       },
-      { path: '', pathMatch: 'full', redirectTo: 'inicio' },
     ],
   },
-  { path: '**', redirectTo: 'inicio' },
+  { path: '**', redirectTo: '' },
 ];

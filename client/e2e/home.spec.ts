@@ -137,6 +137,7 @@ test('home hydrates metadata, preserves zero and no-score, switches tabs and ope
   await page.screenshot({ path: 'test-results/home-desktop.png', fullPage: true });
   await page.getByRole('button', { name: 'Descobrir', exact: true }).click();
   await expect(page.getByText('Minha descoberta de hoje.')).toBeVisible();
+  await page.screenshot({ path: 'test-results/discover-desktop.png', fullPage: true });
   await expect(page.getByText('A produção é interessante', { exact: false })).not.toBeVisible();
   expect(calls.filter((url) => url === '/api/catalog/albums/aurora')).toHaveLength(1);
   await page.getByRole('link', { name: 'Minha conta', exact: true }).click();
@@ -178,8 +179,8 @@ test('a slow previous tab cannot replace the selected timeline', async ({ page, 
   await settled;
   await expect(page.locator('app-review-card')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Descobrir', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
+    'aria-current',
+    'page',
   );
 });
 
@@ -246,7 +247,7 @@ test('mobile navigation and real search parameters work without horizontal overf
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/home-mobile.png', fullPage: true });
   await page.getByRole('button', { name: 'Abrir navegação' }).click();
-  await page.getByRole('button', { name: 'Busca', exact: true }).click();
+  await page.getByRole('button', { name: 'Buscar', exact: true }).click();
   await expect(page.getByRole('searchbox')).toBeFocused();
   await page.getByRole('searchbox').fill('Somnia & noite');
   await page.getByLabel('Tipo de busca').selectOption('track');

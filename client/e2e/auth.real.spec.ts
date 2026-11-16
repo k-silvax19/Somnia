@@ -65,6 +65,7 @@ test('real API: auth, review CRUD, album and track navigation, reload and global
   await expect(page.getByText('Resenha do teste integrado da tela inicial.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Aurora', exact: true })).toBeVisible();
   await expect(page.getByLabel('Nota 92 de 100')).toBeVisible();
+  await page.getByRole('button', { name: 'Buscar música' }).click();
   await page.getByRole('searchbox').fill('Somnia');
   await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Noturno', exact: true })).toBeVisible();
