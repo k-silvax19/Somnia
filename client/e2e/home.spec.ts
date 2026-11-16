@@ -147,6 +147,24 @@ test('home hydrates metadata, preserves zero and no-score, switches tabs and ope
   await expect(page).toHaveURL(/\/inicio$/);
 });
 
+test('clicking an evaluation card opens its music details', async ({ page, context }) => {
+  await fixture(context);
+  await page.route('**/api/catalog/simulated/album/aurora/reviews?*', (route) =>
+    route.fulfill({
+      json: {
+        reviews: pageData([reviews[0]]),
+        summary: { average: 92, count: 1 },
+        myReview: null,
+      },
+    }),
+  );
+  await page.goto('/inicio');
+  const card = page.locator('app-review-card').filter({ hasText: 'Aurora' });
+  await card.getByRole('link', { name: 'Ver detalhes de Aurora' }).click();
+  await expect(page).toHaveURL(/\/musica\/simulated\/album\/aurora$/);
+  await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
+});
+
 test('empty feed invites discovery without fake reviews', async ({ page, context }) => {
   await fixture(context);
   await page.route('**/api/feed?*', (route) => route.fulfill({ json: pageData([]) }));

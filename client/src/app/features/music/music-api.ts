@@ -43,8 +43,7 @@ export function musicError(error: unknown, catalog = false) {
       result.message =
         'Este item não está disponível no catálogo atual. Suas avaliações continuam acessíveis.';
     if (catalog && [502, 503].includes(error.status))
-      result.message =
-        'O catálogo musical está indisponível no momento. Tente novamente em instantes.';
+      result.message = 'Não foi possível carregar as informações desta música agora.';
     if (error.status === 503) {
       const seconds = Number(error.headers.get('Retry-After'));
       result.retryAfter = Number.isFinite(seconds) && seconds > 0 ? seconds : 60;

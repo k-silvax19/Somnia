@@ -68,7 +68,7 @@ describe('music details contract', () => {
       true,
     );
     expect(problem.retryAfter).toBe(30);
-    expect(problem.message).toContain('catálogo musical');
+    expect(problem.message).toContain('informações desta música');
     expect(problem.message).not.toContain('secret');
   });
 });

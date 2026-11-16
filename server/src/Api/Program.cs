@@ -107,7 +107,7 @@ builder.Services.AddCors(options => options.AddPolicy("Client", policy =>
         policy.WithOrigins(origins);
     }
 
-    policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithExposedHeaders("Retry-After");
 }));
 
 builder.Services.AddRateLimiter(options =>

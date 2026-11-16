@@ -7,7 +7,22 @@ import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
   selector: 'app-review-card',
   imports: [Icon, RouterLink],
   template: `
-    <article>
+    <article [class.clickable]="linkToItem()">
+      @if (linkToItem()) {
+        <a
+          class="card-link"
+          [routerLink]="[
+            '/musica',
+            review().item.provider,
+            review().item.type,
+            review().item.externalId,
+          ]"
+          [attr.aria-label]="
+            'Ver detalhes de ' +
+            (item()?.title || (review().item.type === 'album' ? 'o álbum' : 'a música'))
+          "
+        ></a>
+      }
       <header>
         <span class="avatar" aria-hidden="true">{{
           review().author.displayName.slice(0, 1).toUpperCase()
@@ -43,24 +58,12 @@ import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
             <div>
               <p class="type">{{ review().item.type === 'album' ? 'Álbum' : 'Música' }}</p>
               <h2>
-                @if (linkToItem()) {
-                  <a
-                    [routerLink]="[
-                      '/musica',
-                      review().item.provider,
-                      review().item.type,
-                      review().item.externalId,
-                    ]"
-                    >{{
-                      item()?.title || (pending() ? 'Carregando título…' : 'Título indisponível')
-                    }}</a
-                  >
-                } @else {
-                  {{ item()?.title || (pending() ? 'Carregando título…' : 'Título indisponível') }}
-                }
+                {{ item()?.title || (pending() ? 'Carregando título…' : 'Título indisponível') }}
               </h2>
               @if (item(); as music) {
-                <p class="artist">{{ music.artists.join(', ') || 'Artista não informado' }}</p>
+                @if (music.artists.length) {
+                  <p class="artist">{{ music.artists.join(', ') }}</p>
+                }
               }
             </div>
             @if (review().score !== null) {

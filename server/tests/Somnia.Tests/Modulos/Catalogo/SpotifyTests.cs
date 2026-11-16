@@ -122,6 +122,27 @@ public sealed class SpotifyTests
         Assert.Equal(2, chamadas);
     }
 
+    [Fact]
+    public async Task QuotaDeDetalhes_NaoBloqueiaBuscaEmOutroGrupo()
+    {
+        using var fixture = new Contexto(request =>
+        {
+            if (request.RequestUri!.AbsolutePath.Contains("/albums/"))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+                response.Headers.TryAddWithoutValidation("Retry-After", "300");
+                return response;
+            }
+            return Json(Pagina([Item("album", AlbumId)], 1));
+        });
+
+        await Assert.ThrowsAsync<CatalogoIndisponivelException>(() => fixture.Provider.ObterAlbumAsync(AlbumId, default));
+        var busca = await fixture.Provider.PesquisarAsync("teste", TipoItemCatalogo.Album, 10, 0, default);
+
+        Assert.Single(busca.Items);
+        Assert.Equal(2, fixture.Calls.Count(x => x.Host == "api.spotify.com"));
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.ServiceUnavailable)]
