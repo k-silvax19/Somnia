@@ -23,6 +23,8 @@ describe('home catalog integration', () => {
     spotifyUrl: 'https://open.spotify.com/album/abc',
   };
   beforeEach(() => {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith('somnia:spotify-catalog:')) localStorage.removeItem(key);
     TestBed.configureTestingModule({
       providers: [HomeApi, provideHttpClient(), provideHttpClientTesting()],
     });
@@ -84,6 +86,31 @@ describe('home catalog integration', () => {
       coverUrl: 'https://i.scdn.co/image/cover',
       spotifyUrl: 'https://open.spotify.com/album/AAAAAAAAAAAAAAAAAAAAAA',
     });
+    const afterReload = TestBed.runInInjectionContext(() => new HomeApi());
+    expect(await firstValueFrom(afterReload.metadata(spotifyItem))).toEqual(await result);
+    http.expectNone(() => true);
+  });
+
+  it('reuses a recent Spotify search instead of requesting the same page again', async () => {
+    const first = firstValueFrom(api.search('Slipknot', 'album', 0));
+    const page = {
+      items: [
+        {
+          ...spotifyItem,
+          title: 'Slipknot',
+          artists: ['Slipknot'],
+          coverUrl: null,
+          spotifyUrl: `https://open.spotify.com/album/${spotifyItem.externalId}`,
+        },
+      ],
+      limit: 10,
+      offset: 0,
+      total: 1,
+      hasMore: false,
+    };
+    http.expectOne((request) => request.url === `${environment.apiUrl}/catalog/search`).flush(page);
+    expect(await first).toEqual(page);
+    expect(await firstValueFrom(api.search('Slipknot', 'album', 0))).toEqual(page);
     http.expectNone(() => true);
   });
 

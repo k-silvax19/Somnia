@@ -83,13 +83,17 @@ async function fixture(context: BrowserContext) {
     }
     if (path === '/api/me') return route.fulfill({ json: me });
     if (path === '/api/users/marina/avatar')
-      return route.fulfill({
-        contentType: 'image/png',
-        body: Buffer.from(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/LZkAAAAASUVORK5CYII=',
-          'base64',
-        ),
-      });
+      return route.fulfill(
+        me.avatarUrl
+          ? {
+              contentType: 'image/png',
+              body: Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/LZkAAAAASUVORK5CYII=',
+                'base64',
+              ),
+            }
+          : { status: 404 },
+      );
     if (path === '/api/users/ana') return route.fulfill({ json: other });
     if (path === '/api/users/ana/follow' && request.method() !== 'GET') {
       state.following = request.method() === 'PUT';
@@ -187,7 +191,15 @@ test('public profile shows history, follows and lists followers', async ({ page,
 
 test('avatar upload waits for processing and can be removed', async ({ page, context }) => {
   const state = await fixture(context);
+  await page.route('**/api/users/marina/reviews?*', (route) =>
+    route.fulfill({
+      json: pageData([
+        { ...review, author: { username: 'marina', displayName: 'Marina', avatarUrl: null } },
+      ]),
+    }),
+  );
   await page.goto('/conta');
+  await expect(page.locator('app-review-card .avatar img')).toHaveCount(0);
   await page.getByRole('button', { name: 'Alterar foto do perfil' }).click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Escolher foto' }).click();
@@ -203,6 +215,7 @@ test('avatar upload waits for processing and can be removed', async ({ page, con
   });
   await expect(page.getByText('Avatar atualizado.')).toBeVisible();
   await expect(page.locator('.profile-header .avatar img')).toBeVisible();
+  await expect(page.locator('app-review-card .avatar img')).toBeVisible();
   expect(state.uploads).toBe(1);
   await page.getByRole('button', { name: 'Fechar' }).click();
   await page.getByRole('link', { name: 'Início', exact: true }).click();
@@ -213,6 +226,7 @@ test('avatar upload waits for processing and can be removed', async ({ page, con
   await page.getByRole('button', { name: 'Remover avatar' }).click();
   await expect(page.getByText('Avatar removido.')).toBeVisible();
   await expect(page.locator('.profile-header .avatar img')).toHaveCount(0);
+  await expect(page.locator('app-review-card .avatar img')).toHaveCount(0);
 });
 
 test('profile works at 360 px and activity tabs respond to keyboard', async ({ page, context }) => {

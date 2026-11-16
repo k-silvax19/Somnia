@@ -242,8 +242,56 @@ test('Spotify quota fallback keeps album title, cover and reviews visible', asyn
   await expect(page.getByRole('heading', { name: 'Album em prévia', level: 1 })).toBeVisible();
   await expect(page.locator('.hero .artwork img')).toBeVisible();
   await expect(page.locator('app-review-card h2')).toHaveText('Album em prévia');
-  await expect(page.getByText('Não foi possível carregar as informações desta música agora.')).toHaveCount(0);
+  await expect(
+    page.getByText('Não foi possível carregar as informações desta música agora.'),
+  ).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Artista e faixas no Spotify' })).toHaveCount(0);
+});
+
+test('a loaded Spotify album keeps its native track list after a reload', async ({
+  page,
+  context,
+}) => {
+  await fixture(context);
+  const spotifyId = 'AAAAAAAAAAAAAAAAAAAAAA';
+  let detailRequests = 0;
+  await page.route(`**/api/catalog/albums/${spotifyId}`, (route) => {
+    detailRequests++;
+    return route.fulfill({
+      json: {
+        provider: 'spotify',
+        type: 'album',
+        externalId: spotifyId,
+        title: 'Album salvo',
+        artists: ['Artista'],
+        coverUrl: null,
+        spotifyUrl: `https://open.spotify.com/album/${spotifyId}`,
+        tracks: [
+          {
+            provider: 'spotify',
+            type: 'track',
+            externalId: 'BBBBBBBBBBBBBBBBBBBBBB',
+            title: 'Faixa de teste',
+            artists: ['Artista'],
+            coverUrl: null,
+            spotifyUrl: 'https://open.spotify.com/track/BBBBBBBBBBBBBBBBBBBBBB',
+            trackNumber: 1,
+          },
+        ],
+      },
+    });
+  });
+  await page.route(`**/api/catalog/spotify/album/${spotifyId}/reviews?*`, (route) =>
+    route.fulfill({
+      json: { reviews: pageData([]), summary: { average: null, count: 0 }, myReview: null },
+    }),
+  );
+  await page.goto(`/musica/spotify/album/${spotifyId}`);
+  await expect(page.getByRole('heading', { name: 'Faixas do álbum' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Faixa de teste/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('link', { name: /Faixa de teste/ })).toBeVisible();
+  expect(detailRequests).toBe(1);
 });
 
 test('duplicate creation requires explicit reload and never overwrites the existing review', async ({

@@ -41,6 +41,12 @@ header {
   color: var(--text);
   border: 2px solid #5c4b7c;
   font-size: 0.85rem;
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .author {
   display: flex;

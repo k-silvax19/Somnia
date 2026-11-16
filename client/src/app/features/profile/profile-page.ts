@@ -20,6 +20,7 @@ import { ShellSidebar } from '../../shared/shell-sidebar';
 import { HomeApi } from '../home/home-api';
 import { MusicItem, Review, coverUrl, musicKey } from '../home/home.models';
 import { ReviewCard } from '../home/review-card';
+import { ReviewAvatarCache } from '../home/review-avatar-cache';
 import {
   AvatarRequest,
   BannerTheme,
@@ -51,6 +52,7 @@ export class ProfilePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly reviewAvatars = inject(ReviewAvatarCache);
   protected readonly auth = inject(AuthService);
   protected readonly own = this.route.snapshot.data['own'] === true;
   protected readonly selfUsername = signal('');
@@ -253,6 +255,7 @@ export class ProfilePage {
         this.avatarUrl.set(URL.createObjectURL(blob));
         if (old) URL.revokeObjectURL(old);
         if (uploaded) {
+          this.reviewAvatars.invalidate(this.currentUsername);
           this.avatarBusy.set(false);
           this.avatarMessage.set('Avatar atualizado.');
         }
@@ -501,6 +504,7 @@ export class ProfilePage {
           if (old) URL.revokeObjectURL(old);
           this.avatarUrl.set(null);
           this.profile.update((profile) => profile && { ...profile, avatarUrl: null });
+          this.reviewAvatars.invalidate(this.currentUsername);
           this.avatarBusy.set(false);
           this.avatarMessage.set('Avatar removido.');
         },

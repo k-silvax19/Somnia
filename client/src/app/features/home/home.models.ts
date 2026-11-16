@@ -14,7 +14,7 @@ export interface MusicReference {
 
 export interface Review {
   id: string;
-  author: { username: string; displayName: string };
+  author: { username: string; displayName: string; avatarUrl?: string | null };
   item: MusicReference;
   score: number | null;
   review: string | null;

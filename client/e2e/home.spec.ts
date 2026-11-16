@@ -165,6 +165,41 @@ test('clicking an evaluation card opens its music details', async ({ page, conte
   await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
 });
 
+test('review cards show the author photo and share its request', async ({ page, context }) => {
+  await fixture(context);
+  const author = { ...reviews[0].author };
+  await page.route('**/api/feed?*', (route) =>
+    route.fulfill({
+      json: pageData([
+        { ...reviews[0], author },
+        { ...reviews[0], id: 'another', author },
+      ]),
+    }),
+  );
+  let avatarRequests = 0;
+  await page.route('**/api/users/ana.luiza/avatar', (route) => {
+    avatarRequests++;
+    return route.fulfill({
+      contentType: 'image/png',
+      body: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/LZkAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+  });
+  await page.goto('/inicio');
+  await expect(page.locator('app-review-card .avatar img')).toHaveCount(2);
+  await expect
+    .poll(() =>
+      page
+        .locator('app-review-card .avatar img')
+        .first()
+        .evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
+    )
+    .toBe(true);
+  expect(avatarRequests).toBe(1);
+});
+
 test('empty feed invites discovery without fake reviews', async ({ page, context }) => {
   await fixture(context);
   await page.route('**/api/feed?*', (route) => route.fulfill({ json: pageData([]) }));

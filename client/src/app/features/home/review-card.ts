@@ -1,7 +1,8 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../shared/icon';
 import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
+import { ReviewAvatarCache } from './review-avatar-cache';
 
 @Component({
   selector: 'app-review-card',
@@ -24,9 +25,13 @@ import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
         ></a>
       }
       <header>
-        <span class="avatar" aria-hidden="true">{{
-          review().author.displayName.slice(0, 1).toUpperCase()
-        }}</span>
+        <span class="avatar" aria-hidden="true">
+          @if (avatarUrl() && !avatarImageFailed()) {
+            <img [src]="avatarUrl()" alt="" (error)="avatarImageFailed.set(true)" />
+          } @else {
+            {{ review().author.displayName.slice(0, 1).toUpperCase() }}
+          }
+        </span>
         <div class="author">
           <strong
             ><a [routerLink]="['/perfil', review().author.username]">{{
@@ -106,12 +111,15 @@ import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
   styleUrl: './review-card.scss',
 })
 export class ReviewCard {
+  private readonly avatars = inject(ReviewAvatarCache);
   readonly review = input.required<Review>();
   readonly item = input<MusicItem | null>(null);
   readonly pending = input(false);
   readonly linkToItem = input(true);
   protected readonly expanded = signal(false);
   protected readonly imageFailed = signal(false);
+  protected readonly avatarUrl = signal<string | null>(null);
+  protected readonly avatarImageFailed = signal(false);
   protected readonly cover = computed(() => coverUrl(this.item()?.coverUrl ?? null));
   protected readonly spotify = computed(() => (this.item() ? spotifyUrl(this.item()!) : null));
   protected readonly date = computed(() =>
@@ -119,4 +127,26 @@ export class ReviewCard {
       new Date(this.review().createdAt),
     ),
   );
+
+  constructor() {
+    effect((onCleanup) => {
+      const author = this.review().author;
+      const avatarVersion = this.avatars.version(author.username);
+      this.avatarUrl.set(null);
+      this.avatarImageFailed.set(false);
+      // Older API responses omit avatarUrl; fetch once while the server is being updated.
+      if (author.avatarUrl === null && avatarVersion === 0) return;
+      let objectUrl: string | null = null;
+      const request = this.avatars.load(author.username).subscribe((blob) => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = blob ? URL.createObjectURL(blob) : null;
+        this.avatarUrl.set(objectUrl);
+        this.avatarImageFailed.set(false);
+      });
+      onCleanup(() => {
+        request.unsubscribe();
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+      });
+    });
+  }
 }

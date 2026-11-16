@@ -13,6 +13,7 @@ import {
   coverUrl,
   musicKey,
 } from './home.models';
+import { SpotifyCatalogCache } from './spotify-cache';
 
 interface SpotifyPreview {
   provider_name: string;
@@ -24,6 +25,7 @@ interface SpotifyPreview {
 @Injectable()
 export class HomeApi {
   private readonly http = inject(HttpClient);
+  private readonly spotifyCache = inject(SpotifyCatalogCache);
   private readonly base = environment.apiUrl;
   private readonly metadataCache = new Map<
     string,
@@ -64,9 +66,15 @@ export class HomeApi {
     );
   }
   search(query: string, type: 'album' | 'track', offset: number) {
-    return this.http.get<Page<MusicItem>>(`${this.base}/catalog/search`, {
-      params: { q: query, type, limit: 10, offset },
-      timeout: 35_000,
+    return defer(() => {
+      const cached = this.spotifyCache.readSearch(query, type, offset);
+      if (cached) return of(cached);
+      return this.http
+        .get<Page<MusicItem>>(`${this.base}/catalog/search`, {
+          params: { q: query, type, limit: 10, offset },
+          timeout: 35_000,
+        })
+        .pipe(tap((page) => this.spotifyCache.writeSearch(query, type, offset, page)));
     });
   }
   metadata(item: MusicReference): Observable<MusicItem | null> {
@@ -78,6 +86,13 @@ export class HomeApi {
         return of(null);
       if (item.provider === 'spotify' && !/^[a-zA-Z0-9]{22}$/.test(item.externalId))
         return of(null);
+      if (item.provider === 'spotify') {
+        const stored = this.spotifyCache.readCard(item);
+        if (stored) {
+          const { provider, type, externalId, title, artists, coverUrl, spotifyUrl } = stored;
+          return of({ provider, type, externalId, title, artists, coverUrl, spotifyUrl });
+        }
+      }
       const key = musicKey(item);
       const cached = this.metadataCache.get(key);
       if (cached && cached.until > Date.now()) return cached.result;
@@ -103,7 +118,10 @@ export class HomeApi {
       const result = source.pipe(
         tap((metadata) => {
           if (!metadata) this.metadataCache.delete(key);
-          else this.metadataCache.set(key, { until: Date.now() + 120_000, result: of(metadata) });
+          else {
+            this.metadataCache.set(key, { until: Date.now() + 120_000, result: of(metadata) });
+            if (item.provider === 'spotify') this.spotifyCache.writePreview(item, metadata);
+          }
         }),
         catchError((error: unknown) => {
           this.metadataCache.delete(key);
