@@ -7,8 +7,15 @@ const baseMe = {
   email: 'marina@example.test',
   bio: 'Minha bio',
   avatarUrl: null as string | null,
+  bannerTheme: 'midnight',
 };
-const other = { username: 'ana', displayName: 'Ana', bio: 'Discos favoritos', avatarUrl: null };
+const other = {
+  username: 'ana',
+  displayName: 'Ana',
+  bio: 'Discos favoritos',
+  avatarUrl: null,
+  bannerTheme: 'mist',
+};
 const review = {
   id: 'review-1',
   author: { username: 'ana', displayName: 'Ana' },
@@ -55,6 +62,7 @@ async function fixture(context: BrowserContext) {
       if (state.failEdit) return route.fulfill({ status: 503, json: {} });
       me.displayName = edit.displayName;
       me.bio = edit.bio;
+      me.bannerTheme = edit.bannerTheme;
       return route.fulfill({ json: me });
     }
     if (path === '/api/me/avatar' && request.method() === 'PUT') {
@@ -135,6 +143,8 @@ test('own profile keeps edits after a failed save and shows the saved bio', asyn
   await page.screenshot({ path: 'test-results/profile-edit-desktop.png', fullPage: true });
   await page.getByLabel('Nome de exibição').fill('Marina Nova');
   await page.getByLabel('Bio', { exact: true }).fill('Outra bio');
+  await page.getByRole('button', { name: 'Aurora' }).click();
+  await expect(page.locator('.preview-banner')).toHaveClass(/banner-aurora/);
   state.failEdit = true;
   await page.getByRole('button', { name: 'Salvar perfil' }).click();
   await expect(page.getByRole('alert')).toBeVisible();
@@ -143,16 +153,23 @@ test('own profile keeps edits after a failed save and shows the saved bio', asyn
   await page.getByRole('button', { name: 'Salvar perfil' }).click();
   await expect(page.getByRole('heading', { name: 'Marina Nova', level: 1 })).toBeVisible();
   await expect(page.getByText('Perfil salvo.')).toBeVisible();
-  expect(state.edits[1]).toEqual({ displayName: 'Marina Nova', bio: 'Outra bio' });
+  expect(state.edits[1]).toEqual({
+    displayName: 'Marina Nova',
+    bio: 'Outra bio',
+    bannerTheme: 'aurora',
+  });
   await page.setViewportSize({ width: 360, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/profile-edit-mobile.png', fullPage: true });
+  await page.reload();
+  await expect(page.locator('.profile-banner')).toHaveClass(/banner-aurora/);
 });
 
 test('public profile shows history, follows and lists followers', async ({ page, context }) => {
   const state = await fixture(context);
   await page.goto('/perfil/ana');
   await expect(page.getByRole('heading', { name: 'Ana', level: 1 })).toBeVisible();
+  await expect(page.locator('.profile-banner')).toHaveClass(/banner-mist/);
   await expect(page.getByText('Meu álbum favorito.')).toBeVisible();
   await expect(page.getByLabel('Nota 0 de 100')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Aurora' })).toBeVisible();

@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideCamera, LucideLogOut, LucideSettings2, LucideX } from '@lucide/angular';
+import { LucideCamera, LucideCheck, LucideLogOut, LucideSettings2, LucideX } from '@lucide/angular';
 import { Observable, Subscription, from, mergeMap, tap } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -20,7 +20,13 @@ import { ShellSidebar } from '../../shared/shell-sidebar';
 import { HomeApi } from '../home/home-api';
 import { MusicItem, Review, coverUrl, musicKey } from '../home/home.models';
 import { ReviewCard } from '../home/review-card';
-import { AvatarRequest, ProfileApi, PublicProfile, RelatedProfile } from './profile-api';
+import {
+  AvatarRequest,
+  BannerTheme,
+  ProfileApi,
+  PublicProfile,
+  RelatedProfile,
+} from './profile-api';
 
 @Component({
   selector: 'app-profile-page',
@@ -30,6 +36,7 @@ import { AvatarRequest, ProfileApi, PublicProfile, RelatedProfile } from './prof
     ReactiveFormsModule,
     ReviewCard,
     LucideCamera,
+    LucideCheck,
     LucideLogOut,
     LucideSettings2,
     LucideX,
@@ -81,6 +88,11 @@ export class ProfilePage {
   protected readonly logoutError = signal('');
   protected readonly musicKey = musicKey;
   protected readonly coverUrl = coverUrl;
+  protected readonly bannerThemes: { value: BannerTheme; label: string }[] = [
+    { value: 'midnight', label: 'Meia-noite' },
+    { value: 'aurora', label: 'Aurora' },
+    { value: 'mist', label: 'Neblina' },
+  ];
   protected readonly initial = computed(() =>
     (this.profile()?.displayName || 'S').slice(0, 1).toUpperCase(),
   );
@@ -101,6 +113,7 @@ export class ProfilePage {
   protected readonly editForm = inject(FormBuilder).nonNullable.group({
     displayName: ['', [Validators.required, Validators.maxLength(256), Validators.pattern(/\S/)]],
     bio: ['', [Validators.maxLength(300)]],
+    bannerTheme: ['midnight' as BannerTheme],
   });
   private requests = new Subscription();
   private listRequest?: Subscription;
@@ -171,7 +184,11 @@ export class ProfilePage {
             return;
           }
           this.account.set(account);
-          this.editForm.reset({ displayName: account.displayName, bio: account.bio ?? '' });
+          this.editForm.reset({
+            displayName: account.displayName,
+            bio: account.bio ?? '',
+            bannerTheme: account.bannerTheme ?? 'midnight',
+          });
           this.showProfile({ ...account, username: account.username });
         },
         error: (error: unknown) => this.profileFailed(error),
@@ -376,13 +393,17 @@ export class ProfilePage {
     this.saving.set(true);
     this.saved.set(false);
     this.saveError.set('');
-    const { displayName, bio } = this.editForm.getRawValue();
+    const { displayName, bio, bannerTheme } = this.editForm.getRawValue();
     this.requests.add(
-      this.api.edit(displayName.trim(), bio.trim() || null).subscribe({
+      this.api.edit(displayName.trim(), bio.trim() || null, bannerTheme).subscribe({
         next: (account) => {
           this.account.set(account);
           this.profile.set({ ...account, username: this.currentUsername });
-          this.editForm.reset({ displayName: account.displayName, bio: account.bio ?? '' });
+          this.editForm.reset({
+            displayName: account.displayName,
+            bio: account.bio ?? '',
+            bannerTheme: account.bannerTheme ?? 'midnight',
+          });
           this.saving.set(false);
           this.saved.set(true);
         },

@@ -8,7 +8,12 @@
     <div class="message error" role="alert">{{ error() }}</div>
     <button class="button secondary" (click)="retryProfile()">Tentar novamente</button>
   } @else if (profile(); as user) {
-    <div class="profile-banner" aria-hidden="true"></div>
+    <div
+      class="profile-banner"
+      [class.banner-aurora]="user.bannerTheme === 'aurora'"
+      [class.banner-mist]="user.bannerTheme === 'mist'"
+      aria-hidden="true"
+    ></div>
     <section class="profile-header" aria-labelledby="profile-title">
       @if (own) {
         <button
@@ -331,11 +336,41 @@
                 <p class="message error" role="alert">{{ avatarError() }}</p>
               }
             </div>
+            <div class="banner-editor">
+              <h3>Banner do perfil</h3>
+              <p>Escolha um dos temas para o seu perfil.</p>
+              <div class="banner-options" role="group" aria-label="Banner do perfil">
+                @for (theme of bannerThemes; track theme.value) {
+                  <button
+                    type="button"
+                    class="banner-option"
+                    [class.active]="editForm.controls.bannerTheme.value === theme.value"
+                    [attr.aria-pressed]="editForm.controls.bannerTheme.value === theme.value"
+                    (click)="editForm.controls.bannerTheme.setValue(theme.value)"
+                  >
+                    <span
+                      class="banner-swatch"
+                      [class.banner-aurora]="theme.value === 'aurora'"
+                      [class.banner-mist]="theme.value === 'mist'"
+                      aria-hidden="true"
+                    ></span>
+                    <span>{{ theme.label }}</span>
+                    @if (editForm.controls.bannerTheme.value === theme.value) {
+                      <svg lucideCheck class="size-4" aria-hidden="true"></svg>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
           </div>
           <aside class="profile-preview" aria-label="Prévia do perfil">
             <p class="eyebrow">PRÉVIA EM TEMPO REAL</p>
             <div class="preview-card">
-              <div class="preview-banner"></div>
+              <div
+                class="preview-banner"
+                [class.banner-aurora]="editForm.controls.bannerTheme.value === 'aurora'"
+                [class.banner-mist]="editForm.controls.bannerTheme.value === 'mist'"
+              ></div>
               <div class="preview-avatar" aria-hidden="true">
                 @if (avatarUrl(); as url) {
                   <img [src]="url" alt="" />

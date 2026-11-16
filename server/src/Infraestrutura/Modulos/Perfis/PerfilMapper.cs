@@ -14,6 +14,7 @@ public static class PerfilMapper
             usuario.Email!,
             usuario.UserName,
             usuario.Bio,
-            usuario.AvatarUrl);
+            usuario.AvatarUrl,
+            usuario.BannerTheme);
     }
 }

@@ -6,7 +6,8 @@ public sealed record UsuarioDto(
     string Email,
     string? Username = null,
     string? Bio = null,
-    string? AvatarUrl = null
+    string? AvatarUrl = null,
+    string BannerTheme = "midnight"
 );
 public sealed record TokenDto(
     Guid UsuarioId,

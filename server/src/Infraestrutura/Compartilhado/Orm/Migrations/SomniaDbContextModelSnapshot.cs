@@ -468,6 +468,13 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<string>("BannerTheme")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasDefaultValue("midnight");
+
                     b.Property<string>("Bio")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");

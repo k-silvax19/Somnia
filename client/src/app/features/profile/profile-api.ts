@@ -4,11 +4,14 @@ import { Account } from '../../core/auth/auth.models';
 import { environment } from '../../environments/environment';
 import { Connections, Page, Review } from '../home/home.models';
 
+export type BannerTheme = 'midnight' | 'aurora' | 'mist';
+
 export interface PublicProfile {
   username: string;
   displayName: string;
   bio: string | null;
   avatarUrl: string | null;
+  bannerTheme: BannerTheme;
 }
 
 export interface RelatedProfile extends PublicProfile {
@@ -57,8 +60,12 @@ export class ProfileApi {
       ? this.http.put<void>(url, null, this.write)
       : this.http.delete<void>(url, this.write);
   }
-  edit(displayName: string, bio: string | null) {
-    return this.http.patch<Account>(`${this.base}/me/profile`, { displayName, bio }, this.write);
+  edit(displayName: string, bio: string | null, bannerTheme: BannerTheme) {
+    return this.http.patch<Account>(
+      `${this.base}/me/profile`,
+      { displayName, bio, bannerTheme },
+      this.write,
+    );
   }
   avatar(username: string) {
     return this.http.get(`${this.user(username)}/avatar`, {

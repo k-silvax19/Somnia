@@ -30,8 +30,12 @@ test('real API: profile edit, history and following between two participants', a
   await page.getByRole('button', { name: 'Editar perfil' }).click();
   await page.getByLabel('Nome de exibição').fill('Autora Editada');
   await page.getByLabel('Bio', { exact: true }).fill('Discos de madrugada.');
+  await page.getByRole('button', { name: 'Aurora' }).click();
+  await expect(page.locator('.preview-banner')).toHaveClass(/banner-aurora/);
   await page.getByRole('button', { name: 'Salvar perfil' }).click();
   await expect(page.getByText('Perfil salvo.')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.profile-banner')).toHaveClass(/banner-aurora/);
   await page.goto('/musica/simulated/album/somnia-demo-album-aurora');
   await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
   await page.getByLabel('Nota (opcional)', { exact: true }).fill('0');
@@ -48,6 +52,7 @@ test('real API: profile edit, history and following between two participants', a
     await second.goto(`/perfil/${author}`);
     await expect(second.getByRole('heading', { name: 'Autora Editada', level: 1 })).toBeVisible();
     await expect(second.getByText('Discos de madrugada.')).toBeVisible();
+    await expect(second.locator('.profile-banner')).toHaveClass(/banner-aurora/);
     await expect(second.getByRole('heading', { name: 'Aurora', exact: true })).toBeVisible();
     await second.getByRole('button', { name: 'Seguir', exact: true }).click();
     await expect(second.getByRole('button', { name: 'Deixar de seguir' })).toBeVisible();
