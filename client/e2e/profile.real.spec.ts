@@ -51,12 +51,12 @@ test('real API: profile edit, history and following between two participants', a
     await expect(second.getByRole('heading', { name: 'Aurora', exact: true })).toBeVisible();
     await second.getByRole('button', { name: 'Seguir', exact: true }).click();
     await expect(second.getByRole('button', { name: 'Deixar de seguir' })).toBeVisible();
-    await page.getByRole('button', { name: 'Seguidores', exact: true }).click();
+    await page.getByRole('tab', { name: 'Seguidores', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Seguidor', exact: true })).toBeVisible();
     await second.getByRole('button', { name: 'Deixar de seguir' }).click();
     await expect(second.getByRole('button', { name: 'Seguir', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Avaliações', exact: true }).click();
-    await page.getByRole('button', { name: 'Seguidores', exact: true }).click();
+    await page.getByRole('tab', { name: 'Avaliações', exact: true }).click();
+    await page.getByRole('tab', { name: 'Seguidores', exact: true }).click();
     await expect(page.getByText('Nenhum perfil nesta lista.')).toBeVisible();
   } finally {
     await secondContext.close();

@@ -1,8 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideCamera, LucideSettings2, LucideX } from '@lucide/angular';
 import { Observable, Subscription, from, mergeMap, tap } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -15,7 +24,15 @@ import { AvatarRequest, ProfileApi, PublicProfile, RelatedProfile } from './prof
 
 @Component({
   selector: 'app-profile-page',
-  imports: [ShellSidebar, RouterLink, ReactiveFormsModule, ReviewCard],
+  imports: [
+    ShellSidebar,
+    RouterLink,
+    ReactiveFormsModule,
+    ReviewCard,
+    LucideCamera,
+    LucideSettings2,
+    LucideX,
+  ],
   providers: [ProfileApi, HomeApi],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
@@ -56,6 +73,7 @@ export class ProfilePage {
   protected readonly saved = signal(false);
   protected readonly following = signal(false);
   protected readonly avatarBusy = signal(false);
+  protected readonly avatarPickerOpen = signal(false);
   protected readonly avatarMessage = signal('');
   protected readonly avatarError = signal('');
   protected readonly loggingOut = signal(false);
@@ -88,6 +106,10 @@ export class ProfilePage {
   private avatarRequest?: Subscription;
   private avatarPoll?: ReturnType<typeof setTimeout>;
   private avatarAttempts = 0;
+  private readonly avatarFileInput = viewChild<ElementRef<HTMLInputElement>>('avatarFileInput');
+  private readonly avatarTrigger = viewChild<ElementRef<HTMLButtonElement>>('avatarTrigger');
+  private readonly chooseAvatarButton =
+    viewChild<ElementRef<HTMLButtonElement>>('chooseAvatarButton');
   private currentUsername = '';
   private nextOffset = 0;
 
@@ -131,6 +153,7 @@ export class ProfilePage {
     this.connectionError.set('');
     this.avatarMessage.set('');
     this.avatarError.set('');
+    this.avatarPickerOpen.set(false);
     this.editing.set(false);
     this.currentUsername = '';
     this.selfUsername.set('');
@@ -197,20 +220,29 @@ export class ProfilePage {
     this.loadList();
   }
 
-  private loadAvatar(): void {
+  private loadAvatar(uploaded = false): void {
     if (!this.profile()?.avatarUrl) return;
     this.avatarRequest?.unsubscribe();
     this.avatarRequest = this.api.avatar(this.currentUsername).subscribe({
       next: (blob) => {
-        if (blob.type !== 'image/png') return;
+        if (blob.type !== 'image/png') {
+          this.avatarBusy.set(false);
+          this.avatarMessage.set('');
+          this.avatarError.set('A foto recebida não é uma imagem válida. Tente novamente.');
+          return;
+        }
         const old = this.avatarUrl();
         this.avatarUrl.set(URL.createObjectURL(blob));
         if (old) URL.revokeObjectURL(old);
+        if (uploaded) {
+          this.avatarBusy.set(false);
+          this.avatarMessage.set('Avatar atualizado.');
+        }
       },
       error: () => {
-        this.avatarError.set(
-          'A foto foi processada, mas não pôde ser carregada. Atualize o perfil.',
-        );
+        this.avatarBusy.set(false);
+        this.avatarMessage.set('');
+        this.avatarError.set('A foto foi processada, mas não pôde ser carregada. Tente novamente.');
       },
     });
     this.requests.add(this.avatarRequest);
@@ -382,14 +414,27 @@ export class ProfilePage {
     );
   }
 
+  protected openAvatarPicker(): void {
+    this.avatarPickerOpen.set(true);
+    setTimeout(() => this.chooseAvatarButton()?.nativeElement.focus());
+  }
+
+  protected closeAvatarPicker(): void {
+    this.avatarPickerOpen.set(false);
+    setTimeout(() => this.avatarTrigger()?.nativeElement.focus());
+  }
+
+  protected chooseAvatar(): void {
+    this.avatarFileInput()?.nativeElement.click();
+  }
+
   private pollAvatar(request: AvatarRequest): void {
     if (request.status === 'completed') {
-      this.avatarBusy.set(false);
-      this.avatarMessage.set('Avatar atualizado.');
+      this.avatarMessage.set('Carregando foto…');
       this.profile.update(
         (profile) => profile && { ...profile, avatarUrl: `/api/users/${profile.username}/avatar` },
       );
-      this.loadAvatar();
+      this.loadAvatar(true);
       return;
     }
     if (request.status !== 'pending') {

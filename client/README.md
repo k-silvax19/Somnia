@@ -8,18 +8,22 @@ O visual segue o [protótipo do Figma](https://rank-splash-97976218.figma.site/)
 ## Executar
 
 Requer Node.js 24.15 ou superior na linha 24, npm e a API configurada por HTTPS.
-Na raiz do repositório, inicie a API conforme a configuração local existente:
+Inicie primeiro o RabbitMQ conforme o [guia de mensageria](../docs/MENSAGERIA.md).
+Depois, na raiz do repositório, inicie a API:
 
 ```powershell
 dotnet run --project server/src/Api --launch-profile https
 ```
 
-Para que fotos de perfil sejam processadas, inicie também o RabbitMQ e o Worker
-em outro terminal, conforme o [guia de mensageria](../docs/MENSAGERIA.md):
+Para que fotos de perfil sejam processadas, inicie o Worker em outro terminal:
 
 ```powershell
 dotnet run --project server/src/Worker
 ```
+
+Se o RabbitMQ tiver sido reiniciado enquanto a API estava aberta e as fotos ficarem
+em “Processando imagem…”, reinicie também a API. O teste local confirmou que a
+solicitação volta a avançar após a conexão da API com o broker ser restabelecida.
 
 Em outro terminal:
 
@@ -142,7 +146,9 @@ dos testes. O nome do autor nas avaliações abre seu perfil.
   simultâneas. A nota do card é pessoal; não representa a média comunitária.
 - A aba “Editar usuário” reúne nome, bio e foto de perfil. Nome e bio são texto simples. O formulário informa a visibilidade antes de
   salvar, valida os limites da API e preserva o rascunho em caso de erro.
-- O avatar aceita PNG/JPEG de até 2 MiB. Após o envio, a tela consulta o status
+- Clicar na foto do próprio perfil abre o seletor para escolher ou remover a imagem,
+  também acessível pela aba “Editar usuário”. O avatar aceita PNG/JPEG de até 2 MiB.
+  Após o envio, a tela consulta o status
   do processamento assíncrono; erros de validação da imagem são apresentados
   quando o Worker os devolver. Remoção também cancela solicitações pendentes.
   A imagem é buscada com Bearer e sua URL temporária é liberada ao sair.
