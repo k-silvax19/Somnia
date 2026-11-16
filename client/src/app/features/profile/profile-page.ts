@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideCamera, LucideSettings2, LucideX } from '@lucide/angular';
+import { LucideCamera, LucideLogOut, LucideSettings2, LucideX } from '@lucide/angular';
 import { Observable, Subscription, from, mergeMap, tap } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -30,6 +30,7 @@ import { AvatarRequest, ProfileApi, PublicProfile, RelatedProfile } from './prof
     ReactiveFormsModule,
     ReviewCard,
     LucideCamera,
+    LucideLogOut,
     LucideSettings2,
     LucideX,
   ],

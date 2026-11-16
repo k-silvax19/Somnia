@@ -72,8 +72,7 @@ h2 {
 .username,
 .private-email,
 .visibility,
-.editor > p,
-.logout p {
+.editor > p {
   color: var(--muted);
 }
 .bio {
@@ -219,10 +218,6 @@ h2 {
 }
 .more {
   margin-top: 1rem;
-}
-.logout {
-  border-top: 1px solid var(--border);
-  padding-top: 2rem;
 }
 .text-button {
   border: 0;
@@ -386,9 +381,6 @@ h2 {
 .empty {
   background: var(--surface);
   border: 1px solid var(--border);
-}
-.logout {
-  border-color: var(--border);
 }
 .reviewed-albums {
   margin: 2rem 0 2.5rem;
@@ -746,9 +738,6 @@ main {
   margin-top: 1.25rem;
   max-width: 41rem;
 }
-.logout {
-  margin-top: 2.5rem;
-}
 .avatar-dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -865,6 +854,33 @@ main {
   width: 100%;
   margin: 0;
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 3.5rem 0 0 auto;
+}
+.header-actions .edit-toggle {
+  margin: 0;
+}
+.header-logout {
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+.header-error {
+  margin-top: 1rem;
+}
+.activity app-review-card {
+  display: block;
+  margin-bottom: 1.25rem;
+}
+.activity app-review-card:last-of-type {
+  margin-bottom: 0;
+}
 @media (max-width: 600px) {
   .profile-banner {
     height: 180px;
@@ -898,6 +914,16 @@ main {
   .edit-toggle {
     margin: 0.3rem 0 0;
     width: 100%;
+  }
+  .header-actions {
+    width: 100%;
+    margin: 0.3rem 0 0;
+  }
+  .header-actions .button {
+    width: auto;
+  }
+  .header-actions .edit-toggle {
+    flex: 1;
   }
   .profile-sections {
     overflow-x: auto;

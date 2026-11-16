@@ -65,14 +65,26 @@
         </div>
       </div>
       @if (own) {
-        <button
-          class="button secondary edit-toggle"
-          (click)="editing.set(!editing())"
-          [attr.aria-expanded]="editing()"
-        >
-          <svg lucideSettings2 class="size-4" aria-hidden="true"></svg
-          >{{ editing() ? 'Fechar edição' : 'Editar perfil' }}
-        </button>
+        <div class="header-actions">
+          <button
+            class="button secondary edit-toggle"
+            (click)="editing.set(!editing())"
+            [attr.aria-expanded]="editing()"
+          >
+            <svg lucideSettings2 class="size-4" aria-hidden="true"></svg
+            >{{ editing() ? 'Fechar edição' : 'Editar perfil' }}
+          </button>
+          <button
+            class="button secondary header-logout"
+            (click)="logout()"
+            [disabled]="loggingOut()"
+            aria-label="Sair de todos os dispositivos"
+            title="Sair de todos os dispositivos"
+          >
+            <svg lucideLogOut class="size-4" aria-hidden="true"></svg
+            >{{ loggingOut() ? 'Saindo…' : 'Sair' }}
+          </button>
+        </div>
       }
       @if (
         !own &&
@@ -92,6 +104,9 @@
         </button>
       }
     </section>
+    @if (logoutError()) {
+      <p class="message error header-error" role="alert">{{ logoutError() }}</p>
+    }
 
     @if (own && avatarError() && !avatarPickerOpen() && !editing()) {
       <p class="message error avatar-alert" role="alert">{{ avatarError() }}</p>
@@ -213,42 +228,34 @@
       </section>
     }
 
-    <div class="profile-sections" role="tablist" aria-label="Seções do perfil">
-      <button
-        role="tab"
-        [attr.aria-selected]="!editing() && section() === 'reviews'"
-        [class.active]="!editing() && section() === 'reviews'"
-        (click)="changeSection('reviews')"
-      >
-        Avaliações
-      </button>
-      <button
-        role="tab"
-        [attr.aria-selected]="!editing() && section() === 'followers'"
-        [class.active]="!editing() && section() === 'followers'"
-        (click)="changeSection('followers')"
-      >
-        Seguidores
-      </button>
-      <button
-        role="tab"
-        [attr.aria-selected]="!editing() && section() === 'following'"
-        [class.active]="!editing() && section() === 'following'"
-        (click)="changeSection('following')"
-      >
-        Seguindo
-      </button>
-      @if (own) {
+    @if (!editing()) {
+      <div class="profile-sections" role="tablist" aria-label="Seções do perfil">
         <button
           role="tab"
-          [attr.aria-selected]="editing()"
-          [class.active]="editing()"
-          (click)="editing.set(true)"
+          [attr.aria-selected]="!editing() && section() === 'reviews'"
+          [class.active]="!editing() && section() === 'reviews'"
+          (click)="changeSection('reviews')"
         >
-          Editar usuário
+          Avaliações
         </button>
-      }
-    </div>
+        <button
+          role="tab"
+          [attr.aria-selected]="!editing() && section() === 'followers'"
+          [class.active]="!editing() && section() === 'followers'"
+          (click)="changeSection('followers')"
+        >
+          Seguidores
+        </button>
+        <button
+          role="tab"
+          [attr.aria-selected]="!editing() && section() === 'following'"
+          [class.active]="!editing() && section() === 'following'"
+          (click)="changeSection('following')"
+        >
+          Seguindo
+        </button>
+      </div>
+    }
     @if (own && editing()) {
       <section id="edit-panel" class="editor" aria-labelledby="edit-title" role="tabpanel">
         <div class="editor-heading">
@@ -409,18 +416,6 @@
             Carregar mais
           </button>
         }
-      </section>
-    }
-
-    @if (own) {
-      <section class="logout">
-        @if (logoutError()) {
-          <p class="message error" role="alert">{{ logoutError() }}</p>
-        }
-        <button class="button secondary" (click)="logout()" [disabled]="loggingOut()">
-          {{ loggingOut() ? 'Saindo…' : 'Sair de todos os dispositivos' }}
-        </button>
-        <p>Ao sair, todas as suas sessões serão encerradas.</p>
       </section>
     }
   }

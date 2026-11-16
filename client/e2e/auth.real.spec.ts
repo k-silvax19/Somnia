@@ -41,6 +41,7 @@ test('real API: auth, review CRUD, album and track navigation, reload and global
   await page.getByRole('link', { name: /Horizonte/ }).click();
   await expect(page.getByRole('heading', { name: 'Horizonte', level: 1 })).toBeVisible();
   await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
   await page.getByLabel('Nota (opcional)', { exact: true }).fill('0');
   await page.getByRole('button', { name: 'Publicar avaliação' }).click();
   await expect(page.getByText('Avaliação salva.', { exact: true })).toBeVisible();

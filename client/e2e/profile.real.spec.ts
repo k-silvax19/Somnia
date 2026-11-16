@@ -27,7 +27,7 @@ test('real API: profile edit, history and following between two participants', a
   await register(page, author, 'Autora');
   await page.goto('/conta');
   await expect(page.getByRole('heading', { name: 'Autora', level: 1 })).toBeVisible();
-  await page.getByRole('tab', { name: 'Editar usuário' }).click();
+  await page.getByRole('button', { name: 'Editar perfil' }).click();
   await page.getByLabel('Nome de exibição').fill('Autora Editada');
   await page.getByLabel('Bio', { exact: true }).fill('Discos de madrugada.');
   await page.getByRole('button', { name: 'Salvar perfil' }).click();

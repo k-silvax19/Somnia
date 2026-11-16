@@ -124,9 +124,13 @@ test('own profile keeps edits after a failed save and shows the saved bio', asyn
   const state = await fixture(context);
   await page.goto('/conta');
   await expect(page.getByRole('heading', { name: 'Marina', level: 1 })).toBeVisible();
+  await expect(
+    page.locator('.profile-header').getByRole('button', { name: 'Sair de todos os dispositivos' }),
+  ).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Editar usuário' })).toHaveCount(0);
   await expect(page.getByText('Nenhuma avaliação publicada.')).toBeVisible();
   await page.screenshot({ path: 'test-results/profile-desktop.png', fullPage: true });
-  await page.getByRole('tab', { name: 'Editar usuário' }).click();
+  await page.getByRole('button', { name: 'Editar perfil' }).click();
   await expect(page.getByText('marina@example.test')).toBeVisible();
   await page.screenshot({ path: 'test-results/profile-edit-desktop.png', fullPage: true });
   await page.getByLabel('Nome de exibição').fill('Marina Nova');
@@ -156,7 +160,9 @@ test('public profile shows history, follows and lists followers', async ({ page,
   await expect(page.getByRole('button', { name: 'Deixar de seguir' })).toBeVisible();
   expect(state.following).toBe(true);
   await page.getByRole('tab', { name: 'Seguidores', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Marina', exact: true })).toBeVisible();
+  await expect(
+    page.locator('#activity-panel').getByRole('link', { name: 'Marina', exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Deixar de seguir' }).click();
   await expect(page.getByRole('button', { name: 'Seguir', exact: true })).toBeVisible();
   expect(state.following).toBe(false);
