@@ -25,6 +25,7 @@
 }
 .site-header {
   border-bottom: 1px solid #302b47;
+  padding-block: 1rem;
 }
 .site-header > a {
   text-decoration: none;
@@ -32,9 +33,8 @@
 nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: min(57%, 720px);
-  gap: 1rem;
+  justify-content: flex-end;
+  gap: clamp(1rem, 2vw, 1.8rem);
 }
 nav a {
   color: var(--accent-bright);
@@ -56,12 +56,12 @@ main {
   margin: auto;
 }
 .hero {
-  min-height: 680px;
+  min-height: 620px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   gap: 2rem;
   align-items: center;
-  padding: 4rem 3rem 5rem;
+  padding: 2.5rem 3rem 4rem;
 }
 .eyebrow {
   margin: 0;
@@ -363,7 +363,7 @@ h1 em {
 @media (max-width: 850px) {
   .hero {
     grid-template-columns: 1fr;
-    padding-top: 4rem;
+    padding-top: 2.5rem;
   }
   .art-collage {
     height: 390px;
@@ -398,7 +398,7 @@ h1 em {
     display: none;
   }
   .hero {
-    padding: 4rem 1rem 2rem;
+    padding: 2.5rem 1rem 2rem;
     min-height: 0;
   }
   h1 {
