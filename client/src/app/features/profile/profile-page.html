@@ -422,7 +422,11 @@
           @for (person of related(); track person.username) {
             <article class="related">
               <div class="mini-avatar" aria-hidden="true">
-                {{ person.displayName.slice(0, 1).toUpperCase() }}
+                @if (relatedAvatarUrls()[person.username.toLowerCase()]; as url) {
+                  <img [src]="url" alt="" />
+                } @else {
+                  {{ person.displayName.slice(0, 1).toUpperCase() }}
+                }
               </div>
               <div>
                 <a [routerLink]="['/perfil', person.username]">{{ person.displayName }}</a>
