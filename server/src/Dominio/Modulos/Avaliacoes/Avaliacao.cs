@@ -33,7 +33,7 @@ public sealed class Avaliacao
 }
 
 public sealed record ReferenciaItem(string Provider, string Type, string ExternalId);
-public sealed record AutorAvaliacaoDto(string Username, string DisplayName);
+public sealed record AutorAvaliacaoDto(string Username, string DisplayName, string? AvatarUrl = null);
 public sealed record AvaliacaoDto(Guid Id, AutorAvaliacaoDto Author, ReferenciaItem Item,
     int? Score, string? Review, DateTime CreatedAt, DateTime? UpdatedAt);
 public sealed record PaginaAvaliacoesDto(IReadOnlyList<AvaliacaoDto> Items, int Limit, int Offset, int Total)

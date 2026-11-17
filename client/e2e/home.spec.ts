@@ -137,6 +137,7 @@ test('home hydrates metadata, preserves zero and no-score, switches tabs and ope
   await page.screenshot({ path: 'test-results/home-desktop.png', fullPage: true });
   await page.getByRole('button', { name: 'Descobrir', exact: true }).click();
   await expect(page.getByText('Minha descoberta de hoje.')).toBeVisible();
+  await page.screenshot({ path: 'test-results/discover-desktop.png', fullPage: true });
   await expect(page.getByText('A produção é interessante', { exact: false })).not.toBeVisible();
   expect(calls.filter((url) => url === '/api/catalog/albums/aurora')).toHaveLength(1);
   await page.getByRole('link', { name: 'Minha conta', exact: true }).click();
@@ -144,6 +145,59 @@ test('home hydrates metadata, preserves zero and no-score, switches tabs and ope
   await expect(page.getByRole('heading', { name: 'Marina Costa', level: 1 })).toBeVisible();
   await page.getByRole('link', { name: 'Início', exact: true }).click();
   await expect(page).toHaveURL(/\/inicio$/);
+});
+
+test('clicking an evaluation card opens its music details', async ({ page, context }) => {
+  await fixture(context);
+  await page.route('**/api/catalog/simulated/album/aurora/reviews?*', (route) =>
+    route.fulfill({
+      json: {
+        reviews: pageData([reviews[0]]),
+        summary: { average: 92, count: 1 },
+        myReview: null,
+      },
+    }),
+  );
+  await page.goto('/inicio');
+  const card = page.locator('app-review-card').filter({ hasText: 'Aurora' });
+  await card.getByRole('link', { name: 'Ver detalhes de Aurora' }).click();
+  await expect(page).toHaveURL(/\/musica\/simulated\/album\/aurora$/);
+  await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
+});
+
+test('review cards show the author photo and share its request', async ({ page, context }) => {
+  await fixture(context);
+  const author = { ...reviews[0].author };
+  await page.route('**/api/feed?*', (route) =>
+    route.fulfill({
+      json: pageData([
+        { ...reviews[0], author },
+        { ...reviews[0], id: 'another', author },
+      ]),
+    }),
+  );
+  let avatarRequests = 0;
+  await page.route('**/api/users/ana.luiza/avatar', (route) => {
+    avatarRequests++;
+    return route.fulfill({
+      contentType: 'image/png',
+      body: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/LZkAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+  });
+  await page.goto('/inicio');
+  await expect(page.locator('app-review-card .avatar img')).toHaveCount(2);
+  await expect
+    .poll(() =>
+      page
+        .locator('app-review-card .avatar img')
+        .first()
+        .evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
+    )
+    .toBe(true);
+  expect(avatarRequests).toBe(1);
 });
 
 test('empty feed invites discovery without fake reviews', async ({ page, context }) => {
@@ -178,8 +232,8 @@ test('a slow previous tab cannot replace the selected timeline', async ({ page, 
   await settled;
   await expect(page.locator('app-review-card')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Descobrir', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
+    'aria-current',
+    'page',
   );
 });
 
@@ -246,7 +300,7 @@ test('mobile navigation and real search parameters work without horizontal overf
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/home-mobile.png', fullPage: true });
   await page.getByRole('button', { name: 'Abrir navegação' }).click();
-  await page.getByRole('button', { name: 'Busca', exact: true }).click();
+  await page.getByRole('button', { name: 'Buscar', exact: true }).click();
   await expect(page.getByRole('searchbox')).toBeFocused();
   await page.getByRole('searchbox').fill('Somnia & noite');
   await page.getByLabel('Tipo de busca').selectOption('track');

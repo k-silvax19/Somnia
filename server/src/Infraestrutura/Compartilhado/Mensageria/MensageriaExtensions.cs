@@ -54,7 +54,6 @@ public static class MensageriaExtensions
         });
         if (consumidor)
         {
-            services.AddSingleton<IProcessadorAvatar, ProcessadorAvatar>();
             services.AddHostedService<LimpezaSolicitacoesAvatar>();
         }
         return services;

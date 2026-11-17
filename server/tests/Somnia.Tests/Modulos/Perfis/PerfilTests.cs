@@ -66,6 +66,26 @@ public sealed class PerfilTests
         repositorio.VerifyNoOtherCalls();
     }
 
+    [Theory]
+    [InlineData("aurora", false)]
+    [InlineData("mist", false)]
+    [InlineData("neon", true)]
+    [InlineData(null, true)]
+    public async Task Atualizar_ValidaTemaDoBanner(string? tema, bool invalido)
+    {
+        var repositorio = new Mock<IRepositorioPerfil>(MockBehavior.Strict);
+        if (!invalido)
+            repositorio.Setup(x => x.AtualizarAsync(It.IsAny<Guid>(), It.IsAny<AlteracaoPerfil>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new UsuarioDto(Guid.NewGuid(), "Ana", "ana@example.com", BannerTheme: tema!));
+        var handler = new AtualizarPerfilCommandHandler(repositorio.Object);
+        var request = new AtualizarPerfilRequest { BannerTheme = tema };
+
+        var result = await handler.Handle(new AtualizarPerfilCommand(Guid.NewGuid(), request.ToAlteracao()), CancellationToken.None);
+
+        Assert.Equal(invalido, result.IsFailed);
+        if (invalido) repositorio.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public async Task Atualizar_PerfilInexistente_RetornaNaoEncontrado()
     {

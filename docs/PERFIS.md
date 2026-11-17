@@ -84,29 +84,26 @@ const resposta = await fetch('https://localhost:7201/api/me/avatar', {
 });
 ```
 
-O upload retorna `202 Accepted` com ID, `status: "pending"`, `erro: null`
-e o endereço da consulta no cabeçalho `Location`. Isso confirma recebimento;
-a aprovação do conteúdo acontece depois, no consumer RabbitMQ em processo
-separado. Consulte `GET /api/me/avatar/requests/{id}` com o JWT do titular
-até `completed`, `rejected`, `cancelled` ou `failed`.
+O upload valida, normaliza e grava a imagem durante a própria requisição, sem
+RabbitMQ ou Worker. O sucesso retorna `200 OK` com ID, `status: "completed"`
+e `erro: null`; conteúdo inválido retorna `status: "rejected"` e preserva o
+avatar anterior. A rota `GET /api/me/avatar/requests/{id}` permanece disponível
+para consultar solicitações antigas ainda em processamento.
 
 O tamanho do arquivo é limitado a 2 MiB pela API (`400` se excedido).
 O limite total da requisição multipart é 2 MiB + 64 KiB para o envelope;
 ultrapassá-lo também pode ser rejeitado pela infraestrutura HTTP. Uploads
-têm limite de dez chamadas/minuto por usuário e instância (`429`) e de
-100 solicitações pendentes globalmente (`409` se a admissão estiver cheia).
+têm limite de dez chamadas/minuto por usuário e instância (`429`). Não há
+fila de processamento para novas imagens.
 
-O consumer exige conteúdo real PNG ou JPEG estático e dimensões de até
+O processador exige conteúdo real PNG ou JPEG estático e dimensões de até
 2048 × 2048 pixels. Extensão e MIME declarados não aprovam um arquivo.
 GIF, SVG, APNG, arquivos corrompidos e dimensões excessivas resultam em
-status `rejected` com a mensagem de validação. Esses erros de conteúdo
-não retornam `400` no PUT, porque são detectados após o `202`.
+status `rejected` com a mensagem de validação no resultado do PUT.
 
 A imagem é decodificada com SkiaSharp e regravada em PNG de até 512 × 512,
 preservando proporção, sem ampliar imagens pequenas e sem copiar metadados
-ou conteúdo anexado. O original fica temporariamente privado na tabela
-`SolicitacoesAvatar` até finalizar/cancelar ou expirar. O nome do arquivo
-não é armazenado e os bytes originais não são publicados no RabbitMQ.
+ou conteúdo anexado. O original e o nome do arquivo não são armazenados.
 A imagem normalizada fica na tabela `Avatares`, vinculada ao titular por
 chave estrangeira; consultas comuns de perfil não carregam seus bytes.
 
@@ -116,15 +113,13 @@ com Bearer e criar uma URL de objeto para exibição quando necessário.
 Um `<img src="...">` sozinho não envia o Bearer mantido em memória.
 A resposta usa `image/png`, `X-Content-Type-Options: nosniff` e `no-store`.
 
-O avatar anterior continua disponível durante o processamento. O consumer
-só o substitui após validação, na mesma transação da atualização do status.
-Um novo upload cancela pendências anteriores; o DELETE remove o avatar do
-titular e cancela seus trabalhos pendentes, sem esperar o consumer. Mensagens
-antigas ou duplicadas não podem sobrescrever uma solicitação mais recente
-nem recriar um avatar removido. URLs externas continuam rejeitadas no PATCH.
+O avatar anterior permanece intacto se a validação falhar. Uploads válidos
+substituem a imagem na mesma transação SQL. Solicitações antigas canceladas
+não podem sobrescrever uma imagem mais recente nem recriar uma removida.
+URLs externas continuam rejeitadas no PATCH.
 
-Detalhes de configuração, recuperação, retenção e execução do Worker estão
-em [MENSAGERIA.md](MENSAGERIA.md).
+O processamento novo não depende de mensageria. [MENSAGERIA.md](MENSAGERIA.md)
+documenta o Worker legado que pode concluir mensagens antigas.
 GIFs de avatar pertencem à fase Premium descrita no PRD v1.1 e estão fora
 do escopo da especificação técnica do MVP gratuito.
 

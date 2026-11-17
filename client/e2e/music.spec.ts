@@ -42,7 +42,7 @@ async function fixture(context: BrowserContext, initial: typeof own | null = nul
   await context.addCookies([
     { name: '__Host-somnia-csrf', value: 'fixture', domain: 'localhost', path: '/', secure: true },
   ]);
-  await context.route('**/api/**', async (route) => {
+  await context.route('https://localhost:4300/api/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith('/auth/refresh'))
@@ -57,7 +57,7 @@ async function fixture(context: BrowserContext, initial: typeof own | null = nul
           refreshExpiraEmUtc: new Date(Date.now() + 86_400_000).toISOString(),
         },
       });
-    expect(request.headers()['authorization']).toBe('Bearer fixture-token');
+    expect(request.headers()['authorization'], request.url()).toBe('Bearer fixture-token');
     if (request.method() !== 'GET') {
       expect(request.headers()['x-somnia-client']).toBe('web');
       const body = request.postDataJSON();
@@ -194,13 +194,104 @@ test('catalog outage still allows editing own review and mobile has no overflow'
   );
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto(url);
-  await expect(page.getByRole('alert')).toContainText('catálogo musical');
+  await expect(page.getByRole('alert')).toContainText('informações desta música');
   await expect(page.getByRole('button', { name: /Aguarde/ })).toBeDisabled();
   await page.getByRole('button', { name: 'Editar avaliação' }).click();
   await page.getByLabel('Nota (opcional)', { exact: true }).fill('100');
   await page.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(page.getByText('Avaliação salva.', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('Spotify quota fallback keeps album title, cover and reviews visible', async ({
+  page,
+  context,
+}) => {
+  await fixture(context);
+  const spotifyId = 'AAAAAAAAAAAAAAAAAAAAAA';
+  const spotifyReference = { provider: 'spotify', type: 'album', externalId: spotifyId };
+  await page.route(`**/api/catalog/albums/${spotifyId}`, (route) =>
+    route.fulfill({ status: 503, json: {}, headers: { 'Retry-After': '3600' } }),
+  );
+  await page.route(`**/api/catalog/spotify/album/${spotifyId}/reviews?*`, (route) =>
+    route.fulfill({
+      json: {
+        reviews: pageData([{ ...own, item: spotifyReference }]),
+        summary: { average: 0, count: 1 },
+        myReview: null,
+      },
+    }),
+  );
+  await page.route(/https:\/\/open\.spotify\.com\/oembed(?:\?.*)?$/, (route) =>
+    route.fulfill({
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      json: {
+        provider_name: 'Spotify',
+        title: 'Album em prévia',
+        thumbnail_url: 'https://i.scdn.co/image/cover',
+      },
+    }),
+  );
+  await page.route('https://i.scdn.co/image/cover', (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    }),
+  );
+  await page.goto(`/musica/spotify/album/${spotifyId}`);
+  await expect(page.getByRole('heading', { name: 'Album em prévia', level: 1 })).toBeVisible();
+  await expect(page.locator('.hero .artwork img')).toBeVisible();
+  await expect(page.locator('app-review-card h2')).toHaveText('Album em prévia');
+  await expect(
+    page.getByText('Não foi possível carregar as informações desta música agora.'),
+  ).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Artista e faixas no Spotify' })).toHaveCount(0);
+});
+
+test('a loaded Spotify album keeps its native track list after a reload', async ({
+  page,
+  context,
+}) => {
+  await fixture(context);
+  const spotifyId = 'AAAAAAAAAAAAAAAAAAAAAA';
+  let detailRequests = 0;
+  await page.route(`**/api/catalog/albums/${spotifyId}`, (route) => {
+    detailRequests++;
+    return route.fulfill({
+      json: {
+        provider: 'spotify',
+        type: 'album',
+        externalId: spotifyId,
+        title: 'Album salvo',
+        artists: ['Artista'],
+        coverUrl: null,
+        spotifyUrl: `https://open.spotify.com/album/${spotifyId}`,
+        tracks: [
+          {
+            provider: 'spotify',
+            type: 'track',
+            externalId: 'BBBBBBBBBBBBBBBBBBBBBB',
+            title: 'Faixa de teste',
+            artists: ['Artista'],
+            coverUrl: null,
+            spotifyUrl: 'https://open.spotify.com/track/BBBBBBBBBBBBBBBBBBBBBB',
+            trackNumber: 1,
+          },
+        ],
+      },
+    });
+  });
+  await page.route(`**/api/catalog/spotify/album/${spotifyId}/reviews?*`, (route) =>
+    route.fulfill({
+      json: { reviews: pageData([]), summary: { average: null, count: 0 }, myReview: null },
+    }),
+  );
+  await page.goto(`/musica/spotify/album/${spotifyId}`);
+  await expect(page.getByRole('heading', { name: 'Faixas do álbum' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Faixa de teste/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('link', { name: /Faixa de teste/ })).toBeVisible();
+  expect(detailRequests).toBe(1);
 });
 
 test('duplicate creation requires explicit reload and never overwrites the existing review', async ({

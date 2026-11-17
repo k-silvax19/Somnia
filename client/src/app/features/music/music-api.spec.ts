@@ -11,6 +11,8 @@ describe('music details contract', () => {
   let http: HttpTestingController;
   const item: MusicReference = { provider: 'spotify', type: 'album', externalId: 'abc' };
   beforeEach(() => {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith('somnia:spotify-catalog:')) localStorage.removeItem(key);
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -26,6 +28,44 @@ describe('music details contract', () => {
       .expectOne(`${environment.apiUrl}/catalog/albums/abc`)
       .flush({ ...item, provider: 'simulated' });
     await rejected;
+  });
+  it('restores a Spotify album and its tracks from temporary browser storage', async () => {
+    const spotifyId = 'AAAAAAAAAAAAAAAAAAAAAA';
+    const reference: MusicReference = { provider: 'spotify', type: 'album', externalId: spotifyId };
+    const album = {
+      ...reference,
+      title: 'Album',
+      artists: ['Artist'],
+      coverUrl: null,
+      spotifyUrl: `https://open.spotify.com/album/${spotifyId}`,
+      tracks: [
+        {
+          provider: 'spotify',
+          type: 'track',
+          externalId: 'BBBBBBBBBBBBBBBBBBBBBB',
+          title: 'Track',
+          artists: ['Artist'],
+          coverUrl: null,
+          spotifyUrl: 'https://open.spotify.com/track/BBBBBBBBBBBBBBBBBBBBBB',
+          trackNumber: 1,
+        },
+      ],
+    };
+    const first = firstValueFrom(api.details(reference));
+    http.expectOne(`${environment.apiUrl}/catalog/albums/${spotifyId}`).flush(album);
+    expect(await first).toEqual(album);
+    expect(await firstValueFrom(api.details(reference))).toEqual(album);
+    http.expectNone(() => true);
+
+    const key = Object.keys(localStorage).find((name) =>
+      name.includes(`details:spotify:album:${spotifyId}`),
+    );
+    expect(key).toBeDefined();
+    const stored = JSON.parse(localStorage.getItem(key!)!) as { expiresAt: number };
+    localStorage.setItem(key!, JSON.stringify({ ...stored, expiresAt: Date.now() - 1 }));
+    const refreshed = firstValueFrom(api.details(reference));
+    http.expectOne(`${environment.apiUrl}/catalog/albums/${spotifyId}`).flush(album);
+    expect(await refreshed).toEqual(album);
   });
   it('preserves zero, sends origin protection, and replaces both fields on edit', async () => {
     const created = firstValueFrom(api.create(item, { score: 0, review: null }));
@@ -68,7 +108,7 @@ describe('music details contract', () => {
       true,
     );
     expect(problem.retryAfter).toBe(30);
-    expect(problem.message).toContain('catálogo musical');
+    expect(problem.message).toContain('informações desta música');
     expect(problem.message).not.toContain('secret');
   });
 });

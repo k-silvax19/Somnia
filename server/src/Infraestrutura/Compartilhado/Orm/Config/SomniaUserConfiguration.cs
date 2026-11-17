@@ -12,5 +12,6 @@ public sealed class SomniaUserConfiguration : IEntityTypeConfiguration<SomniaUse
 
         builder.Property(usuario => usuario.Bio).HasMaxLength(300);
         builder.Property(usuario => usuario.AvatarUrl).HasMaxLength(2048);
+        builder.Property(usuario => usuario.BannerTheme).HasMaxLength(16).HasDefaultValue("midnight");
     }
 }

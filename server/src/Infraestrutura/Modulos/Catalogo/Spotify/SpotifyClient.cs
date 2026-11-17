@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -18,20 +19,23 @@ public sealed class SpotifyClient(IHttpClientFactory clients, IOptions<SpotifyOp
     private readonly SemaphoreSlim httpGate = new(4, 4);
     private Token? token;
     private long retomarEmUtcTicks;
+    private readonly ConcurrentDictionary<string, long> retomarPorGrupo = new();
 
     public async Task<JsonDocument?> ConsultarAsync(string caminho, bool aceitar404, CancellationToken ct)
     {
         if (Uri.TryCreate(caminho, UriKind.Absolute, out _) || caminho.StartsWith('/') || caminho.Contains('\\'))
             throw new ArgumentException("A consulta deve usar um caminho relativo do catálogo.");
 
+        var grupo = caminho.Split(['/', '?'], 2)[0];
+
         for (var tentativa = 0; tentativa < 2; tentativa++)
         {
             ct.ThrowIfCancellationRequested();
-            VerificarEspera();
+            VerificarEspera(grupo);
             var atual = await ObterTokenAsync(ct);
             using var request = new HttpRequestMessage(HttpMethod.Get, caminho);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", atual.AccessToken);
-            var resultado = await EnviarAsync(ApiClient, request, aceitar404, permitir401: tentativa == 0, ct);
+            var resultado = await EnviarAsync(ApiClient, request, aceitar404, permitir401: tentativa == 0, ct, grupo);
             if (!resultado.TokenRecusado)
                 return resultado.Json;
             // Outro request pode já ter renovado o token; não descarte o sucessor.
@@ -78,7 +82,7 @@ public sealed class SpotifyClient(IHttpClientFactory clients, IOptions<SpotifyOp
     }
 
     private async Task<Resposta> EnviarAsync(string clientName, HttpRequestMessage request,
-        bool aceitar404, bool permitir401, CancellationToken ct)
+        bool aceitar404, bool permitir401, CancellationToken ct, string? grupo = null)
     {
         using var limite = CancellationTokenSource.CreateLinkedTokenSource(ct);
         limite.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds));
@@ -87,7 +91,7 @@ public sealed class SpotifyClient(IHttpClientFactory clients, IOptions<SpotifyOp
         {
             await httpGate.WaitAsync(limite.Token);
             entrou = true;
-            VerificarEspera();
+            VerificarEspera(grupo);
             using var client = clients.CreateClient(clientName);
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, limite.Token);
             if (response.StatusCode == HttpStatusCode.Unauthorized && permitir401)
@@ -95,7 +99,7 @@ public sealed class SpotifyClient(IHttpClientFactory clients, IOptions<SpotifyOp
             if (response.StatusCode == HttpStatusCode.NotFound && aceitar404)
                 return new(null, false);
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                throw Esperar(RetryAfter(response));
+                throw Esperar(RetryAfter(response), grupo);
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
                 || (clientName == AuthClient && response.StatusCode == HttpStatusCode.BadRequest))
                 throw Esperar(30);
@@ -146,9 +150,15 @@ public sealed class SpotifyClient(IHttpClientFactory clients, IOptions<SpotifyOp
         return (int)Math.Clamp(Math.Ceiling(espera?.TotalSeconds ?? 30), 1, int.MaxValue);
     }
 
-    private CatalogoIndisponivelException Esperar(int segundos)
+    private CatalogoIndisponivelException Esperar(int segundos, string? grupo = null)
     {
         var novo = clock.GetUtcNow().AddSeconds(segundos).UtcTicks;
+        // Spotify aplica cotas em grupos de endpoints: detalhes não devem bloquear buscas.
+        if (grupo is not null)
+        {
+            retomarPorGrupo.AddOrUpdate(grupo, novo, (_, anterior) => Math.Max(anterior, novo));
+            return new CatalogoIndisponivelException(segundos);
+        }
         var anterior = Interlocked.Read(ref retomarEmUtcTicks);
         while (novo > anterior)
         {
@@ -159,9 +169,12 @@ public sealed class SpotifyClient(IHttpClientFactory clients, IOptions<SpotifyOp
         return new CatalogoIndisponivelException(segundos);
     }
 
-    private void VerificarEspera()
+    private void VerificarEspera(string? grupo = null)
     {
-        var restante = Interlocked.Read(ref retomarEmUtcTicks) - clock.GetUtcNow().UtcTicks;
+        var limite = Interlocked.Read(ref retomarEmUtcTicks);
+        if (grupo is not null && retomarPorGrupo.TryGetValue(grupo, out var limiteDoGrupo))
+            limite = Math.Max(limite, limiteDoGrupo);
+        var restante = limite - clock.GetUtcNow().UtcTicks;
         if (restante > 0)
             throw new CatalogoIndisponivelException((int)Math.Ceiling(TimeSpan.FromTicks(restante).TotalSeconds));
     }

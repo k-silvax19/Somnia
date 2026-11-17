@@ -32,7 +32,7 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
     private IQueryable<AvaliacaoDto> Projetar(IQueryable<Avaliacao> consulta) =>
         from avaliacao in consulta
         join usuario in db.Users on avaliacao.UsuarioId equals usuario.Id
-        select new AvaliacaoDto(avaliacao.Id, new AutorAvaliacaoDto(usuario.UserName!, usuario.Nome),
+        select new AvaliacaoDto(avaliacao.Id, new AutorAvaliacaoDto(usuario.UserName!, usuario.Nome, usuario.AvatarUrl),
             new ReferenciaItem(avaliacao.Provider, avaliacao.Type, avaliacao.ExternalId),
             avaliacao.Score, avaliacao.Review, avaliacao.CreatedAt, avaliacao.UpdatedAt);
 
@@ -83,7 +83,7 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
         var pagina = from avaliacao in consulta
             join usuario in db.Users on avaliacao.UsuarioId equals usuario.Id
             orderby avaliacao.CreatedAt descending, avaliacao.Id descending
-            select new AvaliacaoDto(avaliacao.Id, new AutorAvaliacaoDto(usuario.UserName!, usuario.Nome),
+            select new AvaliacaoDto(avaliacao.Id, new AutorAvaliacaoDto(usuario.UserName!, usuario.Nome, usuario.AvatarUrl),
                 new ReferenciaItem(avaliacao.Provider, avaliacao.Type, avaliacao.ExternalId),
                 avaliacao.Score, avaliacao.Review, avaliacao.CreatedAt, avaliacao.UpdatedAt);
         var items = await pagina.Skip(offset).Take(limit).ToArrayAsync(ct);

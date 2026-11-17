@@ -101,3 +101,17 @@ textarea {
     padding: 1rem;
   }
 }
+
+.editor {
+  background: var(--surface);
+  border-color: var(--border);
+}
+input,
+textarea {
+  background: #151225;
+  border-color: #4a4163;
+}
+.danger {
+  background: #442938;
+  border-color: #865064;
+}

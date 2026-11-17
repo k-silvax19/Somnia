@@ -1,21 +1,47 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideCamera, LucideCheck, LucideLogOut, LucideSettings2, LucideX } from '@lucide/angular';
 import { Observable, Subscription, from, mergeMap, tap } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
 import { apiError } from '../../core/http/api-error';
-import { Brand } from '../../shared/brand';
+import { ShellSidebar } from '../../shared/shell-sidebar';
 import { HomeApi } from '../home/home-api';
-import { MusicItem, Review, musicKey } from '../home/home.models';
+import { MusicItem, Review, coverUrl, musicKey } from '../home/home.models';
 import { ReviewCard } from '../home/review-card';
-import { AvatarRequest, ProfileApi, PublicProfile, RelatedProfile } from './profile-api';
+import { ReviewAvatarCache } from '../home/review-avatar-cache';
+import {
+  AvatarRequest,
+  BannerTheme,
+  ProfileApi,
+  PublicProfile,
+  RelatedProfile,
+} from './profile-api';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [Brand, RouterLink, ReactiveFormsModule, ReviewCard],
+  imports: [
+    ShellSidebar,
+    RouterLink,
+    ReactiveFormsModule,
+    ReviewCard,
+    LucideCamera,
+    LucideCheck,
+    LucideLogOut,
+    LucideSettings2,
+    LucideX,
+  ],
   providers: [ProfileApi, HomeApi],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
@@ -26,6 +52,7 @@ export class ProfilePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly reviewAvatars = inject(ReviewAvatarCache);
   protected readonly auth = inject(AuthService);
   protected readonly own = this.route.snapshot.data['own'] === true;
   protected readonly selfUsername = signal('');
@@ -51,27 +78,54 @@ export class ProfilePage {
   protected readonly listError = signal('');
   protected readonly connectionError = signal('');
   protected readonly saving = signal(false);
+  protected readonly editing = signal(false);
   protected readonly saveError = signal('');
   protected readonly saved = signal(false);
   protected readonly following = signal(false);
   protected readonly avatarBusy = signal(false);
+  protected readonly avatarPickerOpen = signal(false);
   protected readonly avatarMessage = signal('');
   protected readonly avatarError = signal('');
   protected readonly loggingOut = signal(false);
   protected readonly logoutError = signal('');
   protected readonly musicKey = musicKey;
+  protected readonly coverUrl = coverUrl;
+  protected readonly bannerThemes: { value: BannerTheme; label: string }[] = [
+    { value: 'midnight', label: 'Meia-noite' },
+    { value: 'aurora', label: 'Aurora' },
+    { value: 'mist', label: 'Neblina' },
+  ];
   protected readonly initial = computed(() =>
     (this.profile()?.displayName || 'S').slice(0, 1).toUpperCase(),
   );
+  protected readonly reviewedAlbums = computed(() => {
+    const seen = new Set<string>();
+    return this.reviews()
+      .filter((review) => review.item.type === 'album')
+      .map((review) => this.metadata()[musicKey(review.item)])
+      .filter((item): item is MusicItem => !!item)
+      .filter((item) => {
+        const key = musicKey(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 4);
+  });
   protected readonly editForm = inject(FormBuilder).nonNullable.group({
     displayName: ['', [Validators.required, Validators.maxLength(256), Validators.pattern(/\S/)]],
     bio: ['', [Validators.maxLength(300)]],
+    bannerTheme: ['midnight' as BannerTheme],
   });
   private requests = new Subscription();
   private listRequest?: Subscription;
   private avatarRequest?: Subscription;
   private avatarPoll?: ReturnType<typeof setTimeout>;
   private avatarAttempts = 0;
+  private readonly avatarFileInput = viewChild<ElementRef<HTMLInputElement>>('avatarFileInput');
+  private readonly avatarTrigger = viewChild<ElementRef<HTMLButtonElement>>('avatarTrigger');
+  private readonly chooseAvatarButton =
+    viewChild<ElementRef<HTMLButtonElement>>('chooseAvatarButton');
   private currentUsername = '';
   private nextOffset = 0;
 
@@ -115,6 +169,8 @@ export class ProfilePage {
     this.connectionError.set('');
     this.avatarMessage.set('');
     this.avatarError.set('');
+    this.avatarPickerOpen.set(false);
+    this.editing.set(false);
     this.currentUsername = '';
     this.selfUsername.set('');
     this.selfLoaded.set(false);
@@ -130,7 +186,11 @@ export class ProfilePage {
             return;
           }
           this.account.set(account);
-          this.editForm.reset({ displayName: account.displayName, bio: account.bio ?? '' });
+          this.editForm.reset({
+            displayName: account.displayName,
+            bio: account.bio ?? '',
+            bannerTheme: account.bannerTheme ?? 'midnight',
+          });
           this.showProfile({ ...account, username: account.username });
         },
         error: (error: unknown) => this.profileFailed(error),
@@ -180,18 +240,36 @@ export class ProfilePage {
     this.loadList();
   }
 
-  private loadAvatar(): void {
-    if (!this.profile()?.avatarUrl) return;
+  private loadAvatar(uploaded = false): void {
+    if (!this.currentUsername) return;
     this.avatarRequest?.unsubscribe();
     this.avatarRequest = this.api.avatar(this.currentUsername).subscribe({
       next: (blob) => {
-        if (blob.type !== 'image/png') return;
+        if (blob.type !== 'image/png') {
+          this.avatarBusy.set(false);
+          this.avatarMessage.set('');
+          this.avatarError.set('A foto recebida não é uma imagem válida. Tente novamente.');
+          return;
+        }
         const old = this.avatarUrl();
         this.avatarUrl.set(URL.createObjectURL(blob));
         if (old) URL.revokeObjectURL(old);
+        if (uploaded) {
+          this.reviewAvatars.invalidate(this.currentUsername);
+          this.avatarBusy.set(false);
+          this.avatarMessage.set('Avatar atualizado.');
+        }
       },
-      error: () => {
-        /* Initial remains visible. */
+      error: (error: unknown) => {
+        this.avatarBusy.set(false);
+        this.avatarMessage.set('');
+        if (!uploaded && error instanceof HttpErrorResponse && error.status === 404) {
+          const old = this.avatarUrl();
+          if (old) URL.revokeObjectURL(old);
+          this.avatarUrl.set(null);
+          return;
+        }
+        this.avatarError.set('A foto foi processada, mas não pôde ser carregada. Tente novamente.');
       },
     });
     this.requests.add(this.avatarRequest);
@@ -208,6 +286,7 @@ export class ProfilePage {
   }
 
   protected changeSection(section: 'reviews' | 'followers' | 'following'): void {
+    this.editing.set(false);
     if (this.section() === section) return;
     this.listRequest?.unsubscribe();
     this.listLoading.set(false);
@@ -323,13 +402,17 @@ export class ProfilePage {
     this.saving.set(true);
     this.saved.set(false);
     this.saveError.set('');
-    const { displayName, bio } = this.editForm.getRawValue();
+    const { displayName, bio, bannerTheme } = this.editForm.getRawValue();
     this.requests.add(
-      this.api.edit(displayName.trim(), bio.trim() || null).subscribe({
+      this.api.edit(displayName.trim(), bio.trim() || null, bannerTheme).subscribe({
         next: (account) => {
           this.account.set(account);
           this.profile.set({ ...account, username: this.currentUsername });
-          this.editForm.reset({ displayName: account.displayName, bio: account.bio ?? '' });
+          this.editForm.reset({
+            displayName: account.displayName,
+            bio: account.bio ?? '',
+            bannerTheme: account.bannerTheme ?? 'midnight',
+          });
           this.saving.set(false);
           this.saved.set(true);
         },
@@ -362,14 +445,27 @@ export class ProfilePage {
     );
   }
 
+  protected openAvatarPicker(): void {
+    this.avatarPickerOpen.set(true);
+    setTimeout(() => this.chooseAvatarButton()?.nativeElement.focus());
+  }
+
+  protected closeAvatarPicker(): void {
+    this.avatarPickerOpen.set(false);
+    setTimeout(() => this.avatarTrigger()?.nativeElement.focus());
+  }
+
+  protected chooseAvatar(): void {
+    this.avatarFileInput()?.nativeElement.click();
+  }
+
   private pollAvatar(request: AvatarRequest): void {
     if (request.status === 'completed') {
-      this.avatarBusy.set(false);
-      this.avatarMessage.set('Avatar atualizado.');
+      this.avatarMessage.set('Carregando foto…');
       this.profile.update(
         (profile) => profile && { ...profile, avatarUrl: `/api/users/${profile.username}/avatar` },
       );
-      this.loadAvatar();
+      this.loadAvatar(true);
       return;
     }
     if (request.status !== 'pending') {
@@ -414,6 +510,7 @@ export class ProfilePage {
           if (old) URL.revokeObjectURL(old);
           this.avatarUrl.set(null);
           this.profile.update((profile) => profile && { ...profile, avatarUrl: null });
+          this.reviewAvatars.invalidate(this.currentUsername);
           this.avatarBusy.set(false);
           this.avatarMessage.set('Avatar removido.');
         },

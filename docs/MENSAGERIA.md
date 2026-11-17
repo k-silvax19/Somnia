@@ -1,6 +1,10 @@
-# Processamento assíncrono de avatar
+# Mensageria legada de avatar
 
-A implementação segue o Gerador de Certificados: MassTransit 8.5.10,
+Este documento descreve o fluxo legado, mantido para consumir mensagens que
+já estavam na fila antes do processamento passar a ocorrer dentro da API.
+Novos uploads não dependem de RabbitMQ nem do Worker.
+
+A implementação antiga segue o Gerador de Certificados: MassTransit 8.5.10,
 RabbitMQ, mensagem contendo o ID da solicitação, consumer e consulta de
 status. A conversão roda em `Somnia.Worker`, em processo separado da API.
 Reviews continuam fora desse fluxo e ainda não foram implementadas.

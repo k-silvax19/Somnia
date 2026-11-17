@@ -13,7 +13,7 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
         var normalized = normalizer.NormalizeName(username.Trim());
         return await db.Users.AsNoTracking()
             .Where(usuario => usuario.NormalizedUserName == normalized)
-            .Select(usuario => new PerfilPublicoDto(usuario.UserName!, usuario.Nome, usuario.Bio, usuario.AvatarUrl))
+            .Select(usuario => new PerfilPublicoDto(usuario.UserName!, usuario.Nome, usuario.Bio, usuario.AvatarUrl, usuario.BannerTheme))
             .SingleOrDefaultAsync(ct);
     }
 
@@ -27,6 +27,8 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
             usuario.Nome = alteracao.DisplayName!.Trim();
         if (alteracao.AlterarBio)
             usuario.Bio = string.IsNullOrWhiteSpace(alteracao.Bio) ? null : alteracao.Bio.Trim();
+        if (alteracao.AlterarBannerTheme)
+            usuario.BannerTheme = alteracao.BannerTheme!;
 
         await db.SaveChangesAsync(ct);
         return PerfilMapper.Privado(usuario);

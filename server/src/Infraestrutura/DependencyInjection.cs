@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokens, RefreshTokensEmOrm>();
         services.AddScoped<IRepositorioPerfil, RepositorioPerfilEmOrm>();
         services.AddScoped<IRepositorioAvatar, RepositorioAvatarEmOrm>();
+        services.AddSingleton<IProcessadorAvatar, ProcessadorAvatar>();
         services.AddScoped<IRepositorioAvaliacao, RepositorioAvaliacaoEmOrm>();
         services.AddScoped<IRepositorioRelacao, RepositorioRelacaoEmOrm>();
 

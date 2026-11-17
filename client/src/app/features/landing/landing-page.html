@@ -1,0 +1,115 @@
+<a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+<header class="site-header">
+  <a routerLink="/" aria-label="Somnia — início"><app-brand /></a>
+  <nav aria-label="Navegação principal">
+    <a href="#por-que-somnia">Por que Somnia</a>
+    <a routerLink="/entrar">Entrar</a>
+    <a class="header-cta" routerLink="/cadastro">Começar agora</a>
+  </nav>
+</header>
+
+<main id="conteudo">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow"><span aria-hidden="true"></span> PARA QUEM SENTE MÚSICA DE VERDADE</p>
+      <h1 id="hero-title">Every song<br />has a <em>story.</em></h1>
+      <p class="hero-description">
+        Avalie álbuns e faixas, compartilhe suas opiniões e descubra novas histórias através da
+        música.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" routerLink="/cadastro"
+          >Criar minha conta <span aria-hidden="true">›</span></a
+        >
+        <a class="quiet-link" routerLink="/entrar">Explorar a comunidade</a>
+      </div>
+      <p class="hero-note">Grátis para começar. Sem cartão de crédito.</p>
+    </div>
+    <div class="art-collage" aria-label="Composição visual de capas conceituais">
+      <img class="art art-velvet" src="/visuals/velvet.jpg" alt="" />
+      <img class="art art-nocturne" src="/visuals/nocturne.jpg" alt="" />
+      <img class="art art-blue" src="/visuals/blue-room.jpg" alt="" />
+      <img class="art art-afterimage" src="/visuals/afterimage.jpg" alt="" />
+      <div class="art-note">
+        <span class="note-avatar">M</span
+        ><span class="note-copy"
+          ><strong>maia.sounds</strong><small>avaliou Nocturne</small
+          ><q>Parece uma memória que eu não sei se vivi.</q></span
+        ><strong class="note-score">92</strong>
+      </div>
+    </div>
+  </section>
+
+  <section id="por-que-somnia" class="features" aria-labelledby="features-title">
+    <div class="section-heading">
+      <p class="eyebrow">SEU ARQUIVO MUSICAL</p>
+      <h2 id="features-title">Guarde o que a música<br />faz você sentir.</h2>
+    </div>
+    <div class="feature-grid">
+      <article>
+        <span class="feature-icon" aria-hidden="true"
+          ><svg lucideUserRound class="size-6"></svg></span
+        ><span class="number">01</span>
+        <h3>Seu perfil musical</h3>
+        <p>Reúna suas avaliações de álbuns e faixas em um lugar só.</p>
+      </article>
+      <article>
+        <span class="feature-icon green" aria-hidden="true"
+          ><svg lucideStar class="size-6"></svg></span
+        ><span class="number">02</span>
+        <h3>Opiniões de verdade</h3>
+        <p>Dê uma nota, escreva uma resenha e acompanhe a média da comunidade.</p>
+      </article>
+      <article>
+        <span class="feature-icon rose" aria-hidden="true"
+          ><svg lucideCompass class="size-6"></svg></span
+        ><span class="number">03</span>
+        <h3>Descobertas humanas</h3>
+        <p>Siga pessoas e encontre novos sons pelas avaliações que elas compartilham.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="community" aria-labelledby="community-title">
+    <div>
+      <p class="eyebrow">A COMUNIDADE ESTÁ OUVINDO</p>
+      <h2 id="community-title">Histórias em<br />frequência.</h2>
+      <p>Um espaço calmo para opiniões sinceras, sem ruído.</p>
+      <a class="button secondary" routerLink="/cadastro">Participar da comunidade</a>
+    </div>
+    <div class="community-cards" aria-label="Exemplos da comunidade">
+      <article class="community-card">
+        <div class="sample-author">
+          <span class="sample-avatar">MI</span><strong>noah.fm</strong
+          ><small>ouviu agora mesmo</small><time>2h</time>
+        </div>
+        <div class="sample-album">
+          <img src="/visuals/afterimage.jpg" alt="" loading="lazy" />
+          <div>
+            <small>ÁLBUM · MIRROR LAKE</small>
+            <h3>Afterimage</h3>
+            <p>90<span>/100</span></p>
+          </div>
+        </div>
+      </article>
+      <article class="community-card">
+        <div class="sample-author">
+          <span class="sample-avatar">LU</span><strong>noah.fm</strong
+          ><small>ouviu agora mesmo</small><time>2h</time>
+        </div>
+        <div class="sample-album">
+          <img src="/visuals/velvet.jpg" alt="" loading="lazy" />
+          <div>
+            <small>ÁLBUM · LUNAR ARCADE</small>
+            <h3>Velvet Static</h3>
+            <p>88<span>/100</span></p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <app-brand /><span>Música aproxima pessoas.</span><small>© 2026 Somnia</small>
+</footer>

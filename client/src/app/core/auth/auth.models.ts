@@ -15,6 +15,7 @@ export interface Account {
   username: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bannerTheme: 'midnight' | 'aurora' | 'mist';
 }
 
 export interface Credentials {

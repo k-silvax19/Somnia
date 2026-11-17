@@ -11,7 +11,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription, catchError, forkJoin, map, mergeMap, of } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -19,6 +19,7 @@ import { apiError } from '../../core/http/api-error';
 import { Brand } from '../../shared/brand';
 import { Icon } from '../../shared/icon';
 import { HomeApi } from './home-api';
+import { ReviewAvatarCache } from './review-avatar-cache';
 import {
   Connections,
   MusicItem,
@@ -41,7 +42,9 @@ export class HomePage {
   protected readonly auth = inject(AuthService);
   private readonly api = inject(HomeApi);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly reviewAvatars = inject(ReviewAvatarCache);
   protected readonly account = signal<Account | null>(null);
   protected readonly connections = signal<Connections | null>(null);
   protected readonly reviewCount = signal<number | null>(null);
@@ -70,6 +73,32 @@ export class HomePage {
   protected readonly displayName = computed(
     () => this.account()?.displayName || this.auth.session()?.nome || 'Sua conta',
   );
+  protected readonly featuredAlbums = computed(() => {
+    const seen = new Set<string>();
+    return this.reviews()
+      .filter((review) => review.item.type === 'album')
+      .map((review) => ({ review, item: this.metadata()[musicKey(review.item)] }))
+      .filter((entry): entry is { review: Review; item: MusicItem } => !!entry.item)
+      .filter(({ item }) => {
+        const key = musicKey(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 5);
+  });
+  protected readonly suggestedProfiles = computed(() => {
+    const seen = new Set<string>();
+    return this.reviews()
+      .map((review) => review.author)
+      .filter((author) => {
+        if (author.username === this.account()?.username || seen.has(author.username)) return false;
+        seen.add(author.username);
+        return true;
+      })
+      .slice(0, 3);
+  });
+  protected readonly suggestedAvatarUrls = signal<Record<string, string>>({});
   protected readonly initial = computed(() => this.displayName().slice(0, 1).toUpperCase());
   protected readonly searchForm = inject(FormBuilder).nonNullable.group({
     query: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(/\S/)]],
@@ -83,6 +112,8 @@ export class HomePage {
   private metadataRequest = new Subscription();
   private metadataQueue = new Subject<MusicReference>();
   private searchRequest?: Subscription;
+  private readonly suggestedAvatarRequests = new Map<string, Subscription>();
+  private readonly suggestedAvatarObjects = new Map<string, string>();
   private readonly now = signal(Date.now());
   private readonly feedBlockedUntil = signal(0);
   private readonly searchBlockedUntil = signal(0);
@@ -97,17 +128,37 @@ export class HomePage {
     effect(() => {
       if (!this.auth.session()) void this.router.navigate(['/entrar']);
     });
+    effect(() => {
+      for (const person of this.suggestedProfiles()) {
+        const key = person.username.toLowerCase();
+        if (this.suggestedAvatarUrls()[key] || this.suggestedAvatarRequests.has(key)) continue;
+        const request = this.reviewAvatars.load(person.username).subscribe((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          this.suggestedAvatarObjects.set(key, url);
+          this.suggestedAvatarUrls.update((avatars) => ({ ...avatars, [key]: url }));
+        });
+        this.suggestedAvatarRequests.set(key, request);
+      }
+    });
     const clock = setInterval(() => this.now.set(Date.now()), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(clock);
       this.feedRequest?.unsubscribe();
       this.metadataRequest.unsubscribe();
       this.searchRequest?.unsubscribe();
+      for (const request of this.suggestedAvatarRequests.values()) request.unsubscribe();
+      for (const url of this.suggestedAvatarObjects.values()) URL.revokeObjectURL(url);
       const avatar = this.avatarUrl();
       if (avatar) URL.revokeObjectURL(avatar);
     });
     this.loadProfile();
     this.loadFeed();
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const view = params.get('view');
+      if (view === 'discover') this.selectTab('discover');
+      else if (view === 'search') this.openSearch();
+    });
   }
 
   protected loadProfile(): void {
@@ -119,13 +170,14 @@ export class HomePage {
       .pipe(
         mergeMap((account) => {
           this.account.set(account);
-          if (account.username && account.avatarUrl && !this.avatarUrl()) {
+          if (account.username && !this.avatarUrl()) {
             this.api
               .avatar(account.username)
+              .pipe(catchError(() => of(null)))
               .pipe(takeUntilDestroyed(this.destroyRef))
               .subscribe({
                 next: (blob) => {
-                  if (blob.type !== 'image/png') return;
+                  if (!blob || blob.type !== 'image/png') return;
                   const previous = this.avatarUrl();
                   if (previous) URL.revokeObjectURL(previous);
                   this.avatarUrl.set(URL.createObjectURL(blob));
@@ -218,7 +270,12 @@ export class HomePage {
   protected openSearch(): void {
     this.searchActive.set(true);
     this.menuOpen.set(false);
-    this.searchInput()?.nativeElement.focus();
+    setTimeout(() => this.searchInput()?.nativeElement.focus());
+  }
+
+  protected openMusic(item: MusicItem, event: MouseEvent): void {
+    if (event.target instanceof Element && event.target.closest('a, button')) return;
+    void this.router.navigate(['/musica', item.provider, item.type, item.externalId]);
   }
 
   protected search(more = false): void {

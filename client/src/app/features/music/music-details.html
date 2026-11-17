@@ -19,7 +19,9 @@
       }}
     </h1>
     @if (item(); as music) {
-      <p class="artists">{{ music.artists.join(', ') || 'Artista não informado' }}</p>
+      @if (music.artists.length) {
+        <p class="artists">{{ music.artists.join(', ') }}</p>
+      }
       @if (music.album; as album) {
         <p class="album">
           Do álbum <a [routerLink]="musicRoute(album)">{{ album.title }}</a>
@@ -45,15 +47,15 @@
     }
   </aside>
 </section>
-@if (metadataError()) {
-  <div class="message error" role="alert">
+@if (metadataError() && !item()) {
+  <div class="message" [class.error]="!item()" [attr.role]="item() ? 'status' : 'alert'">
     <p>{{ metadataError() }}</p>
     <button
       class="button secondary"
       (click)="loadMetadata()"
       [disabled]="metadataLoading() || catalogWait() > 0"
     >
-      {{ catalogWait() ? 'Aguarde ' + catalogWait() + 's' : 'Tentar carregar catálogo' }}
+      {{ catalogWait() ? 'Aguarde ' + catalogWaitLabel() : 'Tentar carregar catálogo' }}
     </button>
   </div>
 }

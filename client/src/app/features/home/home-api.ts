@@ -4,12 +4,28 @@ import { Observable, catchError, defer, map, of, shareReplay, tap, throwError } 
 import { Account } from '../../core/auth/auth.models';
 import { apiError } from '../../core/http/api-error';
 import { environment } from '../../environments/environment';
-import { Connections, MusicItem, MusicReference, Page, Review, musicKey } from './home.models';
+import {
+  Connections,
+  MusicItem,
+  MusicReference,
+  Page,
+  Review,
+  coverUrl,
+  musicKey,
+} from './home.models';
+import { SpotifyCatalogCache } from './spotify-cache';
+
+interface SpotifyPreview {
+  provider_name: string;
+  title: string;
+  thumbnail_url: string | null;
+}
 
 // Provided by the home page: metadata cache is released when leaving the account/session.
 @Injectable()
 export class HomeApi {
   private readonly http = inject(HttpClient);
+  private readonly spotifyCache = inject(SpotifyCatalogCache);
   private readonly base = environment.apiUrl;
   private readonly metadataCache = new Map<
     string,
@@ -50,54 +66,101 @@ export class HomeApi {
     );
   }
   search(query: string, type: 'album' | 'track', offset: number) {
-    return this.http.get<Page<MusicItem>>(`${this.base}/catalog/search`, {
-      params: { q: query, type, limit: 10, offset },
-      timeout: 35_000,
+    return defer(() => {
+      const cached = this.spotifyCache.readSearch(query, type, offset);
+      if (cached) return of(cached);
+      return this.http
+        .get<Page<MusicItem>>(`${this.base}/catalog/search`, {
+          params: { q: query, type, limit: 10, offset },
+          timeout: 35_000,
+        })
+        .pipe(tap((page) => this.spotifyCache.writeSearch(query, type, offset, page)));
     });
   }
   metadata(item: MusicReference): Observable<MusicItem | null> {
     return defer(() => {
       if (
         !['spotify', 'simulated'].includes(item.provider) ||
-        Date.now() < this.catalogBlockedUntil
+        (item.provider === 'simulated' && Date.now() < this.catalogBlockedUntil)
       )
         return of(null);
+      if (item.provider === 'spotify' && !/^[a-zA-Z0-9]{22}$/.test(item.externalId))
+        return of(null);
+      if (item.provider === 'spotify') {
+        const stored = this.spotifyCache.readCard(item);
+        if (stored) {
+          const { provider, type, externalId, title, artists, coverUrl, spotifyUrl } = stored;
+          return of({ provider, type, externalId, title, artists, coverUrl, spotifyUrl });
+        }
+      }
       const key = musicKey(item);
       const cached = this.metadataCache.get(key);
       if (cached && cached.until > Date.now()) return cached.result;
       if (this.metadataCache.size >= 100)
         this.metadataCache.delete(this.metadataCache.keys().next().value!);
-      const result = this.http
-        .get<MusicItem>(
-          `${this.base}/catalog/${item.type === 'album' ? 'albums' : 'tracks'}/${encodeURIComponent(item.externalId)}`,
-          { timeout: 35_000 },
-        )
-        .pipe(
-          map((metadata): MusicItem | null => {
-            if (musicKey(metadata) !== key) return null;
-            // Album details may include hundreds of tracks; keep only the card's fields.
-            const { provider, type, externalId, title, artists, coverUrl, spotifyUrl } = metadata;
-            return { provider, type, externalId, title, artists, coverUrl, spotifyUrl };
-          }),
-          tap((metadata) => {
-            if (!metadata) this.metadataCache.delete(key);
-            else this.metadataCache.set(key, { until: Date.now() + 120_000, result: of(metadata) });
-          }),
-          catchError((error: unknown) => {
-            this.metadataCache.delete(key);
-            if (
-              error instanceof HttpErrorResponse &&
-              (error.status === 429 || error.status === 503)
-            ) {
-              this.catalogBlockedUntil = Date.now() + (apiError(error).retryAfter || 60) * 1000;
-            }
-            return throwError(() => error);
-          }),
-          shareReplay({ bufferSize: 1, refCount: true }),
-        );
+      const source =
+        item.provider === 'spotify'
+          ? this.spotifyPreview(item)
+          : this.http
+              .get<MusicItem>(
+                `${this.base}/catalog/${item.type === 'album' ? 'albums' : 'tracks'}/${encodeURIComponent(item.externalId)}`,
+                { timeout: 35_000 },
+              )
+              .pipe(
+                map((metadata): MusicItem | null => {
+                  if (musicKey(metadata) !== key) return null;
+                  // Album details may include hundreds of tracks; keep only the card's fields.
+                  const { provider, type, externalId, title, artists, coverUrl, spotifyUrl } =
+                    metadata;
+                  return { provider, type, externalId, title, artists, coverUrl, spotifyUrl };
+                }),
+              );
+      const result = source.pipe(
+        tap((metadata) => {
+          if (!metadata) this.metadataCache.delete(key);
+          else {
+            this.metadataCache.set(key, { until: Date.now() + 120_000, result: of(metadata) });
+            if (item.provider === 'spotify') this.spotifyCache.writePreview(item, metadata);
+          }
+        }),
+        catchError((error: unknown) => {
+          this.metadataCache.delete(key);
+          if (
+            item.provider === 'simulated' &&
+            error instanceof HttpErrorResponse &&
+            (error.status === 429 || error.status === 503)
+          ) {
+            this.catalogBlockedUntil = Date.now() + (apiError(error).retryAfter || 60) * 1000;
+          }
+          return throwError(() => error);
+        }),
+        shareReplay({ bufferSize: 1, refCount: true }),
+      );
       // Only successful metadata is cached; an unavailable catalog never hides a review.
       this.metadataCache.set(key, { until: Date.now() + 120_000, result });
       return result;
     }).pipe(catchError(() => of(null)));
+  }
+
+  private spotifyPreview(item: MusicReference): Observable<MusicItem | null> {
+    const spotifyUrl = `https://open.spotify.com/${item.type}/${item.externalId}`;
+    return this.http
+      .get<SpotifyPreview>('https://open.spotify.com/oembed', {
+        params: { url: spotifyUrl },
+        timeout: 15_000,
+      })
+      .pipe(
+        map((preview): MusicItem | null => {
+          const title = preview.title?.trim();
+          if (preview.provider_name !== 'Spotify' || !title || title.length > 512) return null;
+          return {
+            ...item,
+            title,
+            artists: [],
+            coverUrl: coverUrl(preview.thumbnail_url),
+            spotifyUrl,
+          };
+        }),
+      );
   }
 }

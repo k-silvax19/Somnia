@@ -1,9 +1,10 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { map } from 'rxjs';
+import { defer, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { apiError } from '../../core/http/api-error';
 import { MusicItem, MusicReference, Page, Review, musicKey } from '../home/home.models';
+import { SpotifyCatalogCache } from '../home/spotify-cache';
 
 export interface MusicDetails extends MusicItem {
   tracks?: (MusicItem & { trackNumber: number })[];
@@ -43,8 +44,7 @@ export function musicError(error: unknown, catalog = false) {
       result.message =
         'Este item não está disponível no catálogo atual. Suas avaliações continuam acessíveis.';
     if (catalog && [502, 503].includes(error.status))
-      result.message =
-        'O catálogo musical está indisponível no momento. Tente novamente em instantes.';
+      result.message = 'Não foi possível carregar as informações desta música agora.';
     if (error.status === 503) {
       const seconds = Number(error.headers.get('Retry-After'));
       result.retryAfter = Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
@@ -56,21 +56,31 @@ export function musicError(error: unknown, catalog = false) {
 @Injectable({ providedIn: 'root' })
 export class MusicApi {
   private readonly http = inject(HttpClient);
+  private readonly spotifyCache = inject(SpotifyCatalogCache);
   private readonly base = environment.apiUrl;
   private readonly write = { headers: { 'X-Somnia-Client': 'web' }, timeout: 35_000 };
 
   details(item: MusicReference) {
-    return this.http
-      .get<MusicDetails>(
-        `${this.base}/catalog/${item.type === 'album' ? 'albums' : 'tracks'}/${encodeURIComponent(item.externalId)}`,
-        { timeout: 35_000 },
-      )
-      .pipe(
-        map((details) => {
-          if (musicKey(details) !== musicKey(item)) throw new HttpErrorResponse({ status: 404 });
-          return details;
-        }),
-      );
+    return defer(() => {
+      if (item.provider === 'spotify') {
+        const cached = this.spotifyCache.readDetails(item);
+        if (cached) return of(cached);
+      }
+      return this.http
+        .get<MusicDetails>(
+          `${this.base}/catalog/${item.type === 'album' ? 'albums' : 'tracks'}/${encodeURIComponent(item.externalId)}`,
+          { timeout: 35_000 },
+        )
+        .pipe(
+          map((details) => {
+            if (musicKey(details) !== musicKey(item)) throw new HttpErrorResponse({ status: 404 });
+            return details;
+          }),
+          tap((details) => {
+            if (item.provider === 'spotify') this.spotifyCache.writeDetails(item, details);
+          }),
+        );
+    });
   }
   reviews(item: MusicReference, offset = 0) {
     return this.http.get<ItemReviews>(

@@ -1,18 +1,23 @@
+@font-face {
+  font-family: Manrope;
+  src: url('/visuals/manrope-latin.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
-  --background: #121416;
-  --surface: #1c2024;
-  --text: #f2eee8;
-  --muted: #a5a6a8;
-  --accent: #d99a3d;
-  --border: #2b2f33;
-  --error: #f4a39b;
-  font-family:
-    'Segoe UI',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  --background: #141225;
+  --surface: #1e1a31;
+  --surface-raised: #28223f;
+  --text: #f7f5ff;
+  --muted: #ada4c9;
+  --accent: #b49bfa;
+  --accent-bright: #c9b8ff;
+  --border: #3a3454;
+  --error: #ffb3c4;
+  font-family: Manrope, 'Segoe UI', sans-serif;
   color: var(--text);
   background: var(--background);
   font-synthesis: none;
@@ -25,7 +30,9 @@ body {
   min-width: 320px;
 }
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 button,
@@ -38,10 +45,10 @@ a {
   text-underline-offset: 0.2em;
 }
 a:hover {
-  color: #edb866;
+  color: var(--accent-bright);
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-bright);
   outline-offset: 4px;
 }
 input:focus-visible {
@@ -50,8 +57,8 @@ input:focus-visible {
 .eyebrow {
   color: var(--accent);
   font-size: 0.68rem;
-  font-weight: 650;
-  letter-spacing: 0.14em;
+  font-weight: 750;
+  letter-spacing: 0.16em;
 }
 .button {
   display: inline-flex;
@@ -59,7 +66,7 @@ input:focus-visible {
   align-items: center;
   min-height: 3rem;
   padding: 0.85rem 1.1rem;
-  border-radius: 0.5rem;
+  border-radius: 0.7rem;
   font-size: 0.9rem;
   font-weight: 650;
   border: 1px solid transparent;
@@ -68,26 +75,26 @@ input:focus-visible {
 }
 .primary {
   background: var(--accent);
-  color: #1c1711;
+  color: #17132b;
 }
 .primary:hover:not(:disabled) {
-  background: #e7ab51;
+  background: var(--accent-bright);
 }
 .secondary {
-  background: var(--surface);
+  background: var(--surface-raised);
   color: var(--text);
-  border-color: #454b51;
+  border-color: #51476d;
 }
 .secondary:hover:not(:disabled) {
-  background: #292f34;
+  background: #342d50;
 }
 button:disabled {
   cursor: wait;
   opacity: 0.6;
 }
 .message {
-  border: 1px solid #45515a;
-  background: #20272b;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
   padding: 0.9rem 1rem;
   font-size: 0.85rem;
   line-height: 1.55;
@@ -97,13 +104,13 @@ button:disabled {
 }
 .message.error {
   color: var(--error);
-  background: #2b1e1e;
-  border-color: #6f3b37;
+  background: #392134;
+  border-color: #85465f;
 }
 .message.success {
-  color: #b8d9b8;
-  background: #1d2b23;
-  border-color: #3f644c;
+  color: #c4f0db;
+  background: #19362e;
+  border-color: #376c5a;
 }
 .sr-only {
   position: absolute;

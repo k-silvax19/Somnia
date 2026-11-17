@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MusicReference, Review, coverUrl, spotifyUrl } from '../home/home.models';
 import { ReviewCard } from '../home/review-card';
+import { HomeApi } from '../home/home-api';
 import { Icon } from '../../shared/icon';
 import { ItemReviews, MusicApi, MusicDetails, musicError, musicRoute } from './music-api';
 import { ReviewEditor } from './review-editor';
@@ -11,12 +12,14 @@ import { ReviewEditor } from './review-editor';
 @Component({
   selector: 'app-music-details',
   imports: [RouterLink, Icon, ReviewCard, ReviewEditor],
+  providers: [HomeApi],
   templateUrl: './music-details.html',
   styleUrl: './music-details.scss',
 })
 export class MusicDetailsView implements OnInit {
   readonly reference = input.required<MusicReference>();
   private readonly api = inject(MusicApi);
+  private readonly previewApi = inject(HomeApi);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly item = signal<MusicDetails | null>(null);
   protected readonly metadataLoading = signal(false);
@@ -51,6 +54,13 @@ export class MusicDetailsView implements OnInit {
   protected readonly catalogWait = computed(() =>
     Math.max(0, Math.ceil((this.catalogBlockedUntil() - this.now()) / 1000)),
   );
+  protected readonly catalogWaitLabel = computed(() => {
+    const seconds = this.catalogWait();
+    if (seconds < 60) return `${seconds}s`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.ceil((seconds % 3600) / 60);
+    return hours ? `${hours}h${minutes ? ` ${minutes}min` : ''}` : `${minutes}min`;
+  });
   protected readonly reviewsWait = computed(() =>
     Math.max(0, Math.ceil((this.reviewsBlockedUntil() - this.now()) / 1000)),
   );
@@ -80,7 +90,20 @@ export class MusicDetailsView implements OnInit {
           const problem = musicError(error, true);
           this.metadataError.set(problem.message);
           this.catalogBlockedUntil.set(Date.now() + problem.retryAfter * 1000);
-          this.metadataLoading.set(false);
+          if (this.reference().provider !== 'spotify') {
+            this.metadataLoading.set(false);
+            return;
+          }
+          this.previewApi
+            .metadata(this.reference())
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((preview) => {
+              if (preview) {
+                this.item.set(preview);
+                this.imageFailed.set(false);
+              }
+              this.metadataLoading.set(false);
+            });
         },
       });
   }

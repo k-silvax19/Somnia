@@ -20,7 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddMusicCatalogServices(builder.Configuration, builder.Environment.IsDevelopment());
-builder.Services.AddAvatarMessaging(builder.Configuration);
+builder.Services.AddHostedService<LimpezaSolicitacoesAvatar>();
 builder.Services.AddScoped<IEmissorTokens, JwtTokenGenerator>();
 builder.Services
     .AddOptions<JwtOptions>()
@@ -107,7 +107,7 @@ builder.Services.AddCors(options => options.AddPolicy("Client", policy =>
         policy.WithOrigins(origins);
     }
 
-    policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithExposedHeaders("Retry-After");
 }));
 
 builder.Services.AddRateLimiter(options =>

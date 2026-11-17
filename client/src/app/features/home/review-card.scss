@@ -1,7 +1,28 @@
 article {
-  padding: 1.1rem;
+  position: relative;
+  padding: 1.25rem;
   background: var(--surface);
-  border-radius: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+article.clickable:hover {
+  border-color: var(--accent);
+}
+.card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.card-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.author a,
+.expand,
+footer a {
+  position: relative;
+  z-index: 2;
 }
 header {
   display: flex;
@@ -16,9 +37,16 @@ header {
   height: 2rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #d99a3d20;
-  color: #e6b56c;
+  background: #846da9;
+  color: var(--text);
+  border: 2px solid #5c4b7c;
   font-size: 0.85rem;
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .author {
   display: flex;
@@ -32,6 +60,14 @@ header {
 time {
   color: var(--muted);
 }
+.author a {
+  color: var(--text);
+  text-decoration: none;
+}
+.author a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
 time {
   margin-left: auto;
   flex-shrink: 0;
@@ -43,16 +79,17 @@ time {
   gap: 1rem;
 }
 .cover {
-  width: 7rem;
-  height: 7rem;
+  width: 8rem;
+  height: 8rem;
   flex-shrink: 0;
-  object-fit: contain;
+  object-fit: cover;
+  border-radius: 0.45rem;
 }
 .fallback {
   display: grid;
   place-items: center;
-  color: #bda078;
-  background: #252b2f;
+  color: var(--accent);
+  background: #312949;
   border-radius: 0.35rem;
 }
 .fallback app-icon {
@@ -73,7 +110,7 @@ time {
 }
 .type {
   margin: 0 0 0.25rem;
-  color: var(--muted);
+  color: var(--accent);
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -83,14 +120,6 @@ h2 {
   font-size: 1rem;
   font-weight: 600;
   overflow-wrap: anywhere;
-}
-h2 a {
-  color: inherit;
-  text-decoration: none;
-}
-h2 a:hover {
-  color: var(--accent);
-  text-decoration: underline;
 }
 .artist {
   color: var(--muted);
@@ -105,12 +134,12 @@ h2 a:hover {
   margin: 0;
 }
 .score strong {
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 650;
   color: var(--accent);
 }
 .score span {
-  color: #c7c6c3;
+  color: var(--muted);
   font-size: 0.9rem;
 }
 .no-score {
@@ -123,7 +152,8 @@ h2 a:hover {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.6;
-  font-size: 0.9rem;
+  font-family: inherit;
+  font-size: 0.95rem;
   margin: 0.65rem 0;
 }
 .review.collapsed {
