@@ -68,6 +68,7 @@ export class ProfilePage {
   protected readonly related = signal<RelatedProfile[]>([]);
   protected readonly metadata = signal<Record<string, MusicItem | null>>({});
   protected readonly avatarUrl = signal<string | null>(null);
+  protected readonly relatedAvatarUrls = signal<Record<string, string>>({});
   protected readonly section = signal<'reviews' | 'followers' | 'following'>('reviews');
   protected readonly loading = signal(true);
   protected readonly listLoading = signal(false);
@@ -120,6 +121,8 @@ export class ProfilePage {
   private requests = new Subscription();
   private listRequest?: Subscription;
   private avatarRequest?: Subscription;
+  private readonly relatedAvatarRequests = new Map<string, Subscription>();
+  private readonly relatedAvatarObjects = new Map<string, string>();
   private avatarPoll?: ReturnType<typeof setTimeout>;
   private avatarAttempts = 0;
   private readonly avatarFileInput = viewChild<ElementRef<HTMLInputElement>>('avatarFileInput');
@@ -151,6 +154,7 @@ export class ProfilePage {
     if (this.avatarPoll) clearTimeout(this.avatarPoll);
     const avatar = this.avatarUrl();
     if (avatar) URL.revokeObjectURL(avatar);
+    this.clearRelatedAvatars();
     this.avatarUrl.set(null);
     this.profile.set(null);
     this.account.set(null);
@@ -289,6 +293,7 @@ export class ProfilePage {
     this.editing.set(false);
     if (this.section() === section) return;
     this.listRequest?.unsubscribe();
+    this.clearRelatedAvatars();
     this.listLoading.set(false);
     this.section.set(section);
     this.reviews.set([]);
@@ -333,6 +338,7 @@ export class ProfilePage {
             ...existing,
             ...items.filter((item) => !existing.some((old) => old.username === item.username)),
           ]);
+          this.loadRelatedAvatars(items);
         }
         this.listTotal.set(page.total);
         this.nextOffset = offset + page.items.length;
@@ -346,6 +352,28 @@ export class ProfilePage {
       },
     });
     this.requests.add(this.listRequest);
+  }
+
+  private loadRelatedAvatars(people: RelatedProfile[]): void {
+    for (const person of people) {
+      const key = person.username.toLowerCase();
+      if (this.relatedAvatarUrls()[key] || this.relatedAvatarRequests.has(key)) continue;
+      const request = this.reviewAvatars.load(person.username).subscribe((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        this.relatedAvatarObjects.set(key, url);
+        this.relatedAvatarUrls.update((avatars) => ({ ...avatars, [key]: url }));
+      });
+      this.relatedAvatarRequests.set(key, request);
+    }
+  }
+
+  private clearRelatedAvatars(): void {
+    for (const request of this.relatedAvatarRequests.values()) request.unsubscribe();
+    this.relatedAvatarRequests.clear();
+    for (const url of this.relatedAvatarObjects.values()) URL.revokeObjectURL(url);
+    this.relatedAvatarObjects.clear();
+    this.relatedAvatarUrls.set({});
   }
 
   private loadMetadata(items: Review[]): void {
