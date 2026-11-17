@@ -19,6 +19,7 @@ import { apiError } from '../../core/http/api-error';
 import { Brand } from '../../shared/brand';
 import { Icon } from '../../shared/icon';
 import { HomeApi } from './home-api';
+import { ReviewAvatarCache } from './review-avatar-cache';
 import {
   Connections,
   MusicItem,
@@ -43,6 +44,7 @@ export class HomePage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly reviewAvatars = inject(ReviewAvatarCache);
   protected readonly account = signal<Account | null>(null);
   protected readonly connections = signal<Connections | null>(null);
   protected readonly reviewCount = signal<number | null>(null);
@@ -96,6 +98,7 @@ export class HomePage {
       })
       .slice(0, 3);
   });
+  protected readonly suggestedAvatarUrls = signal<Record<string, string>>({});
   protected readonly initial = computed(() => this.displayName().slice(0, 1).toUpperCase());
   protected readonly searchForm = inject(FormBuilder).nonNullable.group({
     query: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(/\S/)]],
@@ -109,6 +112,8 @@ export class HomePage {
   private metadataRequest = new Subscription();
   private metadataQueue = new Subject<MusicReference>();
   private searchRequest?: Subscription;
+  private readonly suggestedAvatarRequests = new Map<string, Subscription>();
+  private readonly suggestedAvatarObjects = new Map<string, string>();
   private readonly now = signal(Date.now());
   private readonly feedBlockedUntil = signal(0);
   private readonly searchBlockedUntil = signal(0);
@@ -123,12 +128,27 @@ export class HomePage {
     effect(() => {
       if (!this.auth.session()) void this.router.navigate(['/entrar']);
     });
+    effect(() => {
+      for (const person of this.suggestedProfiles()) {
+        const key = person.username.toLowerCase();
+        if (this.suggestedAvatarUrls()[key] || this.suggestedAvatarRequests.has(key)) continue;
+        const request = this.reviewAvatars.load(person.username).subscribe((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          this.suggestedAvatarObjects.set(key, url);
+          this.suggestedAvatarUrls.update((avatars) => ({ ...avatars, [key]: url }));
+        });
+        this.suggestedAvatarRequests.set(key, request);
+      }
+    });
     const clock = setInterval(() => this.now.set(Date.now()), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(clock);
       this.feedRequest?.unsubscribe();
       this.metadataRequest.unsubscribe();
       this.searchRequest?.unsubscribe();
+      for (const request of this.suggestedAvatarRequests.values()) request.unsubscribe();
+      for (const url of this.suggestedAvatarObjects.values()) URL.revokeObjectURL(url);
       const avatar = this.avatarUrl();
       if (avatar) URL.revokeObjectURL(avatar);
     });
