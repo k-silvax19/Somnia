@@ -1,0 +1,10 @@
+{
+  "/api/**": {
+    "target": "https://localhost:7301",
+    "secure": false,
+    "changeOrigin": true,
+    "headers": {
+      "Origin": "https://localhost:7301"
+    }
+  }
+}

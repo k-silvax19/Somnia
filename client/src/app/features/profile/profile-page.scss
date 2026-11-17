@@ -1,0 +1,940 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+.skip-link {
+  position: absolute;
+  top: -5rem;
+  left: 1rem;
+  z-index: 5;
+  background: var(--surface);
+  padding: 0.7rem;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+main {
+  max-width: 72rem;
+  margin: auto;
+  padding: 2.5rem 1.2rem 5rem;
+}
+.profile-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.avatar {
+  width: 6rem;
+  height: 6rem;
+  flex: none;
+  border-radius: 50%;
+  background: #d99a3d20;
+  border: 1px solid #d99a3d55;
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  font-size: 2.5rem;
+  overflow: hidden;
+}
+.avatar img,.mini-avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.identity {
+  flex: 1;
+  min-width: 12rem;
+}
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  margin: 0.25rem 0;
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 1.4rem;
+}
+.username,
+.private-email {
+  color: var(--muted);
+}
+.bio {
+  max-width: 45rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.private-email {
+  font-size: 0.85rem;
+}
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.counts > * {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 1rem;
+  font: inherit;
+}
+.counts button {
+  cursor: pointer;
+}
+.counts strong {
+  color: var(--accent);
+}
+.editor {
+  margin: 2rem 0;
+  max-width: 38rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface);
+}
+.editor h2 {
+  margin-top: 0;
+}
+.editor form {
+  display: grid;
+  gap: 0.5rem;
+}
+.editor label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.editor input:not([type='file']),
+.editor textarea {
+  width: 100%;
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid #555b60;
+  border-radius: 0.4rem;
+  padding: 0.8rem;
+  font: inherit;
+}
+.editor textarea {
+  resize: vertical;
+}
+.field-error {
+  min-height: 1.1rem;
+  color: var(--error);
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+}
+.avatar-editor {
+  gap: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+.activity {
+  margin: 2.5rem 0;
+  max-width: 45rem;
+}
+.related {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.related a {
+  font-weight: 650;
+}
+.related p {
+  color: var(--muted);
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mini-avatar{
+  flex: none;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #d99a3d20;
+  color: var(--accent);
+  overflow:hidden;
+}
+.empty {
+  padding: 2rem;
+  background: var(--surface);
+  border-radius: 0.6rem;
+  color: var(--muted);
+}
+.more {
+  margin-top: 1rem;
+}
+.text-button {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+@media (max-width: 600px) {
+  .site-header {
+    padding: 1rem;
+  }
+  .site-header nav {
+    gap: 0.7rem;
+    font-size: 0.85rem;
+  }
+  main {
+    padding-top: 1.5rem;
+  }
+  .editor {
+    padding: 1rem;
+  }
+  .profile-header {
+    align-items: start;
+  }
+  .avatar {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 2rem;
+  }
+}
+
+/* Profile composition from the Figma reference. */
+main {
+  max-width: 1180px;
+  margin-left: 15.25rem;
+  padding: 0 6rem 5rem 7.5rem;
+}
+.profile-banner {
+  height: 235px;
+  margin: 0 -6rem 0 -7.5rem;
+  background:
+    linear-gradient(90deg, #3c2863a8, #1714286b),
+    url('/visuals/nocturne.jpg') center 35% / cover;
+  border-bottom: 1px solid var(--border);
+}
+.profile-header {
+  position: relative;
+  margin-top: -3rem;
+  padding: 0 0 1.4rem;
+  align-items: end;
+  border-bottom: 1px solid var(--border);
+}
+.avatar {
+  width: 7rem;
+  height: 7rem;
+  border: 6px solid var(--background);
+  background: #886fae;
+  color: var(--text);
+  font-size: 2.2rem;
+}
+.identity {
+  padding: 3rem 0 0.1rem;
+}
+.identity .eyebrow {
+  display: none;
+}
+h1 {
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+}
+h2 {
+  font-weight: 550;
+}
+.username {
+  margin: 0.2rem 0;
+  color: var(--accent);
+  font-size: 0.84rem;
+}
+.bio {
+  margin: 0.6rem 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.private-email {
+  color: #8d82a9;
+}
+.edit-toggle {
+  align-self: end;
+}
+.counts {
+  border: 0;
+  padding: 0 0 1.5rem;
+  gap: 1.1rem;
+}
+.counts > * {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: 0.25rem 0;
+  font-size: 0.82rem;
+}
+.counts strong {
+  color: var(--text);
+}
+.counts button:hover {
+  color: var(--accent);
+}
+.profile-sections {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-top: 1rem;
+}
+.profile-sections button {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 0.9rem 0.3rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.profile-sections button.active {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.editor {
+  max-width: 45rem;
+  background: var(--surface);
+  margin: 2rem 0;
+  border-color: var(--border);
+  border-radius: 1rem;
+}
+.editor input:not([type='file']),
+.editor textarea {
+  background: #151225;
+  color: var(--text);
+  border-color: #4a4163;
+}
+.activity {
+  margin-top: 2rem;
+}
+.mini-avatar {
+  background: #886fae;
+  color: var(--text);
+}
+.empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.reviewed-albums {
+  margin: 2rem 0 2.5rem;
+}
+.reviewed-albums h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.reviewed-albums p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0.4rem 0 1.3rem;
+}
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.album-tile {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+.album-tile:hover {
+  color: var(--accent);
+}
+.album-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  width: 100%;
+  background: #302845;
+  color: var(--accent);
+  font-size: 2rem;
+  border-radius: 0.45rem;
+  overflow: hidden;
+}
+.album-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.album-tile strong {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.album-tile small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor {
+  max-width: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.editor-heading h2 {
+  margin: 0.5rem 0 0;
+  font-size: 2rem;
+  font-weight: 500;
+}
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.6fr);
+  align-items: start;
+  gap: 2.8rem;
+}
+.editor-fields,
+.profile-preview {
+  min-width: 0;
+}
+.editor-fields form,
+.editor-fields input,
+.editor-fields textarea,
+.avatar-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+.editor-fields h3 {
+  font-size: 1rem;
+  font-weight: 550;
+}
+.editor-fields > p {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.editor-fields form {
+  gap: 0.55rem;
+}
+.editor-fields form label {
+  margin-top: 0.6rem;
+}
+.editor input:not([type='file']),
+.editor textarea {
+  background: var(--background);
+  border-color: var(--border);
+  border-radius: 0.6rem;
+}
+.avatar-editor {
+  background: var(--surface);
+  border: 1px dashed #5e507c;
+  border-radius: 0.8rem;
+  padding: 1.3rem;
+  margin-top: 1.5rem;
+}
+.profile-preview > .eyebrow {
+  margin: 0 0 0.7rem;
+}
+.preview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  text-align: center;
+  padding-bottom: 1.5rem;
+  display: grid;
+  justify-items: center;
+}
+.preview-banner {
+  height: 8rem;
+  width: 100%;
+  background:
+    linear-gradient(90deg, #14122533, #141225b3),
+    url('/visuals/profile-banner.jpg') center / cover;
+}
+.preview-avatar {
+  width: 6.7rem;
+  height: 6.7rem;
+  border-radius: 50%;
+  border: 5px solid var(--surface);
+  background: #886fae;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  margin-top: -3.3rem;
+  font-size: 1.7rem;
+}
+.preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.preview-card > strong {
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+.preview-card > small {
+  color: var(--accent);
+}
+.preview-card > p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 0 1rem;
+}
+.preview-counts {
+  display: flex;
+  gap: 0.8rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.preview-counts b {
+  color: var(--text);
+}
+@media (max-width: 1100px) {
+  main {
+    margin-left: 13rem;
+    padding: 0 1.5rem 5rem;
+  }
+  .profile-banner {
+    margin: 0 -1.5rem;
+  }
+}
+@media (max-width: 850px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-preview {
+    max-width: 28rem;
+  }
+}
+@media (max-width: 600px) {
+  main {
+    margin-left: 0;
+    padding: 0 1rem 3rem;
+  }
+  .profile-banner {
+    height: 145px;
+    margin: 0 -1rem;
+  }
+  .profile-header {
+    margin-top: -2.2rem;
+    gap: 0.8rem;
+  }
+  .avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+    border-width: 4px;
+  }
+  .identity {
+    padding-top: 2.4rem;
+  }
+  .edit-toggle {
+    width: 100%;
+  }
+  .profile-sections {
+    overflow-x: auto;
+  }
+  .profile-sections button {
+    white-space: nowrap;
+  }
+  .album-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .editor-heading {
+    align-items: start;
+  }
+  .editor-heading h2 {
+    font-size: 1.5rem;
+  }
+  .editor-heading .button {
+    font-size: 0.75rem;
+    padding: 0.6rem;
+  }
+}
+
+/* Profile layout from the Figma screen. */
+main {
+  max-width: none;
+}
+.profile-banner {
+  height: 260px;
+  background:
+    linear-gradient(90deg, #14122533, #141225b3),
+    url('/visuals/profile-banner.jpg') center / cover;
+}
+.profile-header {
+  margin-top: -3.15rem;
+  min-height: 186px;
+  padding-bottom: 1.9rem;
+  align-items: start;
+  gap: 1.35rem;
+}
+.avatar {
+  position: relative;
+  width: 6.8rem;
+  height: 6.8rem;
+  border: 5px solid var(--background);
+  font-size: 1.55rem;
+}
+.avatar-action {
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  overflow: visible;
+}
+.avatar-action img {
+  border-radius: 50%;
+}
+.avatar-action:hover .camera-badge {
+  background: var(--accent-bright);
+}
+.camera-badge {
+  position: absolute;
+  right: -0.1rem;
+  bottom: -0.1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #17132b;
+  border: 3px solid var(--background);
+  display: grid;
+  place-items: center;
+}
+.identity {
+  padding: 3.5rem 0 0;
+}
+.identity-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.identity-title h1 {
+  font-size: 1.55rem;
+  margin: 0;
+  font-weight: 500;
+}
+.identity-title .username {
+  margin: 0;
+  font-size: 0.73rem;
+  color: var(--accent);
+}
+.bio {
+  max-width: 35rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 0.35rem 0;
+}
+.counts {
+  gap: 1rem;
+  padding: 0;
+  margin-top: 0.3rem;
+}
+.counts > * {
+  font-size: 0.78rem;
+  padding: 0;
+}
+.counts strong {
+  font-weight: 750;
+}
+.edit-toggle {
+  margin-top: 3.5rem;
+  margin-left: auto;
+  min-height: 2.7rem;
+  display: flex;
+  gap: 0.6rem;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+.reviewed-albums {
+  margin: 2.2rem 0 2.15rem;
+}
+.reviewed-albums h2 {
+  font-size: 1.1rem;
+}
+.reviewed-albums p {
+  margin: 0.35rem 0 1.45rem;
+}
+.album-art {
+  border-radius: 0.45rem;
+}
+.profile-sections {
+  margin: 0;
+  gap: 1.6rem;
+}
+.profile-sections button {
+  padding: 0.9rem 0.1rem;
+  font-size: 0.8rem;
+}
+.activity {
+  margin-top: 1.25rem;
+  max-width: 41rem;
+}
+.avatar-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: #090715c9;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.avatar-alert {
+  margin-top: 1rem;
+}
+.avatar-dialog {
+  position: relative;
+  width: min(100%, 25rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 2rem;
+  box-shadow: 0 2rem 5rem #05040bad;
+  text-align: center;
+}
+.dialog-close {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+.dialog-avatar {
+  width: 7rem;
+  height: 7rem;
+  border-radius: 50%;
+  background: #886fae;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 2rem;
+}
+.dialog-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-dialog h2 {
+  margin: 0.4rem 0 0;
+  font-size: 1.35rem;
+}
+.avatar-dialog > p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0 0 0.5rem;
+}
+.avatar-dialog .button {
+  width: 100%;
+}
+.dialog-remove {
+  color: #f0a4b5;
+  background: transparent;
+  border: 0;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+.avatar-dialog .dialog-status {
+  color: var(--accent);
+  margin: 0;
+}
+.avatar-dialog .message {
+  margin: 0;
+  width: 100%;
+}
+.avatar-editor {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+.avatar-editor-icon {
+  display: grid;
+  place-items: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50%;
+  background: #342b4e;
+  color: var(--accent);
+  font-size: 1.4rem;
+}
+.avatar-editor > div:nth-child(2) {
+  display: grid;
+  gap: 0.2rem;
+}
+.avatar-editor strong {
+  font-size: 0.84rem;
+}
+.avatar-editor small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.avatar-editor .button {
+  margin-left: auto;
+  min-height: 2.4rem;
+  padding: 0.5rem 0.8rem;
+}
+.avatar-editor > p {
+  width: 100%;
+  margin: 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 3.5rem 0 0 auto;
+}
+.header-actions .edit-toggle {
+  margin: 0;
+}
+.header-logout {
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+.header-error {
+  margin-top: 1rem;
+}
+.activity app-review-card {
+  display: block;
+  margin-bottom: 1.25rem;
+}
+.activity app-review-card:last-of-type {
+  margin-bottom: 0;
+}
+.banner-editor {
+  margin-top: 1.8rem;
+}
+.banner-editor h3 {
+  margin: 0 0 0.35rem;
+}
+.banner-editor p {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.banner-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.banner-option {
+  position: relative;
+  min-width: 0;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: #1d1a32;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+}
+.banner-option.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.banner-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.banner-option svg {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.55rem;
+  color: var(--accent);
+}
+.banner-swatch {
+  display: block;
+  height: 4rem;
+  border-radius: 0.4rem;
+  background:
+    linear-gradient(90deg, #14122533, #141225b3),
+    url('/visuals/profile-banner.jpg') center / cover;
+}
+.profile-banner.banner-aurora,
+.preview-banner.banner-aurora,
+.banner-swatch.banner-aurora {
+  background: linear-gradient(135deg, #253b46, #b87988);
+}
+.profile-banner.banner-mist,
+.preview-banner.banner-mist,
+.banner-swatch.banner-mist {
+  background: linear-gradient(135deg, #252c37, #7c7896);
+}
+@media (max-width: 600px) {
+  .profile-banner {
+    height: 180px;
+  }
+  .profile-header {
+    margin-top: -2.6rem;
+    gap: 0.7rem;
+    min-height: 0;
+    padding-bottom: 1rem;
+  }
+  .avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+  .identity {
+    min-width: 0;
+    padding: 2.7rem 0 0;
+  }
+  .identity-title h1 {
+    font-size: 1.35rem;
+  }
+  .identity-title .username {
+    width: 100%;
+  }
+  .counts {
+    gap: 0.6rem;
+  }
+  .counts > * {
+    font-size: 0.68rem;
+  }
+  .edit-toggle {
+    margin: 0.3rem 0 0;
+    width: 100%;
+  }
+  .header-actions {
+    width: 100%;
+    margin: 0.3rem 0 0;
+  }
+  .header-actions .button {
+    width: auto;
+  }
+  .header-actions .edit-toggle {
+    flex: 1;
+  }
+  .profile-sections {
+    overflow-x: auto;
+    gap: 1.1rem;
+  }
+  .profile-sections button {
+    white-space: nowrap;
+  }
+}

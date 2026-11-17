@@ -1,0 +1,39 @@
+name: Build e testes da API
+
+on:
+  push:
+    paths:
+      - "server/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Obter código
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Configurar .NET 10
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restaurar dependências
+        run: dotnet restore server/Somnia.slnx
+      - name: Compilar solução
+        run: dotnet build server/Somnia.slnx -c Release --no-restore
+      - name: Executar testes unitários
+        run: dotnet test server/tests/Somnia.Tests -c Release --no-build --no-restore

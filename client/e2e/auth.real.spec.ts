@@ -1,0 +1,111 @@
+import { expect, test } from '@playwright/test';
+
+test('real API: auth, review CRUD, album and track navigation, reload and global logout', async ({
+  page,
+  context,
+}) => {
+  page.on('response', async (response) => {
+    if (
+      response.url().includes('/api/auth/') &&
+      response.status() >= 400 &&
+      response.status() !== 401
+    ) {
+      const body = await response.json().catch(() => ({}));
+      console.error(`Auth API ${response.status()}: ${JSON.stringify(body)}`);
+    }
+  });
+  const username = `auth_${Date.now()}`;
+  const email = `${username}@example.test`;
+  const password = 'BrowserAuth123!';
+  await page.goto('/cadastro');
+  await page.getByLabel('Nome de exibição').fill('Participante Auth');
+  await page.getByLabel('Nome de usuário').fill(username);
+  await page.getByLabel('E-mail', { exact: true }).fill(email);
+  await page.getByLabel('Senha', { exact: true }).fill(password);
+  await page.getByLabel('Confirme sua senha').fill(password);
+  await page.getByRole('button', { name: 'Criar minha conta' }).click();
+  await expect(page).toHaveURL(/\/entrar$/);
+  await expect(page.getByText('Conta criada! Entre com seu e-mail e senha.')).toBeVisible();
+
+  await page.getByLabel('Senha', { exact: true }).fill('WrongPassword123!');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('E-mail ou senha incorretos');
+  await page.getByLabel('Senha', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+  await expect(page.getByText('Seu feed está começando')).toBeVisible();
+  await page.getByRole('searchbox').fill('Somnia');
+  await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
+  await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: /Horizonte/ }).click();
+  await expect(page.getByRole('heading', { name: 'Horizonte', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Aurora', level: 1 })).toBeVisible();
+  await page.getByLabel('Nota (opcional)', { exact: true }).fill('0');
+  await page.getByRole('button', { name: 'Publicar avaliação' }).click();
+  await expect(page.getByText('Avaliação salva.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('0,0');
+  await page.getByRole('button', { name: 'Editar avaliação' }).click();
+  await page.getByLabel('Nota (opcional)', { exact: true }).fill('');
+  await page
+    .getByLabel('Resenha (opcional)', { exact: true })
+    .fill('Resenha sem nota no banco real.');
+  await page.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(page.getByText('Avaliação salva.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('0 notas');
+  await page.getByRole('button', { name: 'Editar avaliação' }).click();
+  await page.getByLabel('Nota (opcional)', { exact: true }).fill('92');
+  await page
+    .getByLabel('Resenha (opcional)', { exact: true })
+    .fill('Resenha do teste integrado da tela inicial.');
+  await page.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('92,0');
+  await page.getByRole('link', { name: 'Voltar ao início', exact: false }).click();
+  await page.getByRole('button', { name: 'Descobrir', exact: true }).click();
+  await expect(page.getByText('Resenha do teste integrado da tela inicial.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Aurora', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Nota 92 de 100')).toBeVisible();
+  await page.getByRole('button', { name: 'Buscar música' }).click();
+  await page.getByRole('searchbox').fill('Somnia');
+  await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Noturno', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Aurora', exact: true }).click();
+  await page.getByRole('button', { name: 'Excluir avaliação', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar exclusão', exact: true }).click();
+  await expect(page.getByText('Avaliação excluída.', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Publicar avaliação' })).toBeVisible();
+  await expect(page.getByLabel('Média da comunidade')).toContainText('0 notas');
+  await page.getByRole('link', { name: 'Voltar ao início', exact: false }).click();
+  const cookies = await context.cookies();
+  expect(cookies.find((cookie) => cookie.name === '__Host-somnia-refresh')).toMatchObject({
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Strict',
+    path: '/',
+  });
+  expect(cookies.find((cookie) => cookie.name === '__Host-somnia-csrf')).toMatchObject({
+    httpOnly: false,
+    secure: true,
+    sameSite: 'Strict',
+    path: '/',
+  });
+  expect(await page.evaluate(() => document.cookie.includes('__Host-somnia-refresh'))).toBe(false);
+  expect(await page.evaluate(() => localStorage.length + sessionStorage.length)).toBe(0);
+
+  const second = await context.newPage();
+  await Promise.all([page.reload(), second.goto('/inicio')]);
+  await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+  await expect(second.getByText(`@${username}`, { exact: true })).toBeVisible();
+  await page.goto('/entrar');
+  await expect(page).toHaveURL(/\/inicio$/);
+  await page.getByRole('button', { name: 'Sair de todos os dispositivos' }).click();
+  await expect(page).toHaveURL(/\/entrar$/);
+  await expect(second).toHaveURL(/\/entrar$/);
+  expect((await context.cookies()).some((cookie) => cookie.name.startsWith('__Host-somnia-'))).toBe(
+    false,
+  );
+  await page.goto('/inicio');
+  await expect(page).toHaveURL(/\/entrar$/);
+});

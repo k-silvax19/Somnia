@@ -1,0 +1,117 @@
+:host {
+  display: block;
+}
+.editor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+h2 {
+  margin: 0.4rem 0 0.8rem;
+  font-size: 1.35rem;
+}
+.hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 1.4rem 0 0;
+  min-width: 0;
+}
+label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+label span {
+  font-weight: 400;
+  color: var(--muted);
+}
+input,
+textarea {
+  background: var(--background);
+  border: 1px solid #454b51;
+  border-radius: 0.5rem;
+  padding: 0.8rem;
+  color: var(--text);
+  font: inherit;
+}
+input {
+  width: 6rem;
+}
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 9rem;
+}
+.score-field {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  color: var(--muted);
+}
+.counter {
+  text-align: right;
+  margin: 0.3rem 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.actions .button {
+  font-size: 0.82rem;
+}
+.validation {
+  color: var(--error);
+  font-size: 0.8rem;
+}
+.validation:empty {
+  margin: 0;
+}
+.score {
+  font-size: 1.8rem;
+  color: var(--accent);
+  margin: 1rem 0;
+}
+.review {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+.confirmation {
+  border-top: 1px solid var(--border);
+  padding-top: 0.7rem;
+  line-height: 1.6;
+  font-size: 0.88rem;
+}
+.danger {
+  color: var(--error);
+  background: #3b2323;
+  border-color: #85504b;
+}
+@media (max-width: 600px) {
+  .editor {
+    padding: 1rem;
+  }
+}
+
+.editor {
+  background: var(--surface);
+  border-color: var(--border);
+}
+input,
+textarea {
+  background: #151225;
+  border-color: #4a4163;
+}
+.danger {
+  background: #442938;
+  border-color: #865064;
+}
