@@ -150,13 +150,14 @@ export class HomePage {
       .pipe(
         mergeMap((account) => {
           this.account.set(account);
-          if (account.username && account.avatarUrl && !this.avatarUrl()) {
+          if (account.username && !this.avatarUrl()) {
             this.api
               .avatar(account.username)
+              .pipe(catchError(() => of(null)))
               .pipe(takeUntilDestroyed(this.destroyRef))
               .subscribe({
                 next: (blob) => {
-                  if (blob.type !== 'image/png') return;
+                  if (!blob || blob.type !== 'image/png') return;
                   const previous = this.avatarUrl();
                   if (previous) URL.revokeObjectURL(previous);
                   this.avatarUrl.set(URL.createObjectURL(blob));
@@ -250,6 +251,11 @@ export class HomePage {
     this.searchActive.set(true);
     this.menuOpen.set(false);
     setTimeout(() => this.searchInput()?.nativeElement.focus());
+  }
+
+  protected openMusic(item: MusicItem, event: MouseEvent): void {
+    if (event.target instanceof Element && event.target.closest('a, button')) return;
+    void this.router.navigate(['/musica', item.provider, item.type, item.externalId]);
   }
 
   protected search(more = false): void {

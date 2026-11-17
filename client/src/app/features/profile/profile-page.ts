@@ -241,7 +241,7 @@ export class ProfilePage {
   }
 
   private loadAvatar(uploaded = false): void {
-    if (!this.profile()?.avatarUrl) return;
+    if (!this.currentUsername) return;
     this.avatarRequest?.unsubscribe();
     this.avatarRequest = this.api.avatar(this.currentUsername).subscribe({
       next: (blob) => {
@@ -260,9 +260,15 @@ export class ProfilePage {
           this.avatarMessage.set('Avatar atualizado.');
         }
       },
-      error: () => {
+      error: (error: unknown) => {
         this.avatarBusy.set(false);
         this.avatarMessage.set('');
+        if (!uploaded && error instanceof HttpErrorResponse && error.status === 404) {
+          const old = this.avatarUrl();
+          if (old) URL.revokeObjectURL(old);
+          this.avatarUrl.set(null);
+          return;
+        }
         this.avatarError.set('A foto foi processada, mas não pôde ser carregada. Tente novamente.');
       },
     });

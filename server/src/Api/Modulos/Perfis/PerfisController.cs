@@ -75,7 +75,7 @@ public sealed class PerfisController(IMediator mediator) : ControllerBase
         await arquivo.CopyToAsync(buffer, ct);
         var result = await mediator.Send(new SolicitarAvatarCommand(usuarioId, buffer.ToArray()), ct);
         return result.IsFailed ? this.ResultProblem(result)
-            : AcceptedAtAction(nameof(StatusAvatar), new { solicitacaoId = result.Value.Id }, result.Value);
+            : Ok(result.Value);
     }
 
     [HttpDelete("me/avatar")]

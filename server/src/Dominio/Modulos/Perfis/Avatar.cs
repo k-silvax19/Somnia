@@ -27,5 +27,3 @@ public interface IRepositorioAvatar
 }
 
 public sealed record ProcessamentoAvatarDto(Guid Id, string Status, string? Erro);
-
-public sealed class LimiteProcessamentosAvatarException : Exception;

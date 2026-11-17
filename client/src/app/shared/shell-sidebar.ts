@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import {
   LucideCompass,
   LucideHouse,
@@ -204,16 +205,17 @@ export class ShellSidebar {
       .subscribe({
         next: (account) => {
           this.account.set(account);
-          if (!account.username || !account.avatarUrl) return;
+          if (!account.username) return;
           this.http
             .get(`${environment.apiUrl}/users/${encodeURIComponent(account.username)}/avatar`, {
               responseType: 'blob',
               timeout: 15_000,
             })
+            .pipe(catchError(() => of(null)))
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (blob) => {
-                if (blob.type === 'image/png') this.avatarUrl.set(URL.createObjectURL(blob));
+                if (blob?.type === 'image/png') this.avatarUrl.set(URL.createObjectURL(blob));
               },
             });
         },

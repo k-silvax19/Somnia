@@ -134,8 +134,6 @@ export class ReviewCard {
       const avatarVersion = this.avatars.version(author.username);
       this.avatarUrl.set(null);
       this.avatarImageFailed.set(false);
-      // Older API responses omit avatarUrl; fetch once while the server is being updated.
-      if (author.avatarUrl === null && avatarVersion === 0) return;
       let objectUrl: string | null = null;
       const request = this.avatars.load(author.username).subscribe((blob) => {
         if (objectUrl) URL.revokeObjectURL(objectUrl);

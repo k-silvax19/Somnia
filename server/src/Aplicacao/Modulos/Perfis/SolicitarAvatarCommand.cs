@@ -16,18 +16,10 @@ public sealed class SolicitarAvatarCommandHandler(IRepositorioAvatar repositorio
         if (command.Arquivo.Length is 0 or > LimitesAvatar.TamanhoMaximo)
             return Result.Fail<ProcessamentoAvatarDto>(Erros.Criar(TipoErro.Validacao,
                 "Envie uma imagem PNG ou JPEG de até 2 MiB.", "file"));
-        try
-        {
-            var solicitacao = await repositorio.SolicitarAsync(command.UsuarioId, command.Arquivo, ct);
-            return solicitacao is null
-                ? Result.Fail<ProcessamentoAvatarDto>(Erros.Criar(TipoErro.NaoEncontrado, "Perfil inexistente."))
-                : Result.Ok(solicitacao);
-        }
-        catch (LimiteProcessamentosAvatarException)
-        {
-            return Result.Fail<ProcessamentoAvatarDto>(Erros.Criar(TipoErro.Conflito,
-                "A fila de imagens está cheia. Tente novamente mais tarde."));
-        }
+        var solicitacao = await repositorio.SolicitarAsync(command.UsuarioId, command.Arquivo, ct);
+        return solicitacao is null
+            ? Result.Fail<ProcessamentoAvatarDto>(Erros.Criar(TipoErro.NaoEncontrado, "Perfil inexistente."))
+            : Result.Ok(solicitacao);
     }
 }
 

@@ -182,7 +182,7 @@
         <button class="text-button" (click)="loadConnections()">Tentar novamente</button>
       </div>
     }
-    @if (!editing() && (reviewedAlbums().length || own)) {
+    @if (!editing() && section() === 'reviews' && (reviewedAlbums().length || own)) {
       <section class="reviewed-albums" aria-labelledby="reviewed-albums-title">
         <h2 id="reviewed-albums-title">
           {{ reviewedAlbums().length ? 'Álbuns do perfil' : 'Explore novos álbuns' }}

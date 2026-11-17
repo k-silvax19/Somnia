@@ -1,26 +1,36 @@
-using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Somnia.Aplicacao.Modulos.Perfis.Mensageria;
 using Somnia.Dominio.Modulos.Perfis;
 using Somnia.Infraestrutura.Compartilhado.Orm;
 
 namespace Somnia.Infraestrutura.Modulos.Perfis;
 
 public sealed class RepositorioAvatarEmOrm(
-    SomniaDbContext db, ILookupNormalizer normalizer, ISendEndpointProvider mensagens) : IRepositorioAvatar
+    SomniaDbContext db, ILookupNormalizer normalizer, IProcessadorAvatar processador) : IRepositorioAvatar
 {
     public async Task<ProcessamentoAvatarDto?> SolicitarAsync(Guid usuarioId, byte[] arquivo, CancellationToken ct)
     {
+        byte[]? imagem = null;
+        string? erro = null;
+        try
+        {
+            imagem = processador.Normalizar(arquivo);
+        }
+        catch (ArgumentException ex)
+        {
+            erro = ex.Message;
+        }
+
         var id = Guid.NewGuid();
         var solicitacao = new SolicitacaoAvatar
         {
-            Id = id, UsuarioId = usuarioId, Arquivo = arquivo, CriadoEmUtc = DateTime.UtcNow
+            Id = id, UsuarioId = usuarioId, Status = erro is null ? "completed" : "rejected",
+            Erro = erro, CriadoEmUtc = DateTime.UtcNow
         };
         return await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
             await using var transacao = await db.Database.BeginTransactionAsync(ct);
-            // Serializa a admissão para que o limite de 100 imagens pendentes seja global.
+            // Serializa substituições para que uploads concorrentes tenham uma ordem definida.
             await db.Database.ExecuteSqlRawAsync("""
                 DECLARE @resultado int;
                 EXEC @resultado = sys.sp_getapplock @Resource=N'Somnia:Avatares',
@@ -32,21 +42,31 @@ public sealed class RepositorioAvatarEmOrm(
             if (existente is not null)
                 return Dto(existente);
 
-            var usuario = await db.Users.Where(x => x.Id == usuarioId)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.AvatarSolicitacaoAtualId, id), ct);
-            if (usuario == 0)
+            if (erro is null)
+            {
+                var usuario = await db.Users.Where(x => x.Id == usuarioId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.AvatarSolicitacaoAtualId, id), ct);
+                if (usuario == 0)
+                    return null;
+                await CancelarPendentesAsync(usuarioId, ct);
+            }
+            else if (!await db.Users.AnyAsync(x => x.Id == usuarioId, ct))
+            {
                 return null;
-
-            await CancelarPendentesAsync(usuarioId, ct);
-            if (await db.SolicitacoesAvatar.CountAsync(x => x.Status == "pending", ct) >= 100)
-                throw new LimiteProcessamentosAvatarException();
+            }
 
             db.SolicitacoesAvatar.Add(solicitacao);
-            // Bus Outbox grava a mensagem na mesma transação da solicitação.
-            // Envio à fila também funciona antes do primeiro consumer iniciar.
-            var endpoint = await mensagens.GetSendEndpoint(new Uri($"queue:{ProcessarAvatarMessage.Fila}"));
-            await endpoint.Send(new ProcessarAvatarMessage(id), ct);
             await db.SaveChangesAsync(ct);
+
+            if (imagem is not null)
+            {
+                await db.Avatares.Where(x => x.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"INSERT INTO Avatares (UsuarioId, Conteudo) VALUES ({usuarioId}, {imagem})", ct);
+                await db.Users.Where(x => x.Id == usuarioId).ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.AvatarUrl, x => "/api/users/" + x.UserName + "/avatar"), ct);
+            }
+
             await transacao.CommitAsync(ct);
             return Dto(solicitacao);
         });

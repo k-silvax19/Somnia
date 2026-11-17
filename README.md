@@ -2,7 +2,7 @@
 
 API de avaliações musicais e recursos sociais. O MVP está em
 desenvolvimento: atualmente há autenticação e perfis com avatar estático,
-processado de forma assíncrona por RabbitMQ e um Worker separado, além de
+validado e processado pela própria API, sem RabbitMQ para novas fotos, além de
 catálogo musical integrado ao Spotify, avaliações de álbuns/faixas, histórico
 no perfil, médias comunitárias, seguir/deixar de seguir perfis, feed e descoberta.
 
@@ -64,8 +64,8 @@ Backend em ASP.NET Core 10, organizado em `server/src`:
 - `Aplicacao`: casos de uso e handlers MediatR.
 - `Dominio`: contratos e tipos do domínio, sem dependência das outras camadas.
 - `Infraestrutura`: EF Core, SQL Server, Identity e repositórios.
-- `Worker`: host do consumer MassTransit/RabbitMQ, com conversão de avatar
-  fora do processo HTTP. As responsabilidades continuam nas quatro camadas.
+- `Worker`: host legado MassTransit/RabbitMQ, mantido para consumir mensagens
+  de avatar já publicadas antes da troca para processamento síncrono.
 
 | Tema | Proposta do PDF | Implementação atual |
 | --- | --- | --- |
@@ -87,7 +87,7 @@ por convites; detalhes em [CADASTRO.md](server/CADASTRO.md).
 
 ## Execução local
 
-Pré-requisitos: SDK .NET 10, SQL Server acessível, Docker/RabbitMQ e
+Pré-requisitos: SDK .NET 10, SQL Server acessível e
 certificado HTTPS de desenvolvimento. Execute os comandos na raiz do repositório.
 
 Configure a conexão e a chave JWT via User Secrets, substituindo os valores
@@ -114,17 +114,11 @@ OpenAPI: `https://localhost:7201/openapi/v1.json`. O `v1` desse arquivo
 identifica o documento OpenAPI; as rotas dos controllers continuam em `/api`.
 Swagger e OpenAPI são expostos somente em Development.
 
-API e Worker já possuem `ConnectionStrings:RabbitMq` no
-`appsettings.Development.json`, seguindo o Gerador de Certificados:
-`amqp://guest:guest@localhost:5673`. O Worker também usa a mesma conexão SQL
-local da API nesse arquivo. User Secrets e variáveis de ambiente podem
-sobrescrever esses valores. O broker do Compose usa outra configuração;
-os detalhes estão em [MENSAGERIA.md](server/MENSAGERIA.md).
-Após iniciar a API, execute em outro
-terminal `dotnet run --project server/src/Worker` com
-`DOTNET_ENVIRONMENT=Development` para carregar os User Secrets compartilhados.
-O PUT de avatar responde `202`; o frontend consulta o status até a conclusão.
-Há também Compose com Worker limitado a uma CPU e 512 MiB de RAM.
+O Worker e o RabbitMQ não são necessários para novas fotos. O PUT de avatar
+valida e normaliza a imagem dentro da API, grava o resultado no SQL Server e
+responde com status `completed`. O frontend carrega a foto logo após o upload.
+O Worker legado pode ser iniciado para terminar mensagens que já estavam na
+fila antes desta mudança; os detalhes estão em [MENSAGERIA.md](server/MENSAGERIA.md).
 
 Em Development, `MusicCatalog:Provider=Spotify` usa as credenciais dos User
 Secrets compartilhados (`Somnia`). Reinicie a API após configurá-las. Consulte

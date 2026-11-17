@@ -217,7 +217,7 @@
             </div>
           }
           @for (item of results(); track musicKey(item)) {
-            <article class="search-result">
+            <article class="search-result" (click)="openMusic(item, $event)">
               @if (coverUrl(item.coverUrl); as url) {
                 <img
                   #resultCover
@@ -239,7 +239,11 @@
                 </h3>
                 <p>{{ item.artists.join(', ') }}</p>
                 @if (spotifyUrl(item); as url) {
-                  <a [href]="url" target="_blank" rel="noopener noreferrer"
+                  <a
+                    [href]="url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    (click)="$event.stopPropagation()"
                     >Abrir no Spotify ↗<span class="sr-only"> (nova aba)</span></a
                   >
                 }
