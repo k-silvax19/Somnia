@@ -43,7 +43,9 @@ public static class CatalogoExtensions
                         MaxResponseHeadersLength = 32
                     }).RemoveAllLoggers();
                 services.AddSingleton<SpotifyClient>();
-                services.AddSingleton<IMusicCatalogProvider, ProvedorCatalogoSpotify>();
+                services.AddSingleton<ProvedorCatalogoSpotify>();
+                services.AddSingleton<IMusicCatalogProvider>(sp => new ProvedorCatalogoComCache(
+                    sp.GetRequiredService<ProvedorCatalogoSpotify>()));
                 break;
             case "Simulated" when desenvolvimento:
                 services.AddSingleton<IMusicCatalogProvider, ProvedorCatalogoSimulado>();

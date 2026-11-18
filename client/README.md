@@ -100,6 +100,10 @@ pequenas, a navegação fica em um menu expansível e o resumo vem depois do fee
 - A busca consulta álbuns ou músicas com paginação e links oficiais Spotify.
   Títulos da busca e dos cards abrem os detalhes do item. “Minha conta” abre
   a tela `/conta`, que apresenta histórico, relações e edição de perfil.
+- O navegador guarda páginas de busca por dez minutos e detalhes/resumos por
+  até seis horas em `localStorage`, com limite de 50 itens e validação dos dados
+  antes de reutilizá-los. Falhas e itens de outros provedores não entram nesse
+  cache. A API permanece `no-store`; essa reutilização é explícita no cliente.
 - Há estados de carregamento, vazio, falha e nova tentativa. Limites 429 no
   feed e na busca respeitam Retry-After, com fallback de 60 segundos.
 

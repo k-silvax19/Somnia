@@ -110,8 +110,14 @@ pausa por 30 segundos; falhas de transporte/servidor, por 5 segundos. Isso
 preserva a sessão Somnia e permite continuar usando contas e perfis. O
 contrato completo está em [ERROS.md](ERROS.md).
 
-Não há cache persistente de metadados nem coordenação de quota entre
-instâncias. O catálogo é somente leitura, sem tabelas novas ou RabbitMQ.
+O provedor mantém em memória, por instância, até 128 resultados recentes:
+buscas por 5 minutos e detalhes de álbum/faixa por 30 minutos. Chamadas
+concorrentes para a mesma chave compartilham a consulta em andamento; falhas e
+itens inexistentes não são armazenados. O cache é temporário, não persiste em
+banco e não coordena quotas entre instâncias. O frontend também mantém buscas,
+resumos e detalhes válidos em `localStorage` com expiração, para evitar repetir
+chamadas ao Somnia no mesmo navegador. O catálogo continua somente leitura, sem
+tabelas novas ou RabbitMQ.
 O frontend deve exibir atribuição Spotify e links oficiais junto aos dados,
 preservando a arte original conforme a [referência de álbum](https://developer.spotify.com/documentation/web-api/reference/get-an-album).
 A integração não oferece streaming de áudio.

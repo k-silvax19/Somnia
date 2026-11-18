@@ -8,8 +8,8 @@ etapa para não confundir requisitos planejados com código já entregue.
 
 **Autenticação, perfis, avatar assíncrono, catálogo Spotify, avaliações,
 médias, histórico, relações, feed e descoberta estão implementados no backend.
-O frontend integra esses fluxos. Próxima etapa: homologação completa e preparação
-do piloto.**
+O frontend integra esses fluxos. Próxima etapa: tratar os feedbacks de uso real,
+homologar a experiência completa e preparar o piloto.**
 
 O diário privado permanece fora do escopo. Não criar entidade de escuta,
 datas de escuta ou tela de diário. Premium permanece posterior ao piloto.
@@ -374,18 +374,34 @@ para publicar, editar e excluir a avaliação do titular. Edição/exclusão con
 disponíveis sem catálogo; falhas preservam o rascunho e exclusão exige confirmação.
 Contrato e execução em [client/README.md](../client/README.md).
 
-1. Frontend de histórico, perfis públicos, edição de nome/bio/avatar e relações
-   implementado nesta etapa. O histórico usa os contratos da API, mantém
-   avaliações visíveis durante falhas do catálogo e preserva o rascunho de edição
-   nos erros. A integração foi verificada com respostas controladas no navegador;
-   edição, histórico e relações também passaram com API/SQL reais em banco
-   descartável. A homologação completa dos critérios do PRD permanece pendente.
-2. Homologar fluxos completos em 360 px/desktop e por teclado, foco/rótulos/erros,
-   e critérios de aceite do PRD. O backend entregue não homologa a experiência visual.
-3. Preparar deploy/piloto: migrations controladas, backups, retenção, exclusão
-   de conta (incluindo relações), convites/acesso, viabilidade do catálogo e feedback.
-   O gerador de SQL idempotente e as decisões pendentes estão em
-   [Preparação do piloto](PILOTO.md); nenhum banco publicado foi alterado.
+1. Investigar o relato de músicas de outros usuários aparecerem como
+   indisponíveis. Reproduzir sem tunnel e com a API/catálogo acessíveis aos
+   testers; confirmar se o problema está na infraestrutura de teste, nos IDs ou
+   no carregamento das avaliações.
+2. Corrigir os problemas visuais de navegação: ícones da navbar que mudam ao
+   entrar no perfil e avatares padrão que piscam durante a troca de rotas.
+3. Medir e melhorar o desempenho geral, verificando carregamento e erros em
+   máquinas e conexões diferentes.
+4. Cache do catálogo implementado: o navegador reutiliza busca e detalhes com
+   expiração; a API compartilha respostas recentes entre usuários na mesma
+   instância e coalesce chamadas simultâneas iguais. Busca fica 5 minutos e
+   detalhes 30 minutos na API; não há coordenação entre instâncias. A primeira
+   consulta de álbum ainda pode precisar de chamadas paginadas para obter todas
+   as faixas. Acompanhar chamadas/quota no piloto e ajustar se necessário.
+5. Implementar pesquisa de usuários com fluxo semelhante à pesquisa de álbuns
+   e músicas.
+6. Definir e implementar recomendações na pesquisa, começando por músicas
+   melhor avaliadas. Especificar fonte, ordenação e comportamento quando houver
+   poucas avaliações.
+7. Implementar o compartilhamento descrito em
+   [COMPARTILHAMENTO.MD](COMPARTILHAMENTO.MD): gerar uma imagem para Stories do
+   Instagram com capa, nome, nota, resenha, gradiente, logo e nome do Somnia.
+8. Homologar fluxos completos em 360 px/desktop, por teclado, foco, rótulos,
+   erros e critérios de aceite do PRD.
+9. Preparar deploy/piloto: migrations controladas, backups, retenção, exclusão
+   de conta (incluindo relações), convites/acesso, viabilidade do catálogo e
+   canal de feedback. O gerador de SQL idempotente e as decisões pendentes estão
+   em [Preparação do piloto](PILOTO.md); nenhum banco publicado foi alterado.
 
 Não reintroduzir diário nem antecipar Premium. O MVP completo ainda depende
 de homologação e preparação do piloto.
