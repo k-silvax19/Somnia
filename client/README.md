@@ -7,23 +7,15 @@ O visual segue o [protótipo do Figma](https://rank-splash-97976218.figma.site/)
 
 ## Executar
 
-Requer Node.js 24.15 ou superior na linha 24, npm e a API configurada por HTTPS.
-Inicie primeiro o RabbitMQ conforme o [guia de mensageria](../docs/MENSAGERIA.md).
-Depois, na raiz do repositório, inicie a API:
+Requer Node.js 24.15 ou superior na linha 24, npm, SQL Server e a API configurada por HTTPS.
+Inicie a API na raiz do repositório:
 
 ```powershell
 dotnet run --project server/src/Api --launch-profile https
 ```
 
-Para que fotos de perfil sejam processadas, inicie o Worker em outro terminal:
-
-```powershell
-dotnet run --project server/src/Worker
-```
-
-Se o RabbitMQ tiver sido reiniciado enquanto a API estava aberta e as fotos ficarem
-em “Processando imagem…”, reinicie também a API. O teste local confirmou que a
-solicitação volta a avançar após a conexão da API com o broker ser restabelecida.
+As fotos de perfil são validadas e processadas pela própria API. RabbitMQ e
+Worker não são necessários para novos uploads.
 
 Em outro terminal:
 
@@ -39,6 +31,17 @@ O Windows pode pedir confirmação na primeira instalação do certificado.
 O Angular usa esse certificado em `.certs/localhost.pem` e sua chave local;
 `.certs` não é versionado. É necessário ter o SDK .NET instalado.
 Use `localhost` no endereço para corresponder ao certificado.
+
+### Compartilhar um teste temporário pelo VS Code
+
+Com a API e o banco em execução, rode `npm run share` em `client`.
+O modo de compartilhamento abre `http://127.0.0.1:4201` e encaminha `/api`
+internamente para a API local em HTTPS. Fotos de perfil são processadas pela
+API. Na aba **Ports** do VS Code, encaminhe a porta
+`4201`, defina a visibilidade como **Public** e envie o endereço encaminhado.
+Não encaminhe a porta da API, do banco ou do RabbitMQ. O computador e os
+processos precisam continuar ligados durante o teste; encerre a porta pública
+quando terminar.
 
 `src/app/environments/environment.ts` conecta o Angular diretamente
 a `https://localhost:7201/api`, endereço HTTPS do perfil local da API. O CORS
@@ -97,6 +100,10 @@ pequenas, a navegação fica em um menu expansível e o resumo vem depois do fee
 - A busca consulta álbuns ou músicas com paginação e links oficiais Spotify.
   Títulos da busca e dos cards abrem os detalhes do item. “Minha conta” abre
   a tela `/conta`, que apresenta histórico, relações e edição de perfil.
+- O navegador guarda páginas de busca por dez minutos e detalhes/resumos por
+  até seis horas em `localStorage`, com limite de 50 itens e validação dos dados
+  antes de reutilizá-los. Falhas e itens de outros provedores não entram nesse
+  cache. A API permanece `no-store`; essa reutilização é explícita no cliente.
 - Há estados de carregamento, vazio, falha e nova tentativa. Limites 429 no
   feed e na busca respeitam Retry-After, com fallback de 60 segundos.
 
@@ -148,9 +155,9 @@ dos testes. O nome do autor nas avaliações abre seu perfil.
   salvar, valida os limites da API e preserva o rascunho em caso de erro.
 - Clicar na foto do próprio perfil abre o seletor para escolher ou remover a imagem,
   também acessível pela aba “Editar usuário”. O avatar aceita PNG/JPEG de até 2 MiB.
-  Após o envio, a tela consulta o status
-  do processamento assíncrono; erros de validação da imagem são apresentados
-  quando o Worker os devolver. Remoção também cancela solicitações pendentes.
+  Após o envio, a API valida e processa a imagem na própria requisição;
+  erros de validação são apresentados imediatamente. Remoção atualiza o avatar
+  diretamente no banco.
   A imagem é buscada com Bearer e sua URL temporária é liberada ao sair.
 
 ## Sessão

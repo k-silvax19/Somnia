@@ -370,6 +370,23 @@ dd {
   font-size: 1rem;
   overflow-wrap: anywhere;
 }
+.recommendations {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.recommendations-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.recommendations-heading p,
+.recommendations > p {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.recommendations .search-result small {
+  color: var(--accent);
+}
 .search-result {
   display: flex;
   gap: 1rem;

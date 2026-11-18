@@ -42,6 +42,7 @@ public sealed record PaginaAvaliacoesDto(IReadOnlyList<AvaliacaoDto> Items, int 
 }
 public sealed record ResumoAvaliacoesDto(double? Average, int Count);
 public sealed record AvaliacoesItemDto(PaginaAvaliacoesDto Reviews, ResumoAvaliacoesDto Summary, AvaliacaoDto? MyReview);
+public sealed record RecomendacaoMusicalDto(ReferenciaItem Item, double AverageScore, int ReviewCount);
 
 public interface IRepositorioAvaliacao
 {
@@ -54,6 +55,7 @@ public interface IRepositorioAvaliacao
     Task<AvaliacoesItemDto> ListarItemAsync(ReferenciaItem item, Guid usuarioId, int limit, int offset, CancellationToken ct);
     Task<PaginaAvaliacoesDto> ListarFeedAsync(Guid usuarioId, int limit, int offset, CancellationToken ct);
     Task<PaginaAvaliacoesDto> ListarDescobertaAsync(int limit, int offset, CancellationToken ct);
+    Task<IReadOnlyList<RecomendacaoMusicalDto>> ListarRecomendacoesAsync(int limit, CancellationToken ct);
 }
 
 public static class RegrasAvaliacao

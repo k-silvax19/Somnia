@@ -5,6 +5,7 @@
     "ng": "ng",
     "prestart": "node scripts/setup-https.mjs",
     "start": "ng serve",
+    "share": "ng serve --configuration share --host 127.0.0.1 --port 4201 --allowed-hosts",
     "start:e2e": "ng serve --configuration e2e --port 4300",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",

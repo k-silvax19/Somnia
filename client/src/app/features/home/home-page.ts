@@ -23,6 +23,7 @@ import { ReviewAvatarCache } from './review-avatar-cache';
 import {
   Connections,
   MusicItem,
+  MusicRecommendation,
   MusicReference,
   Review,
   coverUrl,
@@ -30,6 +31,8 @@ import {
   spotifyUrl,
 } from './home.models';
 import { ReviewCard } from './review-card';
+
+type RecommendedItem = MusicItem & Pick<MusicRecommendation, 'averageScore' | 'reviewCount'>;
 
 @Component({
   selector: 'app-home-page',
@@ -66,6 +69,9 @@ export class HomePage {
   protected readonly results = signal<MusicItem[]>([]);
   protected readonly searched = signal(false);
   protected readonly searchHasMore = signal(false);
+  protected readonly recommendations = signal<RecommendedItem[]>([]);
+  protected readonly recommendationsLoading = signal(false);
+  protected readonly recommendationsError = signal('');
   protected readonly submittedQuery = signal('');
   protected readonly coverUrl = coverUrl;
   protected readonly spotifyUrl = spotifyUrl;
@@ -112,8 +118,9 @@ export class HomePage {
   private metadataRequest = new Subscription();
   private metadataQueue = new Subject<MusicReference>();
   private searchRequest?: Subscription;
+  private recommendationRequest?: Subscription;
+  private recommendationsLoaded = false;
   private readonly suggestedAvatarRequests = new Map<string, Subscription>();
-  private readonly suggestedAvatarObjects = new Map<string, string>();
   private readonly now = signal(Date.now());
   private readonly feedBlockedUntil = signal(0);
   private readonly searchBlockedUntil = signal(0);
@@ -132,10 +139,8 @@ export class HomePage {
       for (const person of this.suggestedProfiles()) {
         const key = person.username.toLowerCase();
         if (this.suggestedAvatarUrls()[key] || this.suggestedAvatarRequests.has(key)) continue;
-        const request = this.reviewAvatars.load(person.username).subscribe((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          this.suggestedAvatarObjects.set(key, url);
+        const request = this.reviewAvatars.loadUrl(person.username).subscribe((url) => {
+          if (!url) return;
           this.suggestedAvatarUrls.update((avatars) => ({ ...avatars, [key]: url }));
         });
         this.suggestedAvatarRequests.set(key, request);
@@ -147,10 +152,8 @@ export class HomePage {
       this.feedRequest?.unsubscribe();
       this.metadataRequest.unsubscribe();
       this.searchRequest?.unsubscribe();
+      this.recommendationRequest?.unsubscribe();
       for (const request of this.suggestedAvatarRequests.values()) request.unsubscribe();
-      for (const url of this.suggestedAvatarObjects.values()) URL.revokeObjectURL(url);
-      const avatar = this.avatarUrl();
-      if (avatar) URL.revokeObjectURL(avatar);
     });
     this.loadProfile();
     this.loadFeed();
@@ -171,21 +174,10 @@ export class HomePage {
         mergeMap((account) => {
           this.account.set(account);
           if (account.username && !this.avatarUrl()) {
-            this.api
-              .avatar(account.username)
-              .pipe(catchError(() => of(null)))
+            this.reviewAvatars
+              .loadUrl(account.username)
               .pipe(takeUntilDestroyed(this.destroyRef))
-              .subscribe({
-                next: (blob) => {
-                  if (!blob || blob.type !== 'image/png') return;
-                  const previous = this.avatarUrl();
-                  if (previous) URL.revokeObjectURL(previous);
-                  this.avatarUrl.set(URL.createObjectURL(blob));
-                },
-                error: () => {
-                  /* Initials remain visible when an avatar is unavailable. */
-                },
-              });
+              .subscribe((url) => this.avatarUrl.set(url));
           }
           if (!account.username) return of({ connections: null, count: null });
           return forkJoin({
@@ -270,7 +262,51 @@ export class HomePage {
   protected openSearch(): void {
     this.searchActive.set(true);
     this.menuOpen.set(false);
+    if (!this.recommendationsLoaded) this.loadRecommendations();
     setTimeout(() => this.searchInput()?.nativeElement.focus());
+  }
+
+  protected loadRecommendations(): void {
+    if (this.recommendationsLoading()) return;
+    this.recommendationsLoading.set(true);
+    this.recommendationsError.set('');
+    this.recommendationRequest?.unsubscribe();
+    this.recommendationRequest = this.api
+      .recommendations()
+      .pipe(
+        mergeMap((ranked) =>
+          ranked.length
+            ? forkJoin(
+                ranked.map((recommendation) =>
+                  this.api.metadata(recommendation.item).pipe(
+                    map((item) =>
+                      item
+                        ? {
+                            ...item,
+                            averageScore: recommendation.averageScore,
+                            reviewCount: recommendation.reviewCount,
+                          }
+                        : null),
+                  ),
+                ),
+              ).pipe(map((items) => ({ items, hasRatings: true })))
+            : of({ items: [], hasRatings: false }),
+        ),
+      )
+      .subscribe({
+        next: ({ items, hasRatings }) => {
+          const available = items.filter((item): item is RecommendedItem => item !== null);
+          this.recommendations.set(available);
+          if (hasRatings && !available.length)
+            this.recommendationsError.set('As m\u00fasicas recomendadas est\u00e3o temporariamente indispon\u00edveis.');
+          this.recommendationsLoaded = true;
+          this.recommendationsLoading.set(false);
+        },
+        error: () => {
+          this.recommendationsError.set('NÃ£o foi possÃ­vel carregar as sugestÃµes agora.');
+          this.recommendationsLoading.set(false);
+        },
+      });
   }
 
   protected openMusic(item: MusicItem, event: MouseEvent): void {

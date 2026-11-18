@@ -69,6 +69,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "share": {
+              "fileReplacements": [
+                {
+                  "replace": "src/app/environments/environment.ts",
+                  "with": "src/app/environments/environment.share.ts"
+                }
+              ],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
@@ -92,6 +103,11 @@
             "e2e": {
               "buildTarget": "somnia:build:e2e",
               "proxyConfig": "e2e/proxy.conf.json"
+            },
+            "share": {
+              "buildTarget": "somnia:build:share",
+              "ssl": false,
+              "proxyConfig": "proxy.share.json"
             }
           },
           "defaultConfiguration": "development"
