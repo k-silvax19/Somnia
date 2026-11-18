@@ -12,6 +12,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideExternalLink } from '@lucide/angular';
 import { Subject, Subscription, catchError, forkJoin, map, mergeMap, of } from 'rxjs';
 import { Account } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -37,7 +38,7 @@ type RecommendedItem = MusicItem & Pick<MusicRecommendation, 'averageScore' | 'r
 
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink, ReactiveFormsModule, Brand, Icon, ReviewCard],
+  imports: [RouterLink, ReactiveFormsModule, Brand, Icon, ReviewCard, LucideExternalLink],
   providers: [HomeApi],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',

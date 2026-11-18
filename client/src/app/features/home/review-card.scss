@@ -183,6 +183,11 @@ footer a {
   text-decoration: none;
   padding: 0.35rem 0;
 }
+.spotify-link-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  vertical-align: -0.1rem;
+}
 footer a:hover {
   color: var(--accent);
 }

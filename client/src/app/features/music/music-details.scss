@@ -42,9 +42,15 @@ h1 {
   font-size: 0.85rem;
 }
 .spotify {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   margin-top: 0.7rem;
   font-size: 0.85rem;
+}
+.spotify-link-icon {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 .rating {
   border-left: 1px solid var(--border);
