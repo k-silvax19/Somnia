@@ -11,13 +11,24 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
     public async Task<PaginaBuscaPerfisDto> PesquisarAsync(
         Guid usuarioAtualId, string termo, int limit, int offset, CancellationToken ct)
     {
-        var termoNormalizado = normalizer.NormalizeName(termo) ?? termo;
-        var buscaUsuario = $"%{EscaparLike(termoNormalizado)}%";
-        var buscaNome = $"%{EscaparLike(termo)}%";
+        var termoLimpo = termo.Trim();
+        var termoNormalizado = normalizer.NormalizeName(termoLimpo) ?? termoLimpo;
         var consulta = db.Users.AsNoTracking()
-            .Where(usuario => usuario.Id != usuarioAtualId
-                && (EF.Functions.Like(usuario.NormalizedUserName!, buscaUsuario, "~")
-                    || EF.Functions.Like(usuario.Nome, buscaNome, "~")));
+            .Where(usuario => usuario.Id != usuarioAtualId);
+
+        // Permite pesquisar nomes compostos por qualquer combinação de palavras,
+        // sem depender de acentos ou capitalização da collation padrão do banco.
+        foreach (var palavra in termoLimpo.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var palavraUsuario = $"%{EscaparLike(normalizer.NormalizeName(palavra) ?? palavra)}%";
+            var palavraNome = $"%{EscaparLike(palavra)}%";
+            consulta = consulta.Where(usuario =>
+                EF.Functions.Like(usuario.NormalizedUserName!, palavraUsuario, "~")
+                || EF.Functions.Like(
+                    EF.Functions.Collate(usuario.Nome, "Latin1_General_100_CI_AI"),
+                    palavraNome,
+                    "~"));
+        }
 
         var total = await consulta.CountAsync(ct);
         var items = await consulta

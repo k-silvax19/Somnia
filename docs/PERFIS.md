@@ -36,7 +36,10 @@ A consulta por username usa a mesma normalização de nomes do Identity.
 
 `GET /api/users/search` aceita termos de 1 a 200 caracteres, `limit` de 1 a 10
 e `offset` de 0 a 1000. Busca parcialmente por username ou nome de exibição,
-ordena correspondências exatas de username primeiro e desempata por username.
+sem diferenciar maiúsculas de minúsculas ou acentos; em nomes compostos, exige
+que todas as palavras pesquisadas apareçam. Ordena correspondências exatas de
+username primeiro e desempata por username. Na busca da página inicial, o card
+inteiro abre o perfil correspondente.
 A resposta inclui username, displayName, bio e avatarUrl. Exige autenticação e
 usa o rate limit comunitário de 60 chamadas por minuto por usuário.
 

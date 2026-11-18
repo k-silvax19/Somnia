@@ -265,7 +265,7 @@
           }
           @if (submittedType === 'user') {
             @for (person of userResults(); track person.username) {
-              <article class="search-result user-search-result">
+              <a class="search-result user-search-result" [routerLink]="['/perfil', person.username]">
                 <span class="avatar large" aria-hidden="true">
                   @if (suggestedAvatarUrls()[person.username.toLowerCase()]; as url) {
                     <img [src]="url" alt="" />
@@ -275,15 +275,13 @@
                 </span>
                 <div>
                   <span class="result-type">Perfil</span>
-                  <h3>
-                    <a [routerLink]="['/perfil', person.username]">{{ person.displayName }}</a>
-                  </h3>
+                  <h3>{{ person.displayName }}</h3>
                   <p>@{{ person.username }}</p>
                   @if (person.bio) {
                     <small>{{ person.bio }}</small>
                   }
                 </div>
-              </article>
+              </a>
             }
           } @else {
           @for (item of results(); track musicKey(item)) {

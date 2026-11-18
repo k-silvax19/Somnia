@@ -434,7 +434,9 @@ dd {
   padding: 0.4rem 0;
 }
 .user-search-result {
-  cursor: default;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
 }
 .user-search-result .avatar {
   width: 3rem;
