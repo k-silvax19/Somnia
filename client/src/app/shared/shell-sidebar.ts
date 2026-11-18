@@ -1,31 +1,18 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, of } from 'rxjs';
-import {
-  LucideCompass,
-  LucideHouse,
-  LucideMenu,
-  LucideSearch,
-  LucideUserRound,
-} from '@lucide/angular';
+import { Subscription } from 'rxjs';
 import { Account } from '../core/auth/auth.models';
 import { AuthService } from '../core/auth/auth.service';
 import { environment } from '../environments/environment';
 import { Brand } from './brand';
+import { Icon } from './icon';
+import { ReviewAvatarCache } from '../features/home/review-avatar-cache';
 
 @Component({
   selector: 'app-shell-sidebar',
-  imports: [
-    Brand,
-    RouterLink,
-    LucideCompass,
-    LucideHouse,
-    LucideMenu,
-    LucideSearch,
-    LucideUserRound,
-  ],
+  imports: [Brand, Icon, RouterLink],
   template: `
     <header class="mobile-header">
       <a routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
@@ -35,21 +22,21 @@ import { Brand } from './brand';
         aria-controls="shell-navigation"
         aria-label="Abrir navegação"
       >
-        <svg lucideMenu class="size-5" aria-hidden="true"></svg>
+        <app-icon name="menu" />
       </button>
     </header>
     <aside id="shell-navigation" class="sidebar" [class.open]="menuOpen()">
       <a class="brand-link" routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
       <nav aria-label="Navegação principal">
-        <a routerLink="/inicio"><svg lucideHouse class="size-5" aria-hidden="true"></svg>Início</a>
+        <a routerLink="/inicio"><app-icon name="home" />Início</a>
         <a routerLink="/inicio" [queryParams]="{ view: 'discover' }"
-          ><svg lucideCompass class="size-5" aria-hidden="true"></svg>Descobrir</a
+          ><app-icon name="compass" />Descobrir</a
         >
         <a routerLink="/inicio" [queryParams]="{ view: 'search' }"
-          ><svg lucideSearch class="size-5" aria-hidden="true"></svg>Buscar</a
+          ><app-icon name="search" />Buscar</a
         >
         <a routerLink="/conta" [class.active]="router.url.startsWith('/conta')"
-          ><svg lucideUserRound class="size-5" aria-hidden="true"></svg>Perfil</a
+          ><app-icon name="user" />Perfil</a
         >
       </nav>
       <a class="current-account" routerLink="/conta">
@@ -189,6 +176,7 @@ export class ShellSidebar {
   protected readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly avatarCache = inject(ReviewAvatarCache);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly menuOpen = signal(false);
   protected readonly account = signal<Account | null>(null);
@@ -197,32 +185,29 @@ export class ShellSidebar {
     () => this.account()?.displayName || this.auth.session()?.nome || 'Seu perfil',
   );
   protected readonly initial = computed(() => this.displayName().slice(0, 1).toUpperCase());
+  private avatarRequest?: Subscription;
 
   constructor() {
+    effect(() => {
+      const username = this.account()?.username;
+      if (!username) return;
+      this.avatarCache.version(username);
+      this.avatarRequest?.unsubscribe();
+      this.avatarRequest = this.avatarCache
+        .loadUrl(username)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((url) => this.avatarUrl.set(url));
+    });
     this.http
       .get<Account>(`${environment.apiUrl}/me`, { timeout: 15_000 })
       .pipe(takeUntilDestroyed())
       .subscribe({
         next: (account) => {
           this.account.set(account);
-          if (!account.username) return;
-          this.http
-            .get(`${environment.apiUrl}/users/${encodeURIComponent(account.username)}/avatar`, {
-              responseType: 'blob',
-              timeout: 15_000,
-            })
-            .pipe(catchError(() => of(null)))
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (blob) => {
-                if (blob?.type === 'image/png') this.avatarUrl.set(URL.createObjectURL(blob));
-              },
-            });
         },
       });
     this.destroyRef.onDestroy(() => {
-      const url = this.avatarUrl();
-      if (url) URL.revokeObjectURL(url);
+      this.avatarRequest?.unsubscribe();
     });
   }
 }

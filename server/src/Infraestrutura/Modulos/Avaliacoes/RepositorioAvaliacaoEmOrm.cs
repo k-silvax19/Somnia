@@ -77,6 +77,28 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
     public Task<PaginaAvaliacoesDto> ListarDescobertaAsync(int limit, int offset, CancellationToken ct) =>
         PaginarAsync(db.Avaliacoes.AsNoTracking(), limit, offset, ct);
 
+    public async Task<IReadOnlyList<RecomendacaoMusicalDto>> ListarRecomendacoesAsync(int limit, CancellationToken ct)
+    {
+        var ranking = await db.Avaliacoes.AsNoTracking()
+            .Where(x => x.Score != null)
+            .GroupBy(x => new { x.Provider, x.Type, x.ExternalId })
+            .Select(group => new
+            {
+                group.Key.Provider,
+                group.Key.Type,
+                group.Key.ExternalId,
+                AverageScore = group.Average(x => (double)x.Score!),
+                ReviewCount = group.Count(),
+            })
+            .OrderByDescending(x => x.AverageScore)
+            .ThenByDescending(x => x.ReviewCount)
+            .Take(limit)
+            .ToArrayAsync(ct);
+
+        return ranking.Select(x => new RecomendacaoMusicalDto(
+            new ReferenciaItem(x.Provider, x.Type, x.ExternalId), x.AverageScore, x.ReviewCount)).ToArray();
+    }
+
     private async Task<PaginaAvaliacoesDto> PaginarAsync(IQueryable<Avaliacao> consulta, int limit, int offset, CancellationToken ct)
     {
         var total = await consulta.CountAsync(ct);

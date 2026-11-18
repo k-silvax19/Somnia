@@ -34,4 +34,12 @@ public sealed class ComunidadeController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new ListarDescobertaQuery(limit, offset), ct);
         return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
     }
+
+    [HttpGet("discover/recommendations")]
+    [ProducesResponseType<IReadOnlyList<RecomendacaoMusicalDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Recomendacoes(CancellationToken ct, [FromQuery] int limit = 8)
+    {
+        var resultado = await mediator.Send(new ListarRecomendacoesQuery(limit), ct);
+        return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
+    }
 }

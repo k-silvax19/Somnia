@@ -8,6 +8,7 @@ import {
   Connections,
   MusicItem,
   MusicReference,
+  MusicRecommendation,
   Page,
   Review,
   coverUrl,
@@ -64,6 +65,12 @@ export class HomeApi {
         timeout: 15_000,
       },
     );
+  }
+  recommendations() {
+    return this.http.get<MusicRecommendation[]>(`${this.base}/discover/recommendations`, {
+      params: { limit: 4 },
+      timeout: 15_000,
+    });
   }
   search(query: string, type: 'album' | 'track', offset: number) {
     return defer(() => {

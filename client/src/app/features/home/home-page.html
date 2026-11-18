@@ -204,6 +204,47 @@
               <p>Busque um álbum ou uma música pelo nome ou artista.</p>
             </div>
           }
+          @if (!searched()) {
+            <section class="recommendations" aria-labelledby="recommendations-title">
+              <div class="recommendations-heading">
+                <h2 id="recommendations-title">Mais bem avaliadas pela comunidade</h2>
+                <p>Sugestões para começar sua busca, pelas notas médias dos usuários.</p>
+              </div>
+              @if (recommendationsLoading()) {
+                <p role="status">Carregando sugestões…</p>
+              }
+              @if (recommendationsError()) {
+                <div class="message error" role="alert">
+                  <p>{{ recommendationsError() }}</p>
+                  <button class="button secondary" (click)="loadRecommendations()">
+                    Tentar novamente
+                  </button>
+                </div>
+              }
+              @for (item of recommendations(); track musicKey(item)) {
+                <article class="search-result" (click)="openMusic(item, $event)">
+                  @if (coverUrl(item.coverUrl); as url) {
+                    <img [src]="url" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                  } @else {
+                    <div class="album-placeholder" aria-hidden="true"><app-icon name="music" /></div>
+                  }
+                  <div>
+                    <span class="result-type">{{ item.type === 'album' ? 'Álbum' : 'Música' }}</span>
+                    <h3>
+                      <a [routerLink]="['/musica', item.provider, item.type, item.externalId]">{{
+                        item.title
+                      }}</a>
+                    </h3>
+                    <p>{{ item.artists.join(', ') }}</p>
+                    <small>{{ item.averageScore.toFixed(1) }}/100 · {{ item.reviewCount }} avaliações</small>
+                  </div>
+                </article>
+              }
+              @if (!recommendationsLoading() && !recommendationsError() && !recommendations().length) {
+                <p>As sugestões aparecem depois que a comunidade avaliar músicas.</p>
+              }
+            </section>
+          }
           @if (searchError()) {
             <div class="message error" role="alert">
               <p>{{ searchError() }}</p>

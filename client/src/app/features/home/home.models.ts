@@ -29,6 +29,12 @@ export interface MusicItem extends MusicReference {
   spotifyUrl: string | null;
 }
 
+export interface MusicRecommendation {
+  item: MusicReference;
+  averageScore: number;
+  reviewCount: number;
+}
+
 export interface Connections {
   isFollowing: boolean;
   followersCount: number;

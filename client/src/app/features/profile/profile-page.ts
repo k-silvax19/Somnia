@@ -122,7 +122,6 @@ export class ProfilePage {
   private listRequest?: Subscription;
   private avatarRequest?: Subscription;
   private readonly relatedAvatarRequests = new Map<string, Subscription>();
-  private readonly relatedAvatarObjects = new Map<string, string>();
   private avatarPoll?: ReturnType<typeof setTimeout>;
   private avatarAttempts = 0;
   private readonly avatarFileInput = viewChild<ElementRef<HTMLInputElement>>('avatarFileInput');
@@ -152,8 +151,6 @@ export class ProfilePage {
     this.listRequest = undefined;
     this.avatarRequest = undefined;
     if (this.avatarPoll) clearTimeout(this.avatarPoll);
-    const avatar = this.avatarUrl();
-    if (avatar) URL.revokeObjectURL(avatar);
     this.clearRelatedAvatars();
     this.avatarUrl.set(null);
     this.profile.set(null);
@@ -247,34 +244,19 @@ export class ProfilePage {
   private loadAvatar(uploaded = false): void {
     if (!this.currentUsername) return;
     this.avatarRequest?.unsubscribe();
-    this.avatarRequest = this.api.avatar(this.currentUsername).subscribe({
-      next: (blob) => {
-        if (blob.type !== 'image/png') {
-          this.avatarBusy.set(false);
-          this.avatarMessage.set('');
-          this.avatarError.set('A foto recebida não é uma imagem válida. Tente novamente.');
-          return;
-        }
-        const old = this.avatarUrl();
-        this.avatarUrl.set(URL.createObjectURL(blob));
-        if (old) URL.revokeObjectURL(old);
-        if (uploaded) {
-          this.reviewAvatars.invalidate(this.currentUsername);
-          this.avatarBusy.set(false);
-          this.avatarMessage.set('Avatar atualizado.');
-        }
-      },
-      error: (error: unknown) => {
+    if (uploaded) this.reviewAvatars.invalidate(this.currentUsername);
+    this.avatarRequest = this.reviewAvatars.loadUrl(this.currentUsername).subscribe((url) => {
+      this.avatarUrl.set(url);
+      if (uploaded && url) {
+        this.avatarBusy.set(false);
+        this.avatarMessage.set('Avatar atualizado.');
+      } else if (uploaded) {
         this.avatarBusy.set(false);
         this.avatarMessage.set('');
-        if (!uploaded && error instanceof HttpErrorResponse && error.status === 404) {
-          const old = this.avatarUrl();
-          if (old) URL.revokeObjectURL(old);
-          this.avatarUrl.set(null);
-          return;
-        }
-        this.avatarError.set('A foto foi processada, mas não pôde ser carregada. Tente novamente.');
-      },
+        this.avatarError.set('A foto foi processada, mas n\u00e3o p\u00f4de ser carregada. Tente novamente.');
+      } else if (!url) {
+        this.avatarError.set('');
+      }
     });
     this.requests.add(this.avatarRequest);
   }
@@ -358,10 +340,8 @@ export class ProfilePage {
     for (const person of people) {
       const key = person.username.toLowerCase();
       if (this.relatedAvatarUrls()[key] || this.relatedAvatarRequests.has(key)) continue;
-      const request = this.reviewAvatars.load(person.username).subscribe((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        this.relatedAvatarObjects.set(key, url);
+      const request = this.reviewAvatars.loadUrl(person.username).subscribe((url) => {
+        if (!url) return;
         this.relatedAvatarUrls.update((avatars) => ({ ...avatars, [key]: url }));
       });
       this.relatedAvatarRequests.set(key, request);
@@ -371,8 +351,6 @@ export class ProfilePage {
   private clearRelatedAvatars(): void {
     for (const request of this.relatedAvatarRequests.values()) request.unsubscribe();
     this.relatedAvatarRequests.clear();
-    for (const url of this.relatedAvatarObjects.values()) URL.revokeObjectURL(url);
-    this.relatedAvatarObjects.clear();
     this.relatedAvatarUrls.set({});
   }
 
@@ -534,8 +512,6 @@ export class ProfilePage {
     this.requests.add(
       this.api.removeAvatar().subscribe({
         next: () => {
-          const old = this.avatarUrl();
-          if (old) URL.revokeObjectURL(old);
           this.avatarUrl.set(null);
           this.profile.update((profile) => profile && { ...profile, avatarUrl: null });
           this.reviewAvatars.invalidate(this.currentUsername);
