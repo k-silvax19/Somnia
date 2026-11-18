@@ -268,14 +268,6 @@
             <p class="eyebrow">SEU ESPAÇO, DO SEU JEITO</p>
             <h2 id="edit-title">Personalizar perfil</h2>
           </div>
-          <button
-            class="button secondary"
-            form="profile-edit-form"
-            type="submit"
-            [disabled]="saving()"
-          >
-            {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
-          </button>
         </div>
         <div class="editor-grid">
           <div class="editor-fields">
@@ -391,6 +383,16 @@
               </div>
             </div>
           </aside>
+        </div>
+        <div class="editor-actions">
+          <button
+            class="button secondary"
+            form="profile-edit-form"
+            type="submit"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
+          </button>
         </div>
       </section>
     } @else {

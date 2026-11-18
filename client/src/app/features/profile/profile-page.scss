@@ -405,6 +405,11 @@ h2 {
   align-items: start;
   gap: 2.8rem;
 }
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
 .editor-fields,
 .profile-preview {
   min-width: 0;
@@ -557,7 +562,8 @@ h2 {
   .editor-heading h2 {
     font-size: 1.5rem;
   }
-  .editor-heading .button {
+  .editor-actions .button {
+    width: 100%;
     font-size: 0.75rem;
     padding: 0.6rem;
   }
