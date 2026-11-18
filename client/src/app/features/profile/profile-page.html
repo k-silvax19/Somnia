@@ -24,7 +24,7 @@
           aria-label="Alterar foto do perfil"
         >
           @if (avatarUrl(); as url) {
-            <img [src]="url" alt="" />
+            <span class="avatar-image" aria-hidden="true"><img [src]="url" alt="" /></span>
           } @else {
             {{ initial() }}
           }
@@ -354,6 +354,16 @@
                 }
               </div>
             </div>
+            <div class="editor-actions">
+              <button
+                class="button secondary"
+                form="profile-edit-form"
+                type="submit"
+                [disabled]="saving()"
+              >
+                {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
+              </button>
+            </div>
           </div>
           <aside class="profile-preview" aria-label="Prévia do perfil">
             <p class="eyebrow">PRÉVIA EM TEMPO REAL</p>
@@ -383,16 +393,6 @@
               </div>
             </div>
           </aside>
-        </div>
-        <div class="editor-actions">
-          <button
-            class="button secondary"
-            form="profile-edit-form"
-            type="submit"
-            [disabled]="saving()"
-          >
-            {{ saving() ? 'Salvando…' : 'Salvar perfil' }}
-          </button>
         </div>
       </section>
     } @else {
