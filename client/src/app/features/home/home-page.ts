@@ -26,6 +26,7 @@ import {
   MusicRecommendation,
   MusicReference,
   Review,
+  UserSearchResult,
   coverUrl,
   musicKey,
   spotifyUrl,
@@ -67,6 +68,7 @@ export class HomePage {
   protected readonly searchLoading = signal(false);
   protected readonly searchError = signal('');
   protected readonly results = signal<MusicItem[]>([]);
+  protected readonly userResults = signal<UserSearchResult[]>([]);
   protected readonly searched = signal(false);
   protected readonly searchHasMore = signal(false);
   protected readonly recommendations = signal<RecommendedItem[]>([]);
@@ -108,12 +110,12 @@ export class HomePage {
   protected readonly initial = computed(() => this.displayName().slice(0, 1).toUpperCase());
   protected readonly searchForm = inject(FormBuilder).nonNullable.group({
     query: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(/\S/)]],
-    type: ['album' as 'album' | 'track'],
+    type: ['album' as 'album' | 'track' | 'user'],
   });
   private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
   private offset = 0;
   private searchOffset = 0;
-  private submittedType: 'album' | 'track' = 'album';
+  protected submittedType: 'album' | 'track' | 'user' = 'album';
   private feedRequest?: Subscription;
   private metadataRequest = new Subscription();
   private metadataQueue = new Subject<MusicReference>();
@@ -136,7 +138,7 @@ export class HomePage {
       if (!this.auth.session()) void this.router.navigate(['/entrar']);
     });
     effect(() => {
-      for (const person of this.suggestedProfiles()) {
+      for (const person of [...this.suggestedProfiles(), ...this.userResults()]) {
         const key = person.username.toLowerCase();
         if (this.suggestedAvatarUrls()[key] || this.suggestedAvatarRequests.has(key)) continue;
         const request = this.reviewAvatars.loadUrl(person.username).subscribe((url) => {
@@ -325,6 +327,7 @@ export class HomePage {
       this.submittedQuery.set(this.searchForm.controls.query.value.trim());
       this.submittedType = this.searchForm.controls.type.value;
       this.results.set([]);
+      this.userResults.set([]);
       this.searchOffset = 0;
       this.searchHasMore.set(false);
     }
@@ -333,8 +336,27 @@ export class HomePage {
     this.searched.set(true);
     this.searchLoading.set(true);
     this.searchError.set('');
+    const submittedType = this.submittedType;
+    if (submittedType === 'user') {
+      this.searchRequest = this.api.searchUsers(this.submittedQuery(), this.searchOffset).subscribe({
+        next: (page) => {
+          const existing = more ? this.userResults() : [];
+          const usernames = new Set(existing.map((person) => person.username.toLowerCase()));
+          this.userResults.set([
+            ...existing,
+            ...page.items.filter((person) => !usernames.has(person.username.toLowerCase())),
+          ]);
+          this.searchOffset = page.offset + page.limit;
+          this.searchHasMore.set(page.hasMore && this.searchOffset <= 1000);
+          this.searchLoading.set(false);
+        },
+        error: (error: unknown) => this.handleSearchError(error),
+      });
+      return;
+    }
+
     this.searchRequest = this.api
-      .search(this.submittedQuery(), this.submittedType, this.searchOffset)
+      .search(this.submittedQuery(), submittedType, this.searchOffset)
       .subscribe({
         next: (page) => {
           const existing = more ? this.results() : [];
@@ -347,14 +369,16 @@ export class HomePage {
           this.searchHasMore.set(page.hasMore && this.searchOffset <= 1000);
           this.searchLoading.set(false);
         },
-        error: (error: unknown) => {
-          const problem = apiError(error);
-          this.searchError.set(problem.message);
-          this.searchBlockedUntil.set(Date.now() + problem.retryAfter * 1000);
-          this.now.set(Date.now());
-          this.searchLoading.set(false);
-        },
+        error: (error: unknown) => this.handleSearchError(error),
       });
+  }
+
+  private handleSearchError(error: unknown): void {
+    const problem = apiError(error);
+    this.searchError.set(problem.message);
+    this.searchBlockedUntil.set(Date.now() + problem.retryAfter * 1000);
+    this.now.set(Date.now());
+    this.searchLoading.set(false);
   }
 
   protected async logout(): Promise<void> {

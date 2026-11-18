@@ -11,6 +11,7 @@ import {
   MusicRecommendation,
   Page,
   Review,
+  UserSearchResult,
   coverUrl,
   musicKey,
 } from './home.models';
@@ -82,6 +83,12 @@ export class HomeApi {
           timeout: 35_000,
         })
         .pipe(tap((page) => this.spotifyCache.writeSearch(query, type, offset, page)));
+    });
+  }
+  searchUsers(query: string, offset: number) {
+    return this.http.get<Page<UserSearchResult>>(`${this.base}/users/search`, {
+      params: { q: query, limit: 10, offset },
+      timeout: 15_000,
     });
   }
   metadata(item: MusicReference): Observable<MusicItem | null> {

@@ -8,6 +8,31 @@ namespace Somnia.Infraestrutura.Modulos.Perfis;
 
 public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer normalizer) : IRepositorioPerfil
 {
+    public async Task<PaginaBuscaPerfisDto> PesquisarAsync(
+        Guid usuarioAtualId, string termo, int limit, int offset, CancellationToken ct)
+    {
+        var termoNormalizado = normalizer.NormalizeName(termo) ?? termo;
+        var buscaUsuario = $"%{EscaparLike(termoNormalizado)}%";
+        var buscaNome = $"%{EscaparLike(termo)}%";
+        var consulta = db.Users.AsNoTracking()
+            .Where(usuario => usuario.Id != usuarioAtualId
+                && (EF.Functions.Like(usuario.NormalizedUserName!, buscaUsuario, "~")
+                    || EF.Functions.Like(usuario.Nome, buscaNome, "~")));
+
+        var total = await consulta.CountAsync(ct);
+        var items = await consulta
+            .OrderByDescending(usuario => usuario.NormalizedUserName == termoNormalizado)
+            .ThenBy(usuario => usuario.NormalizedUserName)
+            .ThenBy(usuario => usuario.Id)
+            .Skip(offset)
+            .Take(limit)
+            .Select(usuario => new PerfilBuscaDto(
+                usuario.UserName!, usuario.Nome, usuario.Bio, usuario.AvatarUrl))
+            .ToListAsync(ct);
+
+        return new PaginaBuscaPerfisDto(items, limit, offset, total);
+    }
+
     public async Task<PerfilPublicoDto?> ObterPublicoAsync(string username, CancellationToken ct)
     {
         var normalized = normalizer.NormalizeName(username.Trim());
@@ -33,4 +58,10 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
         await db.SaveChangesAsync(ct);
         return PerfilMapper.Privado(usuario);
     }
+
+    private static string EscaparLike(string valor) => valor
+        .Replace("~", "~~", StringComparison.Ordinal)
+        .Replace("%", "~%", StringComparison.Ordinal)
+        .Replace("_", "~_", StringComparison.Ordinal)
+        .Replace("[", "~[", StringComparison.Ordinal);
 }

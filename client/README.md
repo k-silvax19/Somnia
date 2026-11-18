@@ -97,9 +97,10 @@ pequenas, a navegação fica em um menu expansível e o resumo vem depois do fee
   Falhas aparecem como informação indisponível, sem inventar contagens zero.
   O avatar do titular é carregado com Bearer como blob; o endereço temporário
   é revogado ao sair. Autores dos cards usam iniciais, pois o feed não inclui avatar.
-- A busca consulta álbuns ou músicas com paginação e links oficiais Spotify.
-  Títulos da busca e dos cards abrem os detalhes do item. “Minha conta” abre
-  a tela `/conta`, que apresenta histórico, relações e edição de perfil.
+- A busca consulta álbuns e músicas no catálogo Spotify e usuários por nome ou
+  username, com paginação. Resultados de usuário abrem o perfil; música abre
+  seus detalhes e conserva o link oficial Spotify. “Minha conta” abre a tela
+  `/conta`, que apresenta histórico, relações e edição de perfil.
 - O navegador guarda páginas de busca por dez minutos e detalhes/resumos por
   até seis horas em `localStorage`, com limite de 50 itens e validação dos dados
   antes de reutilizá-los. Falhas e itens de outros provedores não entram nesse

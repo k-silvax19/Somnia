@@ -45,6 +45,19 @@ public sealed class PerfisController(IMediator mediator) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpGet("users/search")]
+    [EnableRateLimiting("community")]
+    [ProducesResponseType<PaginaBuscaPerfisDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Pesquisar([FromQuery] string? q, CancellationToken ct,
+        [FromQuery] int limit = 10, [FromQuery] int offset = 0)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
+            return Unauthorized();
+
+        var resultado = await mediator.Send(new PesquisarPerfisQuery(usuarioId, q, limit, offset), ct);
+        return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
+    }
+
     [HttpGet("users/{username}")]
     public async Task<IActionResult> Publico(string username, CancellationToken ct)
     {

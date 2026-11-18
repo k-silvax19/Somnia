@@ -433,6 +433,26 @@ dd {
   display: inline-block;
   padding: 0.4rem 0;
 }
+.user-search-result {
+  cursor: default;
+}
+.user-search-result .avatar {
+  width: 3rem;
+  height: 3rem;
+}
+.user-search-result .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.user-search-result h3 a {
+  font-size: 1rem;
+  padding: 0;
+}
+.user-search-result small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
 .result-type {
   text-transform: uppercase;
   color: var(--muted);

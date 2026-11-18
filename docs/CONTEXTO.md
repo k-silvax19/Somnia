@@ -388,11 +388,10 @@ Contrato e execução em [client/README.md](../client/README.md).
    detalhes 30 minutos na API; não há coordenação entre instâncias. A primeira
    consulta de álbum ainda pode precisar de chamadas paginadas para obter todas
    as faixas. Acompanhar chamadas/quota no piloto e ajustar se necessário.
-5. Implementar pesquisa de usuários com fluxo semelhante à pesquisa de álbuns
-   e músicas.
-6. Definir e implementar recomendações na pesquisa, começando por músicas
-   melhor avaliadas. Especificar fonte, ordenação e comportamento quando houver
-   poucas avaliações.
+5. Pesquisa de usuários implementada na busca da home, com paginação por nome
+   ou username, resultados que abrem perfis e exclusão do próprio titular.
+6. Recomendações na pesquisa implementadas com músicas melhor avaliadas pela
+   comunidade. Observar o comportamento do ranking durante a homologação.
 7. Implementar o compartilhamento descrito em
    [COMPARTILHAMENTO.MD](COMPARTILHAMENTO.MD): gerar uma imagem para Stories do
    Instagram com capa, nome, nota, resenha, gradiente, logo e nome do Somnia.
