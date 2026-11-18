@@ -15,18 +15,11 @@
     <a class="brand-link" routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
     <nav aria-label="Navegação principal">
       <button
-        [class.active]="!searchActive() && tab() === 'following'"
-        [attr.aria-current]="!searchActive() && tab() === 'following' ? 'page' : null"
-        (click)="selectTab('following')"
-      >
-        <app-icon name="home" />Início
-      </button>
-      <button
         [class.active]="!searchActive() && tab() === 'discover'"
         [attr.aria-current]="!searchActive() && tab() === 'discover' ? 'page' : null"
         (click)="selectTab('discover')"
       >
-        <app-icon name="compass" />Descobrir
+        <app-icon name="home" />Início
       </button>
       <button [class.active]="searchActive()" (click)="openSearch()">
         <app-icon name="search" />Buscar
@@ -64,16 +57,17 @@
           <app-icon name="info" />Avaliações visíveis apenas para participantes autenticados.
         </p>
       }
-      <h1>
-        {{
-          searchActive() ? 'Buscar' : tab() === 'discover' ? 'Descobrir' : 'Seu universo musical'
-        }}
-      </h1>
+      <h1>{{ searchActive() ? 'Buscar' : 'Início' }}</h1>
       @if (!searchActive() && tab() === 'discover') {
         <button class="button secondary discover-search" (click)="openSearch()">
           <app-icon name="search" />Buscar música
         </button>
       } @else {
+        @if (searchActive()) {
+          <button class="button secondary search-home" type="button" (click)="selectTab('discover')">
+            <app-icon name="home" />Voltar ao início
+          </button>
+        }
         <form class="search-form" [formGroup]="searchForm" (ngSubmit)="search()" role="search">
           <div class="search-field">
             <app-icon name="search" /><label for="music-search" class="sr-only"

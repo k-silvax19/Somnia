@@ -81,7 +81,8 @@ A composição segue o Figma: navegação lateral, fundo roxo escuro,
 detalhes em lilás, avaliações no centro e resumo da conta à direita. Em telas
 pequenas, a navegação fica em um menu expansível e o resumo vem depois do feed.
 
-- Seguindo consulta `/api/feed`; Descobrir consulta `/api/discover`.
+- A página inicial abre Para você (`/api/discover`), com álbuns em destaque e
+  perfis sugeridos. A aba Seguindo consulta `/api/feed`.
   As páginas têm dez avaliações, com ação para carregar mais. Duplicatas entre
   páginas são descartadas pelo ID; respostas de abas anteriores são canceladas.
 - Títulos, artistas, capas e links são consultados no catálogo, com no máximo

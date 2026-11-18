@@ -58,7 +58,7 @@ export class HomePage {
   protected readonly logoutError = signal('');
   protected readonly loggingOut = signal(false);
   protected readonly menuOpen = signal(false);
-  protected readonly tab = signal<'following' | 'discover'>('following');
+  protected readonly tab = signal<'following' | 'discover'>('discover');
   protected readonly reviews = signal<Review[]>([]);
   protected readonly loading = signal(false);
   protected readonly feedError = signal('');

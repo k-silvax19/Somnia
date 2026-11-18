@@ -158,6 +158,12 @@ h1 {
   background: #1b1f23;
   padding: 0.15rem 0.35rem 0.15rem 0.75rem;
 }
+.search-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
 .search-field {
   display: flex;
   align-items: center;
