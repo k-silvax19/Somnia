@@ -1,12 +1,13 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { LucideExternalLink } from '@lucide/angular';
 import { Icon } from '../../shared/icon';
 import { MusicItem, Review, coverUrl, spotifyUrl } from './home.models';
 import { ReviewAvatarCache } from './review-avatar-cache';
 
 @Component({
   selector: 'app-review-card',
-  imports: [Icon, RouterLink],
+  imports: [Icon, RouterLink, LucideExternalLink],
   template: `
     <article [class.clickable]="linkToItem()">
       @if (linkToItem()) {
@@ -94,7 +95,7 @@ import { ReviewAvatarCache } from './review-avatar-cache';
           <footer>
             @if (spotify(); as url) {
               <a [href]="url" target="_blank" rel="noopener noreferrer"
-                >Abrir no Spotify <span aria-hidden="true">↗</span
+                >Abrir no Spotify <svg lucideExternalLink class="spotify-link-icon" aria-hidden="true"></svg
                 ><span class="sr-only"> (nova aba)</span></a
               >
             } @else if (!item() && !pending()) {

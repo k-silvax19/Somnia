@@ -1,6 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { LucideExternalLink } from '@lucide/angular';
 import { Subscription } from 'rxjs';
 import { MusicReference, Review, coverUrl, spotifyUrl } from '../home/home.models';
 import { ReviewCard } from '../home/review-card';
@@ -11,7 +12,7 @@ import { ReviewEditor } from './review-editor';
 
 @Component({
   selector: 'app-music-details',
-  imports: [RouterLink, Icon, ReviewCard, ReviewEditor],
+  imports: [RouterLink, Icon, ReviewCard, ReviewEditor, LucideExternalLink],
   providers: [HomeApi],
   templateUrl: './music-details.html',
   styleUrl: './music-details.scss',

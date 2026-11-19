@@ -29,9 +29,6 @@ import { ReviewAvatarCache } from '../features/home/review-avatar-cache';
       <a class="brand-link" routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
       <nav aria-label="Navegação principal">
         <a routerLink="/inicio"><app-icon name="home" />Início</a>
-        <a routerLink="/inicio" [queryParams]="{ view: 'discover' }"
-          ><app-icon name="compass" />Descobrir</a
-        >
         <a routerLink="/inicio" [queryParams]="{ view: 'search' }"
           ><app-icon name="search" />Buscar</a
         >

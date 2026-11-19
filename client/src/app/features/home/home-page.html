@@ -15,18 +15,11 @@
     <a class="brand-link" routerLink="/inicio" aria-label="Somnia — início"><app-brand /></a>
     <nav aria-label="Navegação principal">
       <button
-        [class.active]="!searchActive() && tab() === 'following'"
-        [attr.aria-current]="!searchActive() && tab() === 'following' ? 'page' : null"
-        (click)="selectTab('following')"
-      >
-        <app-icon name="home" />Início
-      </button>
-      <button
         [class.active]="!searchActive() && tab() === 'discover'"
         [attr.aria-current]="!searchActive() && tab() === 'discover' ? 'page' : null"
         (click)="selectTab('discover')"
       >
-        <app-icon name="compass" />Descobrir
+        <app-icon name="home" />Início
       </button>
       <button [class.active]="searchActive()" (click)="openSearch()">
         <app-icon name="search" />Buscar
@@ -64,37 +57,39 @@
           <app-icon name="info" />Avaliações visíveis apenas para participantes autenticados.
         </p>
       }
-      <h1>
-        {{
-          searchActive() ? 'Buscar' : tab() === 'discover' ? 'Descobrir' : 'Seu universo musical'
-        }}
-      </h1>
+      <h1>{{ searchActive() ? 'Buscar' : 'Início' }}</h1>
       @if (!searchActive() && tab() === 'discover') {
         <button class="button secondary discover-search" (click)="openSearch()">
           <app-icon name="search" />Buscar música
         </button>
       } @else {
+        @if (searchActive()) {
+          <button class="button secondary search-home" type="button" (click)="selectTab('discover')">
+            <app-icon name="home" />Voltar ao início
+          </button>
+        }
         <form class="search-form" [formGroup]="searchForm" (ngSubmit)="search()" role="search">
           <div class="search-field">
             <app-icon name="search" /><label for="music-search" class="sr-only"
-              >Buscar álbuns ou músicas</label
+              >Buscar álbuns, músicas ou usuários</label
             ><input
               #searchInput
               id="music-search"
               type="search"
               formControlName="query"
               maxlength="200"
-              placeholder="Buscar álbuns ou músicas"
+              [placeholder]="searchForm.controls.type.value === 'user' ? 'Buscar pessoas pelo nome ou usuário' : 'Buscar álbuns ou músicas'"
               aria-describedby="search-validation"
               [attr.aria-invalid]="
                 searchForm.controls.query.touched && searchForm.controls.query.invalid
               "
             />
           </div>
-          <label for="music-type" class="sr-only">Tipo de busca</label
+          <label for="music-type" class="sr-only">O que buscar</label
           ><select id="music-type" formControlName="type">
             <option value="album">Álbuns</option>
             <option value="track">Músicas</option>
+            <option value="user">Usuários</option>
           </select>
           <button
             class="search-submit"
@@ -200,11 +195,16 @@
           } @else {
             <div class="empty">
               <app-icon name="search" />
-              <h2>Encontre seu próximo play</h2>
-              <p>Busque um álbum ou uma música pelo nome ou artista.</p>
+              @if (searchForm.controls.type.value === 'user') {
+                <h2>Encontre pessoas da comunidade</h2>
+                <p>Busque pelo nome ou nome de usuário.</p>
+              } @else {
+                <h2>Encontre seu próximo play</h2>
+                <p>Busque um álbum ou uma música pelo nome ou artista.</p>
+              }
             </div>
           }
-          @if (!searched()) {
+          @if (!searched() && searchForm.controls.type.value !== 'user') {
             <section class="recommendations" aria-labelledby="recommendations-title">
               <div class="recommendations-heading">
                 <h2 id="recommendations-title">Mais bem avaliadas pela comunidade</h2>
@@ -250,13 +250,34 @@
               <p>{{ searchError() }}</p>
               <button
                 class="button secondary"
-                (click)="search(results().length > 0)"
+                (click)="search(submittedType === 'user' ? userResults().length > 0 : results().length > 0)"
                 [disabled]="searchWait() > 0"
               >
                 {{ searchWait() ? 'Aguarde ' + searchWait() + 's' : 'Tentar novamente' }}
               </button>
             </div>
           }
+          @if (submittedType === 'user') {
+            @for (person of userResults(); track person.username) {
+              <a class="search-result user-search-result" [routerLink]="['/perfil', person.username]">
+                <span class="avatar large" aria-hidden="true">
+                  @if (suggestedAvatarUrls()[person.username.toLowerCase()]; as url) {
+                    <img [src]="url" alt="" />
+                  } @else {
+                    {{ person.displayName.slice(0, 1).toUpperCase() }}
+                  }
+                </span>
+                <div>
+                  <span class="result-type">Perfil</span>
+                  <h3>{{ person.displayName }}</h3>
+                  <p>@{{ person.username }}</p>
+                  @if (person.bio) {
+                    <small>{{ person.bio }}</small>
+                  }
+                </div>
+              </a>
+            }
+          } @else {
           @for (item of results(); track musicKey(item)) {
             <article class="search-result" (click)="openMusic(item, $event)">
               @if (coverUrl(item.coverUrl); as url) {
@@ -285,21 +306,35 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     (click)="$event.stopPropagation()"
-                    >Abrir no Spotify ↗<span class="sr-only"> (nova aba)</span></a
+                    >Abrir no Spotify <svg lucideExternalLink class="spotify-link-icon" aria-hidden="true"></svg><span class="sr-only"> (nova aba)</span></a
                   >
                 }
               </div>
             </article>
           }
+          }
           @if (searchLoading()) {
             <p class="loading" role="status">
-              <span class="spinner" aria-hidden="true"></span>Buscando músicas…
+              <span class="spinner" aria-hidden="true"></span>{{
+                submittedType === 'user' ? 'Buscando pessoas…' : 'Buscando músicas…'
+              }}
             </p>
           }
-          @if (searched() && !searchLoading() && !searchError() && results().length === 0) {
+          @if (
+            searched() &&
+            !searchLoading() &&
+            !searchError() &&
+            (submittedType === 'user' ? userResults().length === 0 : results().length === 0)
+          ) {
             <div class="empty">
               <h2>Nenhum resultado encontrado</h2>
-              <p>Tente outro nome de álbum, música ou artista.</p>
+              <p>
+                {{
+                  submittedType === 'user'
+                    ? 'Tente outro nome ou nome de usuário.'
+                    : 'Tente outro nome de álbum, música ou artista.'
+                }}
+              </p>
             </div>
           }
           @if (searchHasMore() && !searchError()) {

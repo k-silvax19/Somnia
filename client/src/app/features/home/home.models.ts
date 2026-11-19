@@ -41,6 +41,13 @@ export interface Connections {
   followingCount: number;
 }
 
+export interface UserSearchResult {
+  username: string;
+  displayName: string;
+  bio: string | null;
+  avatarUrl: string | null;
+}
+
 export const musicKey = (item: MusicReference) =>
   `${item.provider}:${item.type}:${item.externalId}`;
 

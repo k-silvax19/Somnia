@@ -8,6 +8,42 @@ namespace Somnia.Infraestrutura.Modulos.Perfis;
 
 public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer normalizer) : IRepositorioPerfil
 {
+    public async Task<PaginaBuscaPerfisDto> PesquisarAsync(
+        Guid usuarioAtualId, string termo, int limit, int offset, CancellationToken ct)
+    {
+        var termoLimpo = termo.Trim();
+        var termoNormalizado = normalizer.NormalizeName(termoLimpo) ?? termoLimpo;
+        var consulta = db.Users.AsNoTracking()
+            .Where(usuario => usuario.Id != usuarioAtualId);
+
+        // Permite pesquisar nomes compostos por qualquer combinação de palavras,
+        // sem depender de acentos ou capitalização da collation padrão do banco.
+        foreach (var palavra in termoLimpo.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var palavraUsuario = $"%{EscaparLike(normalizer.NormalizeName(palavra) ?? palavra)}%";
+            var palavraNome = $"%{EscaparLike(palavra)}%";
+            consulta = consulta.Where(usuario =>
+                EF.Functions.Like(usuario.NormalizedUserName!, palavraUsuario, "~")
+                || EF.Functions.Like(
+                    EF.Functions.Collate(usuario.Nome, "Latin1_General_100_CI_AI"),
+                    palavraNome,
+                    "~"));
+        }
+
+        var total = await consulta.CountAsync(ct);
+        var items = await consulta
+            .OrderByDescending(usuario => usuario.NormalizedUserName == termoNormalizado)
+            .ThenBy(usuario => usuario.NormalizedUserName)
+            .ThenBy(usuario => usuario.Id)
+            .Skip(offset)
+            .Take(limit)
+            .Select(usuario => new PerfilBuscaDto(
+                usuario.UserName!, usuario.Nome, usuario.Bio, usuario.AvatarUrl))
+            .ToListAsync(ct);
+
+        return new PaginaBuscaPerfisDto(items, limit, offset, total);
+    }
+
     public async Task<PerfilPublicoDto?> ObterPublicoAsync(string username, CancellationToken ct)
     {
         var normalized = normalizer.NormalizeName(username.Trim());
@@ -33,4 +69,10 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
         await db.SaveChangesAsync(ct);
         return PerfilMapper.Privado(usuario);
     }
+
+    private static string EscaparLike(string valor) => valor
+        .Replace("~", "~~", StringComparison.Ordinal)
+        .Replace("%", "~%", StringComparison.Ordinal)
+        .Replace("_", "~_", StringComparison.Ordinal)
+        .Replace("[", "~[", StringComparison.Ordinal);
 }

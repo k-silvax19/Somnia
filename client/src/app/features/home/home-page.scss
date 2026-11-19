@@ -158,6 +158,12 @@ h1 {
   background: #1b1f23;
   padding: 0.15rem 0.35rem 0.15rem 0.75rem;
 }
+.search-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
 .search-field {
   display: flex;
   align-items: center;
@@ -432,6 +438,33 @@ dd {
   font-size: 0.75rem;
   display: inline-block;
   padding: 0.4rem 0;
+}
+.user-search-result {
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.spotify-link-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  vertical-align: -0.1rem;
+}
+.user-search-result .avatar {
+  width: 3rem;
+  height: 3rem;
+}
+.user-search-result .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.user-search-result h3 a {
+  font-size: 1rem;
+  padding: 0;
+}
+.user-search-result small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 .result-type {
   text-transform: uppercase;
