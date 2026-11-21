@@ -20,6 +20,8 @@ export interface Review {
   review: string | null;
   createdAt: string;
   updatedAt: string | null;
+  likesCount?: number;
+  likedByMe?: boolean;
 }
 
 export interface MusicItem extends MusicReference {

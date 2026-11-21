@@ -54,11 +54,31 @@ public sealed class AvaliacoesController(IMediator mediator) : ControllerBase
         return resultado.IsFailed ? this.ResultProblem(resultado) : NoContent();
     }
 
+    [HttpPut("reviews/{id:guid}/like")]
+    [EnableRateLimiting("community")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public Task<IActionResult> Curtir(Guid id, CancellationToken ct) => AlterarCurtida(id, true, ct);
+
+    [HttpDelete("reviews/{id:guid}/like")]
+    [EnableRateLimiting("community")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public Task<IActionResult> Descurtir(Guid id, CancellationToken ct) => AlterarCurtida(id, false, ct);
+
+    private async Task<IActionResult> AlterarCurtida(Guid id, bool curtir, CancellationToken ct)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
+            return Unauthorized();
+        var resultado = await mediator.Send(new AlterarCurtidaAvaliacaoCommand(usuarioId, id, curtir), ct);
+        return resultado.IsFailed ? this.ResultProblem(resultado) : NoContent();
+    }
+
     [HttpGet("reviews/{id:guid}")]
     [ProducesResponseType<AvaliacaoDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken ct)
     {
-        var resultado = await mediator.Send(new ObterAvaliacaoQuery(id), ct);
+        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
+            return Unauthorized();
+        var resultado = await mediator.Send(new ObterAvaliacaoQuery(id, usuarioId), ct);
         return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
     }
 
@@ -67,19 +87,21 @@ public sealed class AvaliacoesController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Perfil(string username, CancellationToken ct,
         [FromQuery] int limit = 20, [FromQuery] int offset = 0)
     {
-        var resultado = await mediator.Send(new ListarAvaliacoesPerfilQuery(username, limit, offset), ct);
+        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
+            return Unauthorized();
+        var resultado = await mediator.Send(new ListarAvaliacoesPerfilQuery(username, usuarioId, limit, offset), ct);
         return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
     }
 
     [HttpGet("catalog/{provider}/{type}/{externalId}/reviews")]
     [ProducesResponseType<AvaliacoesItemDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Item(string provider, string type, string externalId, CancellationToken ct,
-        [FromQuery] int limit = 20, [FromQuery] int offset = 0)
+        [FromQuery] int limit = 20, [FromQuery] int offset = 0, [FromQuery] string sort = "recent")
     {
         if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
             return Unauthorized();
         var resultado = await mediator.Send(new ListarAvaliacoesItemQuery(
-            new ReferenciaItem(provider, type, externalId), usuarioId, limit, offset), ct);
+            new ReferenciaItem(provider, type, externalId), usuarioId, limit, offset, sort), ct);
         return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
     }
 }

@@ -82,11 +82,15 @@ export class MusicApi {
         );
     });
   }
-  reviews(item: MusicReference, offset = 0) {
+  reviews(item: MusicReference, offset = 0, sort: 'recent' | 'popular' = 'recent') {
     return this.http.get<ItemReviews>(
       `${this.base}/catalog/${encodeURIComponent(item.provider)}/${item.type}/${encodeURIComponent(item.externalId)}/reviews`,
-      { params: { limit: 10, offset }, timeout: 15_000 },
+      { params: { limit: 10, offset, sort }, timeout: 15_000 },
     );
+  }
+  setLiked(id: string, liked: boolean) {
+    const url = `${this.base}/reviews/${encodeURIComponent(id)}/like`;
+    return liked ? this.http.put<void>(url, {}, this.write) : this.http.delete<void>(url, this.write);
   }
   create(item: MusicReference, content: ReviewContent) {
     return this.http.post<Review>(`${this.base}/reviews`, { ...item, ...content }, this.write);
