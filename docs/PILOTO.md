@@ -35,11 +35,12 @@ Antes do primeiro deploy, configure estes secrets no repositório:
 | `AZUREAPPSERVICE_TENANTID_25826F9B1C7A48EBBB4E6468859C13F8` | Tenant Azure para login OIDC. |
 | `AZUREAPPSERVICE_SUBSCRIPTIONID_02BC3DCA090A40069BAD7363A0BC9978` | Assinatura Azure para login OIDC. |
 
-Configure também as variáveis de repositório `AZURE_RESOURCE_GROUP` e
-`CLIENT_ORIGIN`. A segunda deve ser a origem HTTPS do frontend, sem caminho.
-O deploy executa migrations no Neon antes de publicar a API. O workflow do
-frontend continua fazendo build e verificações; ele não publica arquivos em
-um host estático.
+O workflow localiza o resource group pelo nome do App Service após o login no
+Azure. `CLIENT_ORIGIN` é uma variável opcional: configure-a quando o frontend
+tiver um endereço HTTPS publicado, sem caminho. Sem ela, a API é publicada sem
+origem CORS permitida. O deploy executa migrations no Neon antes de publicar a
+API. O workflow do frontend continua fazendo build e verificações; ele não
+publica arquivos em um host estático.
 
 ## Decisões para abrir o piloto
 

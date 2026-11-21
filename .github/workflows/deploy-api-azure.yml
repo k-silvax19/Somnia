@@ -19,7 +19,6 @@ env:
   API_PROJECT: ./server/src/Api/Somnia.Api.csproj
   PUBLISH_PATH: ./publish
   AZURE_WEBAPP_NAME: somnia-35ab033c
-  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
 
 jobs:
   build:
@@ -129,6 +128,18 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_25826F9B1C7A48EBBB4E6468859C13F8 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_02BC3DCA090A40069BAD7363A0BC9978 }}
 
+      - name: Resolve Azure resource group
+        shell: pwsh
+        run: |
+          $resourceGroup = az webapp list `
+            --query "[?name=='$env:AZURE_WEBAPP_NAME'].resourceGroup | [0]" `
+            --output tsv
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($resourceGroup)) {
+            throw "Não foi possível localizar o App Service $env:AZURE_WEBAPP_NAME na assinatura Azure."
+          }
+
+          "AZURE_RESOURCE_GROUP=$($resourceGroup.Trim())" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Validate production settings
         shell: pwsh
         env:
@@ -136,9 +147,8 @@ jobs:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
         run: |
-          foreach ($name in @('JWT_SIGNING_KEY', 'SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'CLIENT_ORIGIN', 'AZURE_RESOURCE_GROUP')) {
+          foreach ($name in @('JWT_SIGNING_KEY', 'SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET')) {
             if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
               throw "Configure o secret/variable $name no GitHub."
             }
@@ -148,9 +158,11 @@ jobs:
             throw "JWT_SIGNING_KEY deve possuir pelo menos 32 bytes."
           }
 
-          $origin = [Uri]::new($env:CLIENT_ORIGIN)
-          if ($origin.Scheme -ne 'https' -or $origin.AbsolutePath -ne '/' -or $origin.Query -or $origin.Fragment) {
-            throw "CLIENT_ORIGIN deve ser a origem HTTPS do frontend, sem caminho ou query."
+          if (-not [string]::IsNullOrWhiteSpace($env:CLIENT_ORIGIN)) {
+            $origin = [Uri]::new($env:CLIENT_ORIGIN)
+            if ($origin.Scheme -ne 'https' -or $origin.AbsolutePath -ne '/' -or $origin.Query -or $origin.Fragment) {
+              throw "CLIENT_ORIGIN deve ser a origem HTTPS do frontend, sem caminho ou query."
+            }
           }
 
       - name: Configure Azure Web App settings
@@ -161,7 +173,6 @@ jobs:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
         run: |
           $settings = @(
             "ASPNETCORE_ENVIRONMENT=Production"
@@ -171,8 +182,10 @@ jobs:
             "Spotify__ClientId=$env:SPOTIFY_CLIENT_ID"
             "Spotify__ClientSecret=$env:SPOTIFY_CLIENT_SECRET"
             "Spotify__Market=BR"
-            "Cors__AllowedOrigins__0=$env:CLIENT_ORIGIN"
           )
+          if (-not [string]::IsNullOrWhiteSpace($env:CLIENT_ORIGIN)) {
+            $settings += "Cors__AllowedOrigins__0=$env:CLIENT_ORIGIN"
+          }
 
           az webapp config appsettings set `
             --resource-group "$env:AZURE_RESOURCE_GROUP" `
@@ -184,20 +197,20 @@ jobs:
       - name: Verify required Azure settings
         shell: pwsh
         env:
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:AZURE_RESOURCE_GROUP)) {
-            throw "Configure a variável AZURE_RESOURCE_GROUP no GitHub."
-          }
-
           $settings = az webapp config appsettings list `
             --resource-group "$env:AZURE_RESOURCE_GROUP" `
             --name "$env:AZURE_WEBAPP_NAME" `
             --query "[?name=='ConnectionStrings__Postgres' || name=='Jwt__SigningKey' || name=='Cors__AllowedOrigins__0'].name" `
             --output tsv
           if ($LASTEXITCODE -ne 0 -or $settings -notcontains 'ConnectionStrings__Postgres' -or
-              $settings -notcontains 'Jwt__SigningKey' -or $settings -notcontains 'Cors__AllowedOrigins__0') {
+              $settings -notcontains 'Jwt__SigningKey') {
             throw "Não foi possível confirmar as configurações obrigatórias no Azure."
+          }
+          if (-not [string]::IsNullOrWhiteSpace($env:CLIENT_ORIGIN) -and
+              $settings -notcontains 'Cors__AllowedOrigins__0') {
+            throw "CLIENT_ORIGIN foi informado, mas não apareceu nas configurações do Azure."
           }
 
       - name: Deploy to Azure Web App
