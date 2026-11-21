@@ -37,13 +37,13 @@ jobs:
       - name: Restore dependencies
         shell: pwsh
         run: |
-          dotnet restore "${{ env.API_PROJECT }}" --runtime win-x64
+          dotnet restore "${{ env.API_PROJECT }}" --runtime win-x86
           if ($LASTEXITCODE -ne 0) { throw "Falha no restore da API." }
 
       - name: Build API
         shell: pwsh
         run: |
-          dotnet build "${{ env.API_PROJECT }}" --configuration Release --runtime win-x64 --no-restore
+          dotnet build "${{ env.API_PROJECT }}" --configuration Release --runtime win-x86 --no-restore
           if ($LASTEXITCODE -ne 0) { throw "Falha no build da API." }
 
       - name: Publish API
@@ -51,7 +51,7 @@ jobs:
         run: |
           dotnet publish "${{ env.API_PROJECT }}" `
             --configuration Release `
-            --runtime win-x64 `
+            --runtime win-x86 `
             --self-contained false `
             --no-build `
             --no-restore `
