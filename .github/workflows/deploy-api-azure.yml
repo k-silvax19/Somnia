@@ -1,0 +1,208 @@
+name: Build and deploy Somnia API to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/deploy-api-azure.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-somnia-api-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  API_PROJECT: ./server/src/Api/Somnia.Api.csproj
+  PUBLISH_PATH: ./publish
+  AZURE_WEBAPP_NAME: somnia-35ab033c
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+
+jobs:
+  build:
+    name: Build and publish API
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        shell: pwsh
+        run: |
+          dotnet restore "${{ env.API_PROJECT }}"
+          if ($LASTEXITCODE -ne 0) { throw "Falha no restore da API." }
+
+      - name: Build API
+        shell: pwsh
+        run: |
+          dotnet build "${{ env.API_PROJECT }}" --configuration Release --no-restore
+          if ($LASTEXITCODE -ne 0) { throw "Falha no build da API." }
+
+      - name: Publish API
+        shell: pwsh
+        run: |
+          dotnet publish "${{ env.API_PROJECT }}" `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --output "${{ env.PUBLISH_PATH }}"
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao publicar a API." }
+          if (-not (Test-Path "${{ env.PUBLISH_PATH }}/Somnia.Api.dll")) {
+            throw "Somnia.Api.dll não encontrada na publicação."
+          }
+
+      - name: Upload API artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: somnia-api
+          path: ./publish
+          if-no-files-found: error
+
+  migrate:
+    name: Apply PostgreSQL migrations
+    runs-on: windows-latest
+    needs: build
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore ./server/src/Api/Somnia.Api.csproj
+
+      - name: Install Entity Framework CLI
+        shell: pwsh
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.13
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar dotnet-ef." }
+
+      - name: Apply Neon migrations
+        shell: pwsh
+        env:
+          NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:NEON_CONNECTION_STRING)) {
+            throw "Configure o secret NEON_CONNECTION_STRING com uma connection string Npgsql do Neon."
+          }
+
+          dotnet ef database update `
+            --project ./server/src/Infraestrutura `
+            --startup-project ./server/src/Api `
+            --context SomniaDbContext `
+            --configuration Release `
+            --connection "$env:NEON_CONNECTION_STRING"
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao aplicar migrations no Neon." }
+
+  deploy:
+    name: Configure Azure and deploy API
+    runs-on: windows-latest
+    needs: [build, migrate]
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download API artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: somnia-api
+          path: ./publish
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0CEAC0A9CC984D55A0EA87F6520EA371 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_25826F9B1C7A48EBBB4E6468859C13F8 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_02BC3DCA090A40069BAD7363A0BC9978 }}
+
+      - name: Validate production settings
+        shell: pwsh
+        env:
+          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          foreach ($name in @('JWT_SIGNING_KEY', 'SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'CLIENT_ORIGIN', 'AZURE_RESOURCE_GROUP')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Configure o secret/variable $name no GitHub."
+            }
+          }
+
+          if ([System.Text.Encoding]::UTF8.GetByteCount($env:JWT_SIGNING_KEY) -lt 32) {
+            throw "JWT_SIGNING_KEY deve possuir pelo menos 32 bytes."
+          }
+
+          $origin = [Uri]::new($env:CLIENT_ORIGIN)
+          if ($origin.Scheme -ne 'https' -or $origin.AbsolutePath -ne '/' -or $origin.Query -or $origin.Fragment) {
+            throw "CLIENT_ORIGIN deve ser a origem HTTPS do frontend, sem caminho ou query."
+          }
+
+      - name: Configure Azure Web App settings
+        shell: pwsh
+        env:
+          NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
+          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          $settings = @(
+            "ASPNETCORE_ENVIRONMENT=Production"
+            "ConnectionStrings__Postgres=$env:NEON_CONNECTION_STRING"
+            "Jwt__SigningKey=$env:JWT_SIGNING_KEY"
+            "MusicCatalog__Provider=Spotify"
+            "Spotify__ClientId=$env:SPOTIFY_CLIENT_ID"
+            "Spotify__ClientSecret=$env:SPOTIFY_CLIENT_SECRET"
+            "Spotify__Market=BR"
+            "Cors__AllowedOrigins__0=$env:CLIENT_ORIGIN"
+          )
+
+          az webapp config appsettings set `
+            --resource-group "$env:AZURE_RESOURCE_GROUP" `
+            --name "$env:AZURE_WEBAPP_NAME" `
+            --settings $settings `
+            --output none
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao configurar Azure App Settings." }
+
+      - name: Verify required Azure settings
+        shell: pwsh
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:AZURE_RESOURCE_GROUP)) {
+            throw "Configure a variável AZURE_RESOURCE_GROUP no GitHub."
+          }
+
+          $settings = az webapp config appsettings list `
+            --resource-group "$env:AZURE_RESOURCE_GROUP" `
+            --name "$env:AZURE_WEBAPP_NAME" `
+            --query "[?name=='ConnectionStrings__Postgres' || name=='Jwt__SigningKey' || name=='Cors__AllowedOrigins__0'].name" `
+            --output tsv
+          if ($LASTEXITCODE -ne 0 -or $settings -notcontains 'ConnectionStrings__Postgres' -or
+              $settings -notcontains 'Jwt__SigningKey' -or $settings -notcontains 'Cors__AllowedOrigins__0') {
+            throw "Não foi possível confirmar as configurações obrigatórias no Azure."
+          }
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: Production
+          package: ./publish
