@@ -20,7 +20,8 @@ article.clickable:hover {
 }
 .author a,
 .expand,
-footer a {
+footer a,
+footer button {
   position: relative;
   z-index: 2;
 }
@@ -178,7 +179,8 @@ footer {
   color: var(--muted);
   margin-top: 0.65rem;
 }
-.like-button {
+.like-button,
+.share-button {
   position: relative;
   z-index: 2;
   display: inline-flex;
@@ -213,6 +215,20 @@ footer {
 }
 .like-error {
   color: var(--danger, #ef9a9a);
+}
+.share-button:hover:not(:disabled) {
+  color: var(--accent);
+}
+.share-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+.share-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.share-error {
+  color: var(--error, #ffb3c4);
 }
 footer a {
   color: var(--muted);

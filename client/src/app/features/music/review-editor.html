@@ -45,7 +45,22 @@
         >
           Excluir avaliação
         </button>
+        <button
+          type="button"
+          class="button secondary share-review"
+          (click)="shareStory()"
+          [disabled]="sharing()"
+          [attr.aria-label]="sharing() ? 'Gerando imagem para compartilhar' : 'Compartilhar sua avaliação'"
+        >
+          {{ sharing() ? 'Preparando imagem…' : 'Compartilhar' }}
+        </button>
       </div>
+      @if (shareStatus()) {
+        <p class="hint" role="status">{{ shareStatus() }}</p>
+      }
+      @if (shareError()) {
+        <p class="message error" role="alert">{{ shareError() }}</p>
+      }
     } @else {
       <div class="confirmation" role="group" aria-label="Confirmar exclusão">
         <p>
