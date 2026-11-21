@@ -1,3 +1,5 @@
+![Somnia — Histórias através da música](docs/images/somnia-header.png)
+
 <div align="center">
 
 # ✦ Somnia
@@ -30,15 +32,15 @@ O projeto combina uma interface responsiva em Angular com uma API em ASP.NET Cor
 
 > Um espaço para guardar o que a música fez você sentir.
 
-### Prévia
+### A experiência atual
 
-<div align="center">
+Capturas da área de descoberta e do feed, no desktop e no celular:
 
-| Página inicial em desktop | Página inicial em dispositivos móveis |
-| --- | --- |
-| ![Página inicial do Somnia em desktop](client/docs/home-desktop.png) | ![Feed do Somnia em dispositivo móvel](client/docs/home-mobile.png) |
-
-</div>
+<p align="center">
+  <img src="client/docs/home-desktop.png" alt="Feed atual do Somnia em desktop" width="760" />
+  &nbsp;&nbsp;
+  <img src="client/docs/home-mobile.png" alt="Feed atual do Somnia em um celular" width="230" />
+</p>
 
 ## ✨ Funcionalidades
 
