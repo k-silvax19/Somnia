@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { LucideExternalLink, LucideHeart, LucideShare2 } from '@lucide/angular';
+import { LucideExternalLink, LucideHeart } from '@lucide/angular';
 import { Icon } from '../../shared/icon';
 import { MusicApi } from '../music/music-api';
 import { ReviewStoryShare } from './review-story-share';
@@ -10,7 +10,7 @@ import { ReviewAvatarCache } from './review-avatar-cache';
 
 @Component({
   selector: 'app-review-card',
-  imports: [Icon, RouterLink, LucideExternalLink, LucideHeart, LucideShare2],
+  imports: [Icon, RouterLink, LucideExternalLink, LucideHeart],
   template: `
     <article [class.clickable]="linkToItem()">
       @if (linkToItem()) {
@@ -118,7 +118,6 @@ import { ReviewAvatarCache } from './review-avatar-cache';
                 (click)="shareStory($event)"
                 [attr.aria-label]="sharing() ? 'Gerando imagem para compartilhar' : 'Compartilhar avaliação'"
               >
-                <svg lucideShare2 aria-hidden="true"></svg>
                 {{ sharing() ? 'Preparando imagem…' : 'Compartilhar' }}
               </button>
             }

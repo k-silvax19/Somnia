@@ -1,6 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
-import { LucideShare2 } from '@lucide/angular';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -10,7 +9,7 @@ import { MusicApi, musicError } from './music-api';
 
 @Component({
   selector: 'app-review-editor',
-  imports: [ReactiveFormsModule, LucideShare2],
+  imports: [ReactiveFormsModule],
   templateUrl: './review-editor.html',
   styleUrl: './review-editor.scss',
 })

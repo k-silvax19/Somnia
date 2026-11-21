@@ -18,6 +18,9 @@ gera um PNG vertical de 1080 × 1920. A avaliação é reduzida com
 reticências quando não couber na imagem. Se a capa não puder ser carregada pelo
 navegador, a arte usa uma ilustração musical de reserva.
 
+O botão web permanece textual nesta etapa. O ícone dedicado e a integração
+nativa que abre diretamente o compositor de Stories ficam para depois do MVP.
+
 Quando o navegador oferece compartilhamento de arquivos, o Somnia abre a folha
 nativa e deixa a pessoa escolher o destino. A API web não permite selecionar
 nem publicar diretamente no Story do Instagram. Se o compartilhamento de
