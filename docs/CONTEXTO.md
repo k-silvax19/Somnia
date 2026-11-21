@@ -392,9 +392,9 @@ Contrato e execução em [client/README.md](../client/README.md).
    ou username, resultados que abrem perfis e exclusão do próprio titular.
 6. Recomendações na pesquisa implementadas com músicas melhor avaliadas pela
    comunidade. Observar o comportamento do ranking durante a homologação.
-7. Compartilhamento de avaliações implementado: gera PNG vertical e usa o
-   compartilhamento nativo do navegador quando disponível, com download como
-   alternativa. Ver [COMPARTILHAMENTO.MD](COMPARTILHAMENTO.MD).
+7. Compartilhamento das próprias avaliações implementado: gera PNG vertical e
+   usa o compartilhamento nativo do navegador quando disponível, com download
+   como alternativa. Ver [COMPARTILHAMENTO.MD](COMPARTILHAMENTO.MD).
 8. Homologar fluxos completos em 360 px/desktop, por teclado, foco, rótulos,
    erros e critérios de aceite do PRD.
 9. Preparar deploy/piloto: migrations controladas, backups, retenção, exclusão

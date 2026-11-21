@@ -111,15 +111,17 @@ import { ReviewAvatarCache } from './review-avatar-cache';
             @if (likeError()) {
               <span class="like-error" role="status">{{ likeError() }}</span>
             }
-            <button
-              class="share-button"
-              [disabled]="sharing()"
-              (click)="shareStory($event)"
-              [attr.aria-label]="sharing() ? 'Gerando imagem para compartilhar' : 'Compartilhar avaliação'"
-            >
-              <svg lucideShare2 aria-hidden="true"></svg>
-              {{ sharing() ? 'Preparando imagem…' : 'Compartilhar' }}
-            </button>
+            @if (canShare()) {
+              <button
+                class="share-button"
+                [disabled]="sharing()"
+                (click)="shareStory($event)"
+                [attr.aria-label]="sharing() ? 'Gerando imagem para compartilhar' : 'Compartilhar avaliação'"
+              >
+                <svg lucideShare2 aria-hidden="true"></svg>
+                {{ sharing() ? 'Preparando imagem…' : 'Compartilhar' }}
+              </button>
+            }
             @if (shareStatus()) {
               <span role="status">{{ shareStatus() }}</span>
             }
@@ -150,6 +152,7 @@ export class ReviewCard {
   readonly item = input<MusicItem | null>(null);
   readonly pending = input(false);
   readonly linkToItem = input(true);
+  readonly canShare = input(false);
   private readonly api = inject(MusicApi);
   private readonly destroyRef = inject(DestroyRef);
   private readonly storyShare = inject(ReviewStoryShare);
@@ -226,7 +229,7 @@ export class ReviewCard {
   protected shareStory(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    if (this.sharing()) return;
+    if (!this.canShare() || this.sharing()) return;
 
     this.sharing.set(true);
     this.shareStatus.set('');

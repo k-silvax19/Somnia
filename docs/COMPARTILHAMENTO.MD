@@ -1,7 +1,7 @@
 # Compartilhamento de avaliações
 
-A pessoa pode compartilhar uma avaliação de música como uma arte vertical,
-pronta para publicar em um Story e ajudar a divulgar o Somnia.
+A pessoa pode compartilhar apenas as próprias avaliações de música como uma
+arte vertical, pronta para publicar em um Story e ajudar a divulgar o Somnia.
 
 ## Conteúdo da imagem
 
@@ -12,7 +12,9 @@ pronta para publicar em um Story e ajudar a divulgar o Somnia.
 
 ## Implementação web
 
-O botão gera um PNG vertical de 1080 × 1920. A avaliação é reduzida com
+O botão aparece somente nas avaliações da pessoa autenticada. Nos detalhes da
+música, ele fica junto às ações de editar e excluir a própria avaliação. O botão
+gera um PNG vertical de 1080 × 1920. A avaliação é reduzida com
 reticências quando não couber na imagem. Se a capa não puder ser carregada pelo
 navegador, a arte usa uma ilustração musical de reserva.
 

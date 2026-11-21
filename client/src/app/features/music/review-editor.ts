@@ -1,25 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { LucideShare2 } from '@lucide/angular';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { MusicReference, Review } from '../home/home.models';
+import { MusicItem, MusicReference, Review } from '../home/home.models';
+import { ReviewStoryShare } from '../home/review-story-share';
 import { MusicApi, musicError } from './music-api';
 
 @Component({
   selector: 'app-review-editor',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LucideShare2],
   templateUrl: './review-editor.html',
   styleUrl: './review-editor.scss',
 })
 export class ReviewEditor {
   readonly item = input.required<MusicReference>();
   readonly current = input<Review | null>(null);
+  readonly music = input<MusicItem | null>(null);
   readonly refreshing = input(false);
   readonly changed = output<Review | null>();
   readonly busyChange = output<boolean>();
   readonly refresh = output<void>();
   private readonly api = inject(MusicApi);
+  private readonly storyShare = inject(ReviewStoryShare);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly editing = signal(false);
   protected readonly busy = signal(false);
@@ -27,6 +31,9 @@ export class ReviewEditor {
   protected readonly error = signal('');
   protected readonly fields = signal<Record<string, string>>({});
   protected readonly success = signal('');
+  protected readonly sharing = signal(false);
+  protected readonly shareStatus = signal('');
+  protected readonly shareError = signal('');
   protected readonly conflict = signal(false);
   private readonly now = signal(Date.now());
   private readonly blockedUntil = signal(0);
@@ -103,6 +110,20 @@ export class ReviewEditor {
     )
       return;
     this.run(this.api.delete(this.current()!.id), true);
+  }
+  protected shareStory() {
+    const review = this.current();
+    if (!review || this.sharing()) return;
+    this.sharing.set(true);
+    this.shareStatus.set('');
+    this.shareError.set('');
+    this.storyShare.share(review, this.music()).then((result) => {
+      if (result === 'shared') this.shareStatus.set('Imagem enviada ao compartilhador do dispositivo.');
+      if (result === 'downloaded') this.shareStatus.set('Imagem baixada; abra o Instagram para publicar no Story.');
+      if (result === 'cancelled') this.shareStatus.set('Compartilhamento cancelado.');
+    }).catch(() => {
+      this.shareError.set('Não foi possível gerar a imagem. Tente novamente.');
+    }).finally(() => this.sharing.set(false));
   }
   private run(request: Observable<Review | void>, deleting: boolean) {
     this.busy.set(true);

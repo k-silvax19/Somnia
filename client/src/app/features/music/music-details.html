@@ -144,6 +144,7 @@
     @if (loaded()) {
       <app-review-editor
         [item]="reference()"
+        [music]="item()"
         [current]="mine()"
         [refreshing]="loading()"
         (changed)="onChanged($event)"
