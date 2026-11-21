@@ -31,6 +31,7 @@ export class ReviewEditor {
   protected readonly fields = signal<Record<string, string>>({});
   protected readonly success = signal('');
   protected readonly sharing = signal(false);
+  protected readonly preparedStory = signal<File | null>(null);
   protected readonly shareStatus = signal('');
   protected readonly shareError = signal('');
   protected readonly conflict = signal(false);
@@ -116,10 +117,22 @@ export class ReviewEditor {
     this.sharing.set(true);
     this.shareStatus.set('');
     this.shareError.set('');
-    this.storyShare.share(review, this.music()).then((result) => {
-      if (result === 'shared') this.shareStatus.set('Imagem enviada ao compartilhador do dispositivo.');
-      if (result === 'downloaded') this.shareStatus.set('Imagem baixada; abra o Instagram para publicar no Story.');
-      if (result === 'cancelled') this.shareStatus.set('Compartilhamento cancelado.');
+    const prepared = this.preparedStory();
+    if (prepared) {
+      this.storyShare.share(prepared, this.music()).then((result) => {
+        if (result === 'shared') this.shareStatus.set('Imagem enviada ao compartilhador do dispositivo.');
+        if (result === 'downloaded') this.shareStatus.set('Imagem baixada; abra o Instagram para publicar no Story.');
+        if (result === 'cancelled') this.shareStatus.set('Compartilhamento cancelado.');
+        if (result !== 'cancelled') this.preparedStory.set(null);
+      }).catch(() => {
+        this.shareError.set('Não foi possível compartilhar a imagem. Tente novamente.');
+      }).finally(() => this.sharing.set(false));
+      return;
+    }
+
+    this.storyShare.prepare(review, this.music()).then((file) => {
+      this.preparedStory.set(file);
+      this.shareStatus.set('Imagem pronta. Toque em “Abrir compartilhamento” para continuar.');
     }).catch(() => {
       this.shareError.set('Não foi possível gerar a imagem. Tente novamente.');
     }).finally(() => this.sharing.set(false));

@@ -13,8 +13,11 @@ const STORY_MUTED = '#ada4c9';
 
 @Injectable({ providedIn: 'root' })
 export class ReviewStoryShare {
-  async share(review: Review, item: MusicItem | null): Promise<ReviewStoryShareResult> {
-    const file = await this.createImage(review, item);
+  prepare(review: Review, item: MusicItem | null): Promise<File> {
+    return this.createImage(review, item);
+  }
+
+  share(file: File, item: MusicItem | null): Promise<ReviewStoryShareResult> {
     const shareData: ShareData = {
       files: [file],
       title: item?.title || 'Avaliação musical no Somnia',
@@ -23,15 +26,21 @@ export class ReviewStoryShare {
 
     if (this.supportsFileShare(shareData)) {
       try {
-        await navigator.share(shareData);
-        return 'shared';
+        return navigator.share(shareData).then(
+          () => 'shared' as const,
+          (error: unknown) => {
+            if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled' as const;
+            this.download(file);
+            return 'downloaded' as const;
+          },
+        );
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
+        if (error instanceof DOMException && error.name === 'AbortError') return Promise.resolve('cancelled');
       }
     }
 
     this.download(file);
-    return 'downloaded';
+    return Promise.resolve('downloaded');
   }
 
   private supportsFileShare(data: ShareData): boolean {
