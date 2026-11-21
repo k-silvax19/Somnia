@@ -145,6 +145,25 @@ h2 {
   gap: 0.8rem;
   margin-bottom: 1.2rem;
 }
+.review-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.review-controls select {
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 0.8rem;
+}
+.review-controls select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .refresh {
   background: transparent;
   color: var(--accent);

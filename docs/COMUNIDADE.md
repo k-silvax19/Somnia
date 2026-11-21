@@ -54,7 +54,9 @@ inválidos retornam `400` com ProblemDetails e erro associado ao parâmetro.
 ```
 
 Cada avaliação contém `id`, `author` (`username`, `displayName`), `item`
-(`provider`, `type`, `externalId`), `score`, `review`, `createdAt`, `updatedAt`.
+(`provider`, `type`, `externalId`), `score`, `review`, `createdAt`, `updatedAt`,
+`likesCount` e `likedByMe`. A contagem e o estado de curtida refletem o
+participante autenticado da consulta.
 Resenhas sem nota também aparecem. Não são selecionados e-mails, IDs internos
 de usuário, credenciais, sessões ou preferências de segurança da conta.
 Nome e username refletem o perfil atual; resenha é texto simples e deve ser

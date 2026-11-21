@@ -34,6 +34,8 @@ PRD; não eram decisões previamente confirmadas no documento v1.2.
 | GET | `/api/reviews/{id}` | Consulta uma avaliação (`200`/`404`) |
 | PUT | `/api/reviews/{id}` | Substitui nota/resenha do titular (`200`) |
 | DELETE | `/api/reviews/{id}` | Exclui a avaliação do titular (`204`) |
+| PUT | `/api/reviews/{id}/like` | Curte a avaliação; operação idempotente (`204`) |
+| DELETE | `/api/reviews/{id}/like` | Remove a curtida; operação idempotente (`204`) |
 | GET | `/api/users/{username}/reviews` | Histórico paginado do perfil |
 | GET | `/api/catalog/{provider}/{type}/{externalId}/reviews` | Avaliações e resumo do item |
 
@@ -78,7 +80,16 @@ deve escapar o texto ao exibir, sem interpretá-lo como HTML.
 
 Cada avaliação retorna `id`, `author` (`username`, `displayName`), `item`
 (`provider`, `type`, `externalId`), `score`, `review`, `createdAt` e
-`updatedAt`. E-mail, credenciais e sessões não são incluídos.
+`updatedAt`, `likesCount` e `likedByMe`. `likedByMe` é calculado para o
+participante autenticado da consulta. E-mail, credenciais e sessões não são
+incluídos.
+
+Uma curtida é única por pessoa e avaliação, garantida pela chave composta
+`(UsuarioId, AvaliacaoId)`. Não é permitido curtir a própria avaliação.
+Curtir e descurtir repetidamente mantêm o mesmo resultado. Ao excluir uma
+avaliação, o banco remove suas curtidas em cascata. A FK direta para a conta
+não usa cascade; uma futura exclusão de conta precisa limpar as curtidas
+criadas pelo usuário antes de remover sua conta.
 
 O histórico usa `limit` (padrão 20, de 1 a 50) e `offset` (padrão 0, de 0
 a 10.000), retornando `items`, `limit`, `offset`, `total` e `hasMore`.
@@ -89,6 +100,10 @@ requisições se outras avaliações forem criadas ou excluídas.
 
 A consulta por item retorna `reviews` (a página acima), `myReview` (a avaliação
 do titular do JWT ou `null`, independente da página) e `summary`:
+
+A consulta aceita `sort=recent` (padrão) ou `sort=popular`. A ordenação popular
+coloca primeiro as avaliações com mais curtidas; empates usam criação e ID
+decrescentes. Avaliações sem curtidas continuam listadas depois das demais.
 
 ```json
 {

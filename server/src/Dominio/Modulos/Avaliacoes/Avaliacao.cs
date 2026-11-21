@@ -32,10 +32,32 @@ public sealed class Avaliacao
     }
 }
 
+public sealed class CurtidaAvaliacao
+{
+    private CurtidaAvaliacao() { }
+
+    public Guid UsuarioId { get; private set; }
+    public Guid AvaliacaoId { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+
+    public static CurtidaAvaliacao Criar(Guid usuarioId, Guid avaliacaoId)
+    {
+        if (usuarioId == Guid.Empty || avaliacaoId == Guid.Empty)
+            throw new ArgumentException("Usuário e avaliação devem ser válidos.");
+        return new CurtidaAvaliacao
+        {
+            UsuarioId = usuarioId,
+            AvaliacaoId = avaliacaoId,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+}
+
 public sealed record ReferenciaItem(string Provider, string Type, string ExternalId);
 public sealed record AutorAvaliacaoDto(string Username, string DisplayName, string? AvatarUrl = null);
 public sealed record AvaliacaoDto(Guid Id, AutorAvaliacaoDto Author, ReferenciaItem Item,
-    int? Score, string? Review, DateTime CreatedAt, DateTime? UpdatedAt);
+    int? Score, string? Review, DateTime CreatedAt, DateTime? UpdatedAt,
+    int LikesCount = 0, bool LikedByMe = false);
 public sealed record PaginaAvaliacoesDto(IReadOnlyList<AvaliacaoDto> Items, int Limit, int Offset, int Total)
 {
     public bool HasMore => (long)Offset + Items.Count < Total;
@@ -49,19 +71,36 @@ public interface IRepositorioAvaliacao
     Task<bool> ExisteAsync(Guid usuarioId, ReferenciaItem item, CancellationToken ct);
     Task<bool> CriarAsync(Avaliacao avaliacao, CancellationToken ct);
     Task<AvaliacaoDto?> ObterAsync(Guid id, CancellationToken ct);
+    Task<AvaliacaoDto?> ObterAsync(Guid id, Guid usuarioId, CancellationToken ct) => ObterAsync(id, ct);
     Task<AvaliacaoDto?> AtualizarAsync(Guid id, Guid usuarioId, int? score, string? review, CancellationToken ct);
     Task<bool> ExcluirAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task<PaginaAvaliacoesDto?> ListarPerfilAsync(string username, int limit, int offset, CancellationToken ct);
+    Task<PaginaAvaliacoesDto?> ListarPerfilAsync(string username, Guid usuarioId, int limit, int offset, CancellationToken ct) =>
+        ListarPerfilAsync(username, limit, offset, ct);
     Task<AvaliacoesItemDto> ListarItemAsync(ReferenciaItem item, Guid usuarioId, int limit, int offset, CancellationToken ct);
+    Task<AvaliacoesItemDto> ListarItemAsync(ReferenciaItem item, Guid usuarioId, int limit, int offset,
+        OrdenacaoAvaliacoes ordenacao, CancellationToken ct) => ListarItemAsync(item, usuarioId, limit, offset, ct);
     Task<PaginaAvaliacoesDto> ListarFeedAsync(Guid usuarioId, int limit, int offset, CancellationToken ct);
     Task<PaginaAvaliacoesDto> ListarDescobertaAsync(int limit, int offset, CancellationToken ct);
+    Task<PaginaAvaliacoesDto> ListarDescobertaAsync(Guid usuarioId, int limit, int offset, CancellationToken ct) =>
+        ListarDescobertaAsync(limit, offset, ct);
     Task<IReadOnlyList<RecomendacaoMusicalDto>> ListarRecomendacoesAsync(int limit, CancellationToken ct);
+    Task<ResultadoCurtidaAvaliacao> AlterarCurtidaAsync(Guid avaliacaoId, Guid usuarioId, bool curtir, CancellationToken ct) =>
+        Task.FromResult(ResultadoCurtidaAvaliacao.AvaliacaoInexistente);
 }
+
+public enum OrdenacaoAvaliacoes { Recentes, MaisCurtidas }
+public enum ResultadoCurtidaAvaliacao { Sucesso, AvaliacaoInexistente, PropriaAvaliacao }
 
 public static class RegrasAvaliacao
 {
     public const int ResenhaMaxima = 5000;
     public const int LimiteMaximo = 50;
+    public static IEnumerable<ErroValidacao> ValidarOrdenacao(string? ordenacao)
+    {
+        if (ordenacao is not ("recent" or "popular"))
+            yield return new("sort", "Use recent ou popular.");
+    }
     public static string? NormalizarResenha(string? review) => string.IsNullOrWhiteSpace(review) ? null : review.Trim();
 
     public static IEnumerable<ErroValidacao> ValidarConteudo(int? score, string? review)

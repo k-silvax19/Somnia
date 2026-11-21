@@ -13,6 +13,23 @@ public sealed record CriarAvaliacaoCommand(Guid UsuarioId, ReferenciaItem Item, 
 public sealed record AtualizarAvaliacaoCommand(Guid UsuarioId, Guid Id, int? Score, string? Review)
     : IRequest<Result<AvaliacaoDto>>;
 public sealed record ExcluirAvaliacaoCommand(Guid UsuarioId, Guid Id) : IRequest<Result>;
+public sealed record AlterarCurtidaAvaliacaoCommand(Guid UsuarioId, Guid Id, bool Curtir) : IRequest<Result>;
+
+public sealed class AlterarCurtidaAvaliacaoCommandHandler(IRepositorioAvaliacao repositorio)
+    : IRequestHandler<AlterarCurtidaAvaliacaoCommand, Result>
+{
+    public async Task<Result> Handle(AlterarCurtidaAvaliacaoCommand command, CancellationToken ct)
+    {
+        var resultado = await repositorio.AlterarCurtidaAsync(command.Id, command.UsuarioId, command.Curtir, ct);
+        return resultado switch
+        {
+            ResultadoCurtidaAvaliacao.Sucesso => Result.Ok(),
+            ResultadoCurtidaAvaliacao.PropriaAvaliacao => Result.Fail(Erros.Criar(
+                TipoErro.Validacao, "Não é possível curtir a própria avaliação.")),
+            _ => Result.Fail(Erros.Criar(TipoErro.NaoEncontrado, "Avaliação inexistente.")),
+        };
+    }
+}
 
 public sealed class CriarAvaliacaoCommandHandler(IRepositorioAvaliacao repositorio, IMusicCatalogProvider catalogo)
     : IRequestHandler<CriarAvaliacaoCommand, Result<AvaliacaoDto>>
@@ -41,7 +58,7 @@ public sealed class CriarAvaliacaoCommandHandler(IRepositorioAvaliacao repositor
         var avaliacao = Avaliacao.Criar(command.UsuarioId, command.Item, command.Score, command.Review);
         if (!await repositorio.CriarAsync(avaliacao, ct))
             return ResultadosAvaliacao.Duplicada();
-        var salva = await repositorio.ObterAsync(avaliacao.Id, ct);
+        var salva = await repositorio.ObterAsync(avaliacao.Id, command.UsuarioId, ct);
         return salva is null ? ResultadosAvaliacao.NaoEncontrada<AvaliacaoDto>() : Result.Ok(salva);
     }
 }

@@ -83,13 +83,20 @@
     <section class="community" aria-labelledby="community-title">
       <div class="section-heading">
         <h2 id="community-title">Avaliações da comunidade</h2>
-        <button
-          class="refresh"
-          (click)="loadReviews()"
-          [disabled]="loading() || writing() || reviewsWait() > 0"
-        >
-          Atualizar avaliações
-        </button>
+        <div class="review-controls">
+          <label class="sr-only" for="review-sort">Ordenar avaliações</label>
+          <select id="review-sort" [value]="reviewSort()" (change)="setReviewSort($any($event.target).value)">
+            <option value="recent">Mais recentes</option>
+            <option value="popular">Mais curtidas</option>
+          </select>
+          <button
+            class="refresh"
+            (click)="loadReviews()"
+            [disabled]="loading() || writing() || reviewsWait() > 0"
+          >
+            Atualizar avaliações
+          </button>
+        </div>
       </div>
       @if (reviewError()) {
         <div class="message error" role="alert">
@@ -109,6 +116,7 @@
           [item]="item()"
           [pending]="metadataLoading()"
           [linkToItem]="false"
+          [isOwn]="review.author.username === mine()?.author?.username"
         />
       }
       @if (loading()) {
