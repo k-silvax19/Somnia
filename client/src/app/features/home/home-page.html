@@ -364,7 +364,6 @@
               [review]="review"
               [item]="metadata()[musicKey(review.item)] ?? null"
               [pending]="metadata()[musicKey(review.item)] === undefined"
-              [isOwn]="review.author.username === account()?.username"
             />
           }
           @if (loading()) {

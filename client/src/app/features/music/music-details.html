@@ -116,7 +116,6 @@
           [item]="item()"
           [pending]="metadataLoading()"
           [linkToItem]="false"
-          [isOwn]="review.author.username === mine()?.author?.username"
         />
       }
       @if (loading()) {

@@ -103,12 +103,8 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
     public async Task<ResultadoCurtidaAvaliacao> AlterarCurtidaAsync(
         Guid avaliacaoId, Guid usuarioId, bool curtir, CancellationToken ct)
     {
-        var avaliacao = await db.Avaliacoes.AsNoTracking()
-            .Where(x => x.Id == avaliacaoId)
-            .Select(x => new { x.UsuarioId })
-            .SingleOrDefaultAsync(ct);
-        if (avaliacao is null) return ResultadoCurtidaAvaliacao.AvaliacaoInexistente;
-        if (curtir && avaliacao.UsuarioId == usuarioId) return ResultadoCurtidaAvaliacao.PropriaAvaliacao;
+        if (!await db.Avaliacoes.AsNoTracking().AnyAsync(x => x.Id == avaliacaoId, ct))
+            return ResultadoCurtidaAvaliacao.AvaliacaoInexistente;
 
         if (!curtir)
         {

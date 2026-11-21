@@ -98,15 +98,9 @@ import { ReviewAvatarCache } from './review-avatar-cache';
             <button
               class="like-button"
               [class.liked]="likedByMe()"
-              [disabled]="liking() || isOwn()"
+              [disabled]="liking()"
               [attr.aria-pressed]="likedByMe()"
-              [attr.aria-label]="
-                isOwn()
-                  ? 'Não é possível curtir a própria avaliação'
-                  : likedByMe()
-                    ? 'Remover curtida'
-                    : 'Curtir avaliação'
-              "
+              [attr.aria-label]="likedByMe() ? 'Remover curtida' : 'Curtir avaliação'"
               (click)="toggleLike($event)"
             >
               <svg lucideHeart aria-hidden="true"></svg>
@@ -140,7 +134,6 @@ export class ReviewCard {
   readonly item = input<MusicItem | null>(null);
   readonly pending = input(false);
   readonly linkToItem = input(true);
-  readonly isOwn = input(false);
   private readonly api = inject(MusicApi);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly expanded = signal(false);
@@ -187,7 +180,7 @@ export class ReviewCard {
   protected toggleLike(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    if (this.liking() || this.isOwn()) return;
+    if (this.liking()) return;
 
     const previousLiked = this.likedByMe();
     const previousCount = this.likesCount();

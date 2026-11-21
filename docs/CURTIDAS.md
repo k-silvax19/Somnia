@@ -12,8 +12,8 @@ alteram a nota nem a média da comunidade.
 | DELETE | `/api/reviews/{id}/like` | Remove a curtida; repetição retorna `204` |
 
 As duas rotas exigem JWT, origem autorizada, HTTPS e `X-Somnia-Client: web`.
-Curtir avaliação inexistente retorna `404`; curtir a própria avaliação retorna
-`400`. Uma avaliação excluída também remove suas curtidas.
+Curtir avaliação inexistente retorna `404`. Também é permitido curtir a própria
+avaliação. Uma avaliação excluída remove suas curtidas.
 
 As respostas de avaliações incluem:
 

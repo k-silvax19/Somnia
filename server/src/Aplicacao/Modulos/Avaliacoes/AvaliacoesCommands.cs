@@ -24,8 +24,6 @@ public sealed class AlterarCurtidaAvaliacaoCommandHandler(IRepositorioAvaliacao 
         return resultado switch
         {
             ResultadoCurtidaAvaliacao.Sucesso => Result.Ok(),
-            ResultadoCurtidaAvaliacao.PropriaAvaliacao => Result.Fail(Erros.Criar(
-                TipoErro.Validacao, "Não é possível curtir a própria avaliação.")),
             _ => Result.Fail(Erros.Criar(TipoErro.NaoEncontrado, "Avaliação inexistente.")),
         };
     }

@@ -90,7 +90,7 @@ public interface IRepositorioAvaliacao
 }
 
 public enum OrdenacaoAvaliacoes { Recentes, MaisCurtidas }
-public enum ResultadoCurtidaAvaliacao { Sucesso, AvaliacaoInexistente, PropriaAvaliacao }
+public enum ResultadoCurtidaAvaliacao { Sucesso, AvaliacaoInexistente }
 
 public static class RegrasAvaliacao
 {
