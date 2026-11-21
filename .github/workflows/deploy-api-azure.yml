@@ -156,7 +156,7 @@ jobs:
           JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN || 'https://lively-mushroom-044813310.4.azurestaticapps.net' }}
         run: |
           foreach ($name in @('JWT_SIGNING_KEY', 'SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET')) {
             if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
@@ -182,7 +182,7 @@ jobs:
           JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN || 'https://lively-mushroom-044813310.4.azurestaticapps.net' }}
         run: |
           $settings = @(
             "ASPNETCORE_ENVIRONMENT=Production"
@@ -207,7 +207,7 @@ jobs:
       - name: Verify required Azure settings
         shell: pwsh
         env:
-          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN || 'https://lively-mushroom-044813310.4.azurestaticapps.net' }}
         run: |
           $settings = az webapp config appsettings list `
             --resource-group "$env:AZURE_RESOURCE_GROUP" `
