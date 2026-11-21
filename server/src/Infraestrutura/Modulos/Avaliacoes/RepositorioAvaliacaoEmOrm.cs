@@ -163,11 +163,14 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
         int limit, int offset, OrdenacaoAvaliacoes ordenacao, CancellationToken ct)
     {
         var total = await consulta.CountAsync(ct);
-        var pagina = Projetar(consulta, usuarioId);
-        pagina = ordenacao == OrdenacaoAvaliacoes.MaisCurtidas
-            ? pagina.OrderByDescending(x => x.LikesCount).ThenByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
-            : pagina.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id);
-        var items = await pagina.Skip(offset).Take(limit).ToArrayAsync(ct);
+        var ordenada = ordenacao == OrdenacaoAvaliacoes.MaisCurtidas
+            ? consulta.OrderByDescending(avaliacao => db.CurtidasAvaliacoes
+                    .Count(curtida => curtida.AvaliacaoId == avaliacao.Id))
+                .ThenByDescending(avaliacao => avaliacao.CreatedAt)
+                .ThenByDescending(avaliacao => avaliacao.Id)
+            : consulta.OrderByDescending(avaliacao => avaliacao.CreatedAt)
+                .ThenByDescending(avaliacao => avaliacao.Id);
+        var items = await Projetar(ordenada.Skip(offset).Take(limit), usuarioId).ToArrayAsync(ct);
         return new PaginaAvaliacoesDto(items, limit, offset, total);
     }
 }
