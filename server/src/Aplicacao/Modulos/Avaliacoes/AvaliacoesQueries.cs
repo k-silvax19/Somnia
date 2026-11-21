@@ -29,7 +29,9 @@ public sealed class ObterAvaliacaoQueryHandler(IRepositorioAvaliacao repositorio
 {
     public async Task<Result<AvaliacaoDto>> Handle(ObterAvaliacaoQuery query, CancellationToken ct)
     {
-        var avaliacao = await repositorio.ObterAsync(query.Id, query.UsuarioId, ct);
+        var avaliacao = query.UsuarioId == Guid.Empty
+            ? await repositorio.ObterAsync(query.Id, ct)
+            : await repositorio.ObterAsync(query.Id, query.UsuarioId, ct);
         return avaliacao is null ? ResultadosAvaliacao.NaoEncontrada<AvaliacaoDto>() : Result.Ok(avaliacao);
     }
 }
@@ -42,7 +44,9 @@ public sealed class ListarAvaliacoesPerfilQueryHandler(IRepositorioAvaliacao rep
         var erros = RegrasAvaliacao.ValidarPagina(query.Limit, query.Offset).ToArray();
         if (erros.Length > 0)
             return Result.Fail<PaginaAvaliacoesDto>(Erros.Validacao(erros));
-        var pagina = await repositorio.ListarPerfilAsync(query.Username, query.UsuarioId, query.Limit, query.Offset, ct);
+        var pagina = query.UsuarioId == Guid.Empty
+            ? await repositorio.ListarPerfilAsync(query.Username, query.Limit, query.Offset, ct)
+            : await repositorio.ListarPerfilAsync(query.Username, query.UsuarioId, query.Limit, query.Offset, ct);
         return pagina is null
             ? Result.Fail<PaginaAvaliacoesDto>(Erros.Criar(TipoErro.NaoEncontrado, "Perfil inexistente."))
             : Result.Ok(pagina);
@@ -60,7 +64,9 @@ public sealed class ListarAvaliacoesItemQueryHandler(IRepositorioAvaliacao repos
         if (erros.Length > 0)
             return Result.Fail<AvaliacoesItemDto>(Erros.Validacao(erros));
         var ordenacao = query.Sort == "popular" ? OrdenacaoAvaliacoes.MaisCurtidas : OrdenacaoAvaliacoes.Recentes;
-        return Result.Ok(await repositorio.ListarItemAsync(query.Item, query.UsuarioId, query.Limit,
-            query.Offset, ordenacao, ct));
+        return Result.Ok(ordenacao == OrdenacaoAvaliacoes.Recentes
+            ? await repositorio.ListarItemAsync(query.Item, query.UsuarioId, query.Limit, query.Offset, ct)
+            : await repositorio.ListarItemAsync(query.Item, query.UsuarioId, query.Limit,
+                query.Offset, ordenacao, ct));
     }
 }
