@@ -31,7 +31,9 @@ public sealed class ComunidadeController(IMediator mediator) : ControllerBase
     [ProducesResponseType<PaginaAvaliacoesDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Descoberta(CancellationToken ct, [FromQuery] int limit = 20, [FromQuery] int offset = 0)
     {
-        var resultado = await mediator.Send(new ListarDescobertaQuery(limit, offset), ct);
+        if (!Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var usuarioId))
+            return Unauthorized();
+        var resultado = await mediator.Send(new ListarDescobertaQuery(usuarioId, limit, offset), ct);
         return resultado.IsFailed ? this.ResultProblem(resultado) : Ok(resultado.Value);
     }
 

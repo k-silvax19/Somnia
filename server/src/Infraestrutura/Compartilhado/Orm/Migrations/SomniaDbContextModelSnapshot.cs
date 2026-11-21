@@ -320,6 +320,25 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Somnia.Dominio.Modulos.Avaliacoes.CurtidaAvaliacao", b =>
+                {
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AvaliacaoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UsuarioId", "AvaliacaoId");
+
+                    b.HasIndex("AvaliacaoId", "CreatedAt", "UsuarioId")
+                        .IsDescending(false, true, true);
+
+                    b.ToTable("CurtidasAvaliacoes", (string)null);
+                });
+
             modelBuilder.Entity("Somnia.Dominio.Modulos.Relacoes.RelacaoSeguir", b =>
                 {
                     b.Property<Guid>("SeguidorId")
@@ -601,6 +620,21 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Somnia.Dominio.Modulos.Avaliacoes.CurtidaAvaliacao", b =>
+                {
+                    b.HasOne("Somnia.Dominio.Modulos.Avaliacoes.Avaliacao", null)
+                        .WithMany()
+                        .HasForeignKey("AvaliacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Somnia.Infraestrutura.Compartilhado.Orm.SomniaUser", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 

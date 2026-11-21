@@ -32,6 +32,7 @@ export class MusicDetailsView implements OnInit {
   protected readonly loaded = signal(false);
   protected readonly loading = signal(false);
   protected readonly reviewError = signal('');
+  protected readonly reviewSort = signal<'recent' | 'popular'>('recent');
   protected readonly hasMore = signal(false);
   protected readonly writing = signal(false);
   protected readonly retryAppend = signal(false);
@@ -116,7 +117,7 @@ export class MusicDetailsView implements OnInit {
     this.loading.set(true);
     this.reviewError.set('');
     this.request = this.api
-      .reviews(this.reference(), this.offset)
+      .reviews(this.reference(), this.offset, this.reviewSort())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -148,6 +149,13 @@ export class MusicDetailsView implements OnInit {
   protected onChanged(review: Review | null) {
     this.mine.set(review);
     this.summary.set(null);
+    this.reviews.set([]);
+    this.hasMore.set(false);
+    this.loadReviews();
+  }
+  protected setReviewSort(sort: 'recent' | 'popular') {
+    if (this.reviewSort() === sort) return;
+    this.reviewSort.set(sort);
     this.reviews.set([]);
     this.hasMore.set(false);
     this.loadReviews();

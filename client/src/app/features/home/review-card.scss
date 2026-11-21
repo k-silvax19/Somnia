@@ -20,7 +20,8 @@ article.clickable:hover {
 }
 .author a,
 .expand,
-footer a {
+footer a,
+footer button {
   position: relative;
   z-index: 2;
 }
@@ -178,6 +179,65 @@ footer {
   color: var(--muted);
   margin-top: 0.65rem;
 }
+.like-button,
+.share-button {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.like-button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.like-button:hover:not(:disabled),
+.like-button.liked {
+  color: var(--accent);
+}
+.like-button.liked svg {
+  fill: currentColor;
+}
+.like-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+.like-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.like-error {
+  color: var(--danger, #ef9a9a);
+}
+.share-button:hover:not(:disabled) {
+  color: var(--accent);
+}
+.share-button svg {
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.share-button span {
+  white-space: nowrap;
+}
+.share-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+.share-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.share-error {
+  color: var(--error, #ffb3c4);
+}
 footer a {
   color: var(--muted);
   text-decoration: none;
@@ -222,5 +282,14 @@ footer a:hover {
   }
   .review {
     font-size: 0.85rem;
+  }
+  .share-button {
+    gap: 0.25rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.68rem;
+  }
+  .share-button svg {
+    width: 0.82rem;
+    height: 0.82rem;
   }
 }

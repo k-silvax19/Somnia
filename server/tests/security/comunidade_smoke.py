@@ -60,7 +60,9 @@ def validar_comunidade(request, sql, database, env, restart_api, alice, bob):
         assert page(path + f'?offset={total}')['items'] == []
     ordered_feed, ordered_discover = ids(feed), ids(discover)
     for item in page(discover)['items']:
-        assert set(item) == {'id', 'author', 'item', 'score', 'review', 'createdAt', 'updatedAt'}
+        assert set(item) == {
+            'id', 'author', 'item', 'score', 'review', 'createdAt', 'updatedAt', 'likesCount', 'likedByMe'
+        }
         assert set(item['author']) == {'username', 'displayName'}
         assert set(item['item']) == {'provider', 'type', 'externalId'}
     assert next(x for x in page(feed)['items'] if x['id'] == review_only['id'])['score'] is None

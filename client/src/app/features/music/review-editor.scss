@@ -68,6 +68,17 @@ textarea {
 .actions .button {
   font-size: 0.82rem;
 }
+.share-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+.share-review svg {
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 0.9rem;
+}
 .validation {
   color: var(--error);
   font-size: 0.8rem;
@@ -99,6 +110,14 @@ textarea {
 @media (max-width: 600px) {
   .editor {
     padding: 1rem;
+  }
+  .share-review {
+    gap: 0.3rem;
+    padding-inline: 0.7rem;
+  }
+  .share-review svg {
+    width: 0.85rem;
+    height: 0.85rem;
   }
 }
 

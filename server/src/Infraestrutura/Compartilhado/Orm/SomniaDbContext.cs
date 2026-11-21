@@ -15,6 +15,7 @@ public sealed class SomniaDbContext(DbContextOptions<SomniaDbContext> options)
     public DbSet<AvatarUsuario> Avatares => Set<AvatarUsuario>();
     public DbSet<SolicitacaoAvatar> SolicitacoesAvatar => Set<SolicitacaoAvatar>();
     public DbSet<Avaliacao> Avaliacoes => Set<Avaliacao>();
+    public DbSet<CurtidaAvaliacao> CurtidasAvaliacoes => Set<CurtidaAvaliacao>();
     public DbSet<RelacaoSeguir> RelacoesSeguir => Set<RelacaoSeguir>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
