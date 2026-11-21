@@ -12,7 +12,7 @@ seguindo os contratos de autenticação e de ProblemDetails existentes.
   externos. Texto em branco vira `null`. Nota e resenha não podem estar ambas vazias.
 - Resenha sem nota é permitida; não entra na média nem na contagem de notas.
 - Uma avaliação atual por usuário + provedor + tipo + ID externo, garantida
-  por índice único no SQL Server. Criação duplicada retorna `409`, inclusive
+  por índice único no PostgreSQL. Criação duplicada retorna `409`, inclusive
   sob concorrência; não edita silenciosamente o conteúdo anterior.
 - Edição substitui nota e resenha no registro existente. Preserva `createdAt`
   e atualiza `updatedAt`. Não gera outra avaliação ou publicação.

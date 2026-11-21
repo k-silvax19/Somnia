@@ -7,7 +7,7 @@ consultáveis pelos participantes autenticados, sem privacidade por campo.
 O perfil permite edição de nome, bio e avatar estático.
 O avatar usa endpoints próprios de upload e remoção, em vez de receber
 uma URL no PATCH de perfil proposto pelo PDF.
-O projeto usa SQL Server, quatro camadas e rotas sem `/v1`; PostgreSQL e
+O projeto usa PostgreSQL, quatro camadas e rotas sem `/v1`; PostgreSQL e
 `/api/v1` são propostas do PDF que diferem da implementação atual.
 
 ## Endpoints

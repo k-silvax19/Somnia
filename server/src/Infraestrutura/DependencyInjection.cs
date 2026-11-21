@@ -18,14 +18,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var connection = configuration.GetConnectionString("SqlServer");
+        var connection = configuration.GetConnectionString("Postgres");
         if (string.IsNullOrWhiteSpace(connection))
         {
-            throw new InvalidOperationException("Connection string \"SqlServer\" não configurada.");
+            throw new InvalidOperationException("Connection string \"Postgres\" não configurada.");
         }
 
         services.AddDbContext<SomniaDbContext>(options =>
-            options.UseSqlServer(connection, sql => sql.EnableRetryOnFailure(3)));
+            options.UseNpgsql(connection, postgres => postgres.EnableRetryOnFailure(3)));
 
         services.AddIdentityCore<SomniaUser>(options =>
         {

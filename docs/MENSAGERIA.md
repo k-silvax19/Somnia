@@ -73,13 +73,13 @@ um teto físico de 100 mensagens no RabbitMQ.
 
 ## Execução local
 
-Pré-requisitos: Docker, .NET 10, SQL Server e a configuração HTTPS/JWT do
+Pré-requisitos: Docker, .NET 10, PostgreSQL e a configuração HTTPS/JWT do
 [README](../README.md). Execute os comandos na raiz do projeto.
 
 O padrão de desenvolvimento segue o Gerador de Certificados. API e Worker
 definem `ConnectionStrings:RabbitMq` em seus `appsettings.Development.json`:
-`amqp://guest:guest@localhost:5673`. Ambos também têm a conexão SQL local
-com `SomniaDb`. Essa configuração espera um broker local na porta 5673,
+`amqp://guest:guest@localhost:5673`. A conexão PostgreSQL local fica em User Secrets.
+Essa configuração espera um broker local na porta 5673,
 com o usuário de desenvolvimento `guest`.
 
 O Compose deste repositório é uma alternativa: usa `somnia`, senha definida
@@ -106,7 +106,7 @@ dotnet run --project server/src/Worker
 ```
 
 API e Worker compartilham o `UserSecretsId` `Somnia`. Em Development, o
-Worker lê `ConnectionStrings:SqlServer` e `ConnectionStrings:RabbitMq` do
+Worker lê `ConnectionStrings:Postgres` e `ConnectionStrings:RabbitMq` do
 seu `appsettings.Development.json`; User Secrets e variáveis de ambiente
 têm precedência. Em produção, configure as conexões por variáveis de ambiente
 ou outro provedor de segredos. O Worker não precisa de chave JWT e não aplica
@@ -117,9 +117,8 @@ RabbitMQ usa portas locais 5672 (AMQP) e 15672 (painel); usuário `somnia` e
 a senha definida no ambiente. As portas publicadas estão presas ao loopback.
 Não copie segredos de exemplo para produção.
 
-Para executar o Worker no Docker, configure também `SOMNIA_SQL_CONNECTION`
-com uma conexão SQL acessível pelo contêiner (no Docker Desktop, o host é
-`host.docker.internal`, não `localhost`):
+Para executar o Worker no Docker, a connection string PostgreSQL é passada
+automaticamente pelo Compose usando o hostname interno `postgres`:
 
 ```powershell
 docker compose -f server/compose.yaml --profile worker up -d --build

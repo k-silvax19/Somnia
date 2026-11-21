@@ -39,7 +39,7 @@ public sealed class RefreshTokensEmOrm(SomniaDbContext db) : IRefreshTokens
 
             // Serialize refresh and revocation for the same session, including concurrent replays.
             var sessao = await db.Sessoes
-                .FromSqlInterpolated($"SELECT * FROM [Sessoes] WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {registro.SessaoId}")
+                .FromSqlInterpolated($"SELECT * FROM \"Sessoes\" WHERE \"Id\" = {registro.SessaoId} FOR UPDATE")
                 .SingleOrDefaultAsync(ct);
             var agora = DateTime.UtcNow;
 

@@ -9,7 +9,7 @@ public sealed class RelacaoSeguirConfiguration : IEntityTypeConfiguration<Relaca
     public void Configure(EntityTypeBuilder<RelacaoSeguir> builder)
     {
         builder.ToTable("RelacoesSeguir", tabela =>
-            tabela.HasCheckConstraint("CK_RelacoesSeguir_UsuariosDistintos", "[SeguidorId] <> [SeguidoId]"));
+            tabela.HasCheckConstraint("CK_RelacoesSeguir_UsuariosDistintos", "\"SeguidorId\" <> \"SeguidoId\""));
         builder.HasKey(x => new { x.SeguidorId, x.SeguidoId });
         builder.HasIndex(x => new { x.SeguidorId, x.CreatedAt, x.SeguidoId }).IsDescending(false, true, true);
         builder.HasIndex(x => new { x.SeguidoId, x.CreatedAt, x.SeguidorId }).IsDescending(false, true, true);

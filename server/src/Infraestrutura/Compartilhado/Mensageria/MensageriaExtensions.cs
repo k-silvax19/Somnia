@@ -25,7 +25,7 @@ public static class MensageriaExtensions
             else
                 config.AddEntityFrameworkOutbox<SomniaDbContext>(outbox =>
                 {
-                    outbox.UseSqlServer();
+                    outbox.UsePostgres();
                     outbox.QueryDelay = TimeSpan.FromSeconds(1);
                     outbox.UseBusOutbox();
                 });

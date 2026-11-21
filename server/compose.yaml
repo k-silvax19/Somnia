@@ -1,5 +1,23 @@
 name: somnia
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: somnia
+      POSTGRES_USER: somnia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD em server/.env}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U somnia -d somnia"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    mem_limit: 512m
+    cpus: 1
+    restart: unless-stopped
   rabbitmq:
     image: rabbitmq:4-management
     environment:
@@ -25,7 +43,7 @@ services:
       context: .
       dockerfile: src/Worker/Dockerfile
     environment:
-      ConnectionStrings__SqlServer: ${SOMNIA_SQL_CONNECTION:-}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=somnia;Username=somnia;Password=${POSTGRES_PASSWORD}
       ConnectionStrings__RabbitMq: rabbitmq://somnia:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       DOTNET_ENVIRONMENT: Production
     depends_on:
@@ -39,4 +57,5 @@ services:
     security_opt: [no-new-privileges:true]
     restart: unless-stopped
 volumes:
+  postgres-data:
   rabbitmq-data:
