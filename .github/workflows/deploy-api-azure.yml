@@ -92,9 +92,9 @@ jobs:
       - name: Apply Neon migrations
         shell: pwsh
         env:
-          NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
+          ConnectionStrings__Postgres: ${{ secrets.NEON_CONNECTION_STRING }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:NEON_CONNECTION_STRING)) {
+          if ([string]::IsNullOrWhiteSpace($env:ConnectionStrings__Postgres)) {
             throw "Configure o secret NEON_CONNECTION_STRING com uma connection string Npgsql do Neon."
           }
 
@@ -103,7 +103,7 @@ jobs:
             --startup-project ./server/src/Api `
             --context SomniaDbContext `
             --configuration Release `
-            --connection "$env:NEON_CONNECTION_STRING"
+            --connection "$env:ConnectionStrings__Postgres"
           if ($LASTEXITCODE -ne 0) { throw "Falha ao aplicar migrations no Neon." }
 
   deploy:
