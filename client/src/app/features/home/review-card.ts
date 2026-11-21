@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { LucideExternalLink, LucideHeart } from '@lucide/angular';
+import { LucideExternalLink, LucideHeart, LucideShare2 } from '@lucide/angular';
 import { Icon } from '../../shared/icon';
 import { MusicApi } from '../music/music-api';
 import { ReviewStoryShare } from './review-story-share';
@@ -10,7 +10,7 @@ import { ReviewAvatarCache } from './review-avatar-cache';
 
 @Component({
   selector: 'app-review-card',
-  imports: [Icon, RouterLink, LucideExternalLink, LucideHeart],
+  imports: [Icon, RouterLink, LucideExternalLink, LucideHeart, LucideShare2],
   template: `
     <article [class.clickable]="linkToItem()">
       @if (linkToItem()) {
@@ -116,15 +116,10 @@ import { ReviewAvatarCache } from './review-avatar-cache';
                 class="share-button"
                 [disabled]="sharing()"
                 (click)="shareStory($event)"
-                [attr.aria-label]="
-                  sharing()
-                    ? 'Preparando imagem para compartilhar'
-                    : preparedStory()
-                      ? 'Imagem pronta. Toque para abrir o compartilhamento'
-                      : 'Preparar imagem para compartilhar avaliação'
-                "
+                aria-label="Compartilhar avaliação"
               >
-                {{ sharing() ? 'Preparando imagem…' : preparedStory() ? 'Abrir compartilhamento' : 'Compartilhar' }}
+                <svg lucideShare2 aria-hidden="true"></svg>
+                <span>Compartilhar</span>
               </button>
             }
             @if (shareStatus()) {
@@ -170,7 +165,6 @@ export class ReviewCard {
   protected readonly liking = signal(false);
   protected readonly likeError = signal('');
   protected readonly sharing = signal(false);
-  protected readonly preparedStory = signal<File | null>(null);
   protected readonly shareStatus = signal('');
   protected readonly shareError = signal('');
   protected readonly cover = computed(() => coverUrl(this.item()?.coverUrl ?? null));
@@ -240,24 +234,12 @@ export class ReviewCard {
     this.sharing.set(true);
     this.shareStatus.set('');
     this.shareError.set('');
-    const prepared = this.preparedStory();
-    if (prepared) {
-      this.storyShare.share(prepared, this.item()).then((result) => {
-        if (result === 'shared') this.shareStatus.set('Imagem enviada ao compartilhador do dispositivo.');
-        if (result === 'downloaded') this.shareStatus.set('Imagem baixada; abra o Instagram para publicar no Story.');
-        if (result === 'cancelled') this.shareStatus.set('Compartilhamento cancelado.');
-        if (result !== 'cancelled') this.preparedStory.set(null);
-      }).catch(() => {
-        this.shareError.set('Não foi possível compartilhar a imagem. Tente novamente.');
-      }).finally(() => this.sharing.set(false));
-      return;
-    }
-
-    this.storyShare.prepare(this.review(), this.item()).then((file) => {
-      this.preparedStory.set(file);
-      this.shareStatus.set('Imagem pronta. Toque em “Abrir compartilhamento” para continuar.');
+    this.storyShare.share(this.review(), this.item()).then((result) => {
+      if (result === 'shared') this.shareStatus.set('Imagem enviada ao compartilhador do dispositivo.');
+      if (result === 'downloaded') this.shareStatus.set('Imagem baixada; abra o Instagram para publicar no Story.');
+      if (result === 'cancelled') this.shareStatus.set('Compartilhamento cancelado.');
     }).catch(() => {
-      this.shareError.set('Não foi possível gerar a imagem. Tente novamente.');
+      this.shareError.set('Não foi possível compartilhar a imagem. Tente novamente.');
     }).finally(() => this.sharing.set(false));
   }
 }

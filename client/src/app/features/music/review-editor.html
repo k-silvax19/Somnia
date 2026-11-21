@@ -50,15 +50,10 @@
           class="button secondary share-review"
           (click)="shareStory()"
           [disabled]="sharing()"
-          [attr.aria-label]="
-            sharing()
-              ? 'Preparando imagem para compartilhar'
-              : preparedStory()
-                ? 'Imagem pronta. Toque para abrir o compartilhamento'
-                : 'Preparar imagem para compartilhar sua avaliação'
-          "
+          aria-label="Compartilhar sua avaliação"
         >
-          {{ sharing() ? 'Preparando imagem…' : preparedStory() ? 'Abrir compartilhamento' : 'Compartilhar' }}
+          <svg lucideShare2 aria-hidden="true"></svg>
+          <span>Compartilhar</span>
         </button>
       </div>
       @if (shareStatus()) {

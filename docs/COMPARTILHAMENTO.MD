@@ -13,15 +13,14 @@ arte vertical, pronta para publicar em um Story e ajudar a divulgar o Somnia.
 ## Implementação web
 
 O botão aparece somente nas avaliações da pessoa autenticada. Nos detalhes da
-música, ele fica junto às ações de editar e excluir a própria avaliação. O
-primeiro toque gera um PNG vertical de 1080 × 1920. A avaliação é reduzida com
-reticências quando não couber na imagem. Se a capa não puder ser carregada pelo
-navegador, a arte usa uma ilustração musical de reserva. Quando a imagem estiver
-pronta, um segundo toque abre o compartilhamento ou baixa o PNG. Essa etapa
-separada mantém a ação do navegador ligada diretamente ao toque da pessoa.
+música, ele fica junto às ações de editar e excluir a própria avaliação. Um
+toque gera um PNG vertical de 1080 × 1920 e inicia o compartilhamento. A
+avaliação é reduzida com reticências quando não couber na imagem. Se a capa não
+puder ser carregada pelo navegador, a arte usa uma ilustração musical de
+reserva. O botão inclui ícone e rótulo, com tamanho ajustado para telas móveis.
 
-O botão web permanece textual nesta etapa. O ícone dedicado e a integração
-nativa que abre diretamente o compositor de Stories ficam para depois do MVP.
+A integração nativa que abre diretamente o compositor de Stories fica para
+depois do MVP.
 
 Quando o navegador oferece compartilhamento de arquivos, o Somnia abre a folha
 nativa e deixa a pessoa escolher o destino. A API web não permite selecionar
