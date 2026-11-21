@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { LucideShare2 } from '@lucide/angular';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -9,7 +10,7 @@ import { MusicApi, musicError } from './music-api';
 
 @Component({
   selector: 'app-review-editor',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LucideShare2],
   templateUrl: './review-editor.html',
   styleUrl: './review-editor.scss',
 })
@@ -121,7 +122,7 @@ export class ReviewEditor {
       if (result === 'downloaded') this.shareStatus.set('Imagem baixada; abra o Instagram para publicar no Story.');
       if (result === 'cancelled') this.shareStatus.set('Compartilhamento cancelado.');
     }).catch(() => {
-      this.shareError.set('Não foi possível gerar a imagem. Tente novamente.');
+      this.shareError.set('Não foi possível compartilhar a imagem. Tente novamente.');
     }).finally(() => this.sharing.set(false));
   }
   private run(request: Observable<Review | void>, deleting: boolean) {
