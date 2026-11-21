@@ -31,9 +31,9 @@ Antes do primeiro deploy, configure estes secrets no repositório:
 | `JWT_SIGNING_KEY` | Chave aleatória com pelo menos 32 bytes. |
 | `SPOTIFY_CLIENT_ID` | Client ID do aplicativo Spotify. |
 | `SPOTIFY_CLIENT_SECRET` | Client secret do aplicativo Spotify. |
-| `AZUREAPPSERVICE_CLIENTID_0CEAC0A9CC984D55A0EA87F6520EA371` | Identidade OIDC já referenciada pelo workflow do App Service. |
-| `AZUREAPPSERVICE_TENANTID_25826F9B1C7A48EBBB4E6468859C13F8` | Tenant Azure para login OIDC. |
-| `AZUREAPPSERVICE_SUBSCRIPTIONID_02BC3DCA090A40069BAD7363A0BC9978` | Assinatura Azure para login OIDC. |
+| `AZUREAPPSERVICE_CLIENTID_FBE2A7630DFA41A281D552C49CD934B3` | Identidade OIDC do App Service `somnia-9f22f300`. |
+| `AZUREAPPSERVICE_TENANTID_293D7379EAC34AA6A4CB8788FDFB847F` | Tenant Azure para login OIDC. |
+| `AZUREAPPSERVICE_SUBSCRIPTIONID_3613012762CC4326B1793A52A8DA8B29` | Assinatura Azure para login OIDC. |
 
 O workflow localiza o resource group pelo nome do App Service após o login no
 Azure. `CLIENT_ORIGIN` é uma variável opcional: configure-a quando o frontend

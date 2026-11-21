@@ -18,7 +18,7 @@ concurrency:
 env:
   API_PROJECT: ./server/src/Api/Somnia.Api.csproj
   PUBLISH_PATH: ./publish
-  AZURE_WEBAPP_NAME: somnia-35ab033c
+  AZURE_WEBAPP_NAME: somnia-9f22f300
 
 jobs:
   build:
@@ -124,9 +124,9 @@ jobs:
       - name: Log in to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0CEAC0A9CC984D55A0EA87F6520EA371 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_25826F9B1C7A48EBBB4E6468859C13F8 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_02BC3DCA090A40069BAD7363A0BC9978 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FBE2A7630DFA41A281D552C49CD934B3 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_293D7379EAC34AA6A4CB8788FDFB847F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3613012762CC4326B1793A52A8DA8B29 }}
 
       - name: Resolve Azure resource group
         shell: pwsh
