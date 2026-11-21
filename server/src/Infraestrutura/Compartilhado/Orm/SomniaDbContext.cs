@@ -21,6 +21,7 @@ public sealed class SomniaDbContext(DbContextOptions<SomniaDbContext> options)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("unaccent");
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();

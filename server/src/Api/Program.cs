@@ -185,10 +185,7 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<SomniaDbContext>();
 
-    if (db.Database.IsSqlServer())
-    {
-        db.Database.Migrate();
-    }
+    db.Database.Migrate();
 }
 
 app.UseRouting();

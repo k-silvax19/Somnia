@@ -122,7 +122,7 @@ Detalhes em [Avaliações](../server/AVALIACOES.md).
 - Solução: `server/Somnia.slnx`.
 - Camadas em `server/src`: `Api`, `Aplicacao`, `Dominio` e `Infraestrutura`.
 - Host de processamento em `server/src/Worker`.
-- Banco atual é **SQL Server**, embora o PDF proponha PostgreSQL.
+- Banco atual é **PostgreSQL** via Npgsql; o piloto usa volume local Docker e o deploy pode usar Neon.
 - Rotas atuais usam **`/api`**, embora o PDF proponha `/api/v1`.
 - Cadastro, login, refresh rotativo, revogação de sessões e logout global.
 - Refresh em cookie protegido e validações de origem/cabeçalho/CSRF conforme
@@ -199,18 +199,16 @@ Repositório no computador atual:
 API e Worker usam **`UserSecretsId=Somnia`**. Não executar `user-secrets init`
 novamente. Nomes das configurações relevantes, sem seus valores secretos:
 
-- `ConnectionStrings:SqlServer` e `ConnectionStrings:RabbitMq`.
+- `ConnectionStrings:Postgres` e `ConnectionStrings:RabbitMq`.
 - `Jwt:SigningKey`, `Jwt:Issuer` e `Jwt:Audience` na API.
 - `Spotify:ClientId` e `Spotify:ClientSecret` na API.
 - `Spotify:Market` e `Spotify:TimeoutSeconds`.
 
-Os arquivos Development da API e do Worker já têm conexão SQL local com
-`SomniaDb` e RabbitMQ no padrão solicitado pelo usuário, porta **5673**.
-User Secrets e variáveis de ambiente podem sobrescrever os arquivos.
-O Compose alternativo usa porta **5672** e outras credenciais: não misturar
-as duas configurações. Consultar Mensageria antes de trocar o broker.
+O PostgreSQL local do Somnia é iniciado pelo Compose em `127.0.0.1:5433`;
+configure a senha em `server/.env` e guarde a conexão da API em User Secrets.
+RabbitMQ local continua na porta **5673**; o Compose usa **5672**.
 
-Com SQL e RabbitMQ disponíveis, na raiz do repositório:
+Com PostgreSQL e RabbitMQ disponíveis, na raiz do repositório:
 
 ```powershell
 dotnet run --project server/src/Api --launch-profile https

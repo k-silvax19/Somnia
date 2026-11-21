@@ -16,17 +16,16 @@ public sealed class RepositorioPerfilEmOrm(SomniaDbContext db, ILookupNormalizer
         var consulta = db.Users.AsNoTracking()
             .Where(usuario => usuario.Id != usuarioAtualId);
 
-        // Permite pesquisar nomes compostos por qualquer combinação de palavras,
-        // sem depender de acentos ou capitalização da collation padrão do banco.
+        // Search each word case- and accent-insensitively, as the former SQL collation did.
         foreach (var palavra in termoLimpo.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             var palavraUsuario = $"%{EscaparLike(normalizer.NormalizeName(palavra) ?? palavra)}%";
             var palavraNome = $"%{EscaparLike(palavra)}%";
             consulta = consulta.Where(usuario =>
-                EF.Functions.Like(usuario.NormalizedUserName!, palavraUsuario, "~")
-                || EF.Functions.Like(
-                    EF.Functions.Collate(usuario.Nome, "Latin1_General_100_CI_AI"),
-                    palavraNome,
+                EF.Functions.ILike(usuario.NormalizedUserName!, palavraUsuario, "~")
+                || EF.Functions.ILike(
+                    EF.Functions.Unaccent(usuario.Nome),
+                    EF.Functions.Unaccent(palavraNome),
                     "~"));
         }
 

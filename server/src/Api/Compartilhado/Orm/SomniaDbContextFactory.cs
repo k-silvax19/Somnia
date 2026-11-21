@@ -16,14 +16,14 @@ public sealed class SomniaDbContextFactory : IDesignTimeDbContextFactory<SomniaD
             .AddEnvironmentVariables()
             .Build();
 
-        var connection = configuration.GetConnectionString("SqlServer")
-            ?? throw new InvalidOperationException("Connection string \"SqlServer\" não configurada.");
+        var connection = configuration.GetConnectionString("Postgres")
+            ?? throw new InvalidOperationException("Connection string \"Postgres\" não configurada.");
 
         var options = new DbContextOptionsBuilder<SomniaDbContext>()
-            .UseSqlServer(connection, sql => sql.EnableRetryOnFailure(
+            .UseNpgsql(connection, postgres => postgres.EnableRetryOnFailure(
                 maxRetryCount: 10,
                 maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null))
+                errorCodesToAdd: null))
             .Options;
 
         return new SomniaDbContext(options);

@@ -4,7 +4,7 @@ O frontend e a API já cobrem os fluxos funcionais do MVP. A publicação depend
 de escolher hospedagem, acesso ao cadastro e políticas operacionais. Este
 documento registra a preparação técnica sem aplicar mudanças a um banco real.
 
-## Migrations do SQL Server
+## Migrations do PostgreSQL
 
 A API aplica migrations automaticamente apenas em `Development`. Em produção,
 gere um SQL idempotente para revisão antes da implantação:
@@ -32,6 +32,6 @@ para o provedor de hospedagem escolhido.
 | Grupo piloto, canal de feedback e responsável por retirada de conteúdo | A definir |
 
 Nenhuma dessas decisões deve ser inferida do ambiente local. Antes de receber
-participantes reais, verificar o fluxo completo com HTTPS, SQL Server,
+participantes reais, verificar o fluxo completo com HTTPS, PostgreSQL,
 RabbitMQ/Worker e Spotify no ambiente de destino, incluindo upload de avatar,
 falhas externas, backup e restauração.

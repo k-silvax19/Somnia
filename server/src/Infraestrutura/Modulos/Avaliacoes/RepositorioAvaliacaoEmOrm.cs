@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Somnia.Dominio.Modulos.Avaliacoes;
 using Somnia.Infraestrutura.Compartilhado.Orm;
 
@@ -22,7 +22,7 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
             await db.SaveChangesAsync(ct);
             return true;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             db.Entry(avaliacao).State = EntityState.Detached;
             return false;
@@ -121,12 +121,12 @@ public sealed class RepositorioAvaliacaoEmOrm(SomniaDbContext db, ILookupNormali
             await db.SaveChangesAsync(ct);
             return ResultadoCurtidaAvaliacao.Sucesso;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             db.Entry(curtida).State = EntityState.Detached;
             return ResultadoCurtidaAvaliacao.Sucesso;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 547 })
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })
         {
             db.Entry(curtida).State = EntityState.Detached;
             return ResultadoCurtidaAvaliacao.AvaliacaoInexistente;

@@ -14,7 +14,7 @@ Descubra álbuns e faixas, escreva avaliações e encontre pessoas que sentem a 
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![SQL Server](https://img.shields.io/badge/SQL_Server-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 
 <br />
 
@@ -28,7 +28,7 @@ Descubra álbuns e faixas, escreva avaliações e encontre pessoas que sentem a 
 
 **Somnia** é uma aplicação social para registrar e compartilhar avaliações musicais. Cada pessoa pode explorar o catálogo, avaliar álbuns ou faixas e acompanhar o que a comunidade está ouvindo e comentando.
 
-O projeto combina uma interface responsiva em Angular com uma API em ASP.NET Core. A API integra o catálogo do Spotify e armazena contas, avaliações e relações entre participantes em SQL Server.
+O projeto combina uma interface responsiva em Angular com uma API em ASP.NET Core. A API integra o catálogo do Spotify e armazena contas, avaliações e relações entre participantes em PostgreSQL.
 
 > Um espaço para guardar o que a música fez você sentir.
 
@@ -75,7 +75,7 @@ O compartilhamento direto para Stories por integração nativa com aplicativos f
 | Estilos e ícones | **Tailwind CSS 4**, SCSS e **Lucide Angular**. |
 | API | **ASP.NET Core 10**, controllers REST, autenticação e documentação OpenAPI/Swagger. |
 | Aplicação e domínio | Casos de uso com **MediatR**, regras de negócio e contratos. |
-| Persistência | **Entity Framework Core 10**, migrations e **SQL Server**. |
+| Persistência | **Entity Framework Core 10**, Npgsql, migrations e **PostgreSQL**. |
 | Catálogo | Spotify Web API com Client Credentials. |
 | Testes | **xUnit** no backend e **Vitest/Playwright** no frontend. |
 
@@ -88,7 +88,7 @@ As versões refletem os manifests do repositório. O deploy e a homologação co
 - **Git**.
 - **SDK do .NET 10**.
 - **Node.js 24.15.x** e **npm 11.19.x**.
-- Uma instância local ou acessível de **SQL Server**.
+- **Docker Desktop** para iniciar o PostgreSQL local, ou uma instância PostgreSQL acessível.
 - Credenciais de aplicativo do **Spotify** para habilitar a busca real do catálogo.
 
 Os comandos a seguir partem da raiz do repositório e usam PowerShell.
@@ -102,10 +102,16 @@ cd Somnia
 
 ### 2. Configure a API
 
+Inicie o PostgreSQL local. O Compose usa a porta `5433` e cria o banco `somnia` vazio no volume do projeto. O arquivo `server/.env` já existe apenas neste ambiente e não é versionado; em outro clone, copie `server/.env.example` e defina senhas aleatórias.
+
+```powershell
+docker compose -f server/compose.yaml up -d postgres
+```
+
 Guarde connection string, chave JWT e credenciais Spotify em User Secrets. Use valores próprios para o seu ambiente; a chave JWT precisa ter pelo menos 32 bytes.
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:SqlServer" "<conexão SQL Server local>" --project server/src/Api
+dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Port=5433;Database=somnia;Username=somnia;Password=<senha do server/.env>" --project server/src/Api
 dotnet user-secrets set "Jwt:SigningKey" "<chave aleatória com pelo menos 32 bytes>" --project server/src/Api
 dotnet user-secrets set "Spotify:ClientId" "<Client ID do Spotify>" --project server/src/Api
 dotnet user-secrets set "Spotify:ClientSecret" "<Client Secret do Spotify>" --project server/src/Api
@@ -113,6 +119,8 @@ dotnet dev-certs https --trust
 ```
 
 `Jwt:Issuer` e `Jwt:Audience` já têm valores de desenvolvimento em `server/src/Api/appsettings.json`. Para uma instância local diferente, ajuste `Cors:AllowedOrigins` para incluir a origem HTTPS do frontend. Não coloque credenciais em arquivos versionados.
+
+No deploy, configure `ConnectionStrings__Postgres` com a connection string fornecida pelo Neon, incluindo SSL (`SSL Mode=Require;Trust Server Certificate=true`).
 
 Restaure e inicie a API:
 
@@ -156,7 +164,7 @@ flowchart LR
     APP --> DOM[Domínio]
     API --> INFRA[Infraestrutura]
     INFRA --> DOM
-    INFRA -->|Entity Framework Core| DB[(SQL Server)]
+    INFRA -->|Entity Framework Core + Npgsql| DB[(PostgreSQL / Neon)]
     INFRA -->|Client Credentials| SPOTIFY[Spotify Web API]
 ```
 
@@ -165,7 +173,7 @@ flowchart LR
 | **Api** | Controllers, contratos HTTP, autenticação, CORS, rate limiting e OpenAPI. |
 | **Aplicacao** | Comandos, consultas, handlers e coordenação dos casos de uso. |
 | **Dominio** | Entidades, regras, tipos e contratos do domínio. |
-| **Infraestrutura** | SQL Server, EF Core, Identity, repositórios e integração com o catálogo. |
+| **Infraestrutura** | PostgreSQL, EF Core, Identity, repositórios e integração com o catálogo. |
 | **Worker** | Host legado RabbitMQ/MassTransit, mantido para concluir mensagens de avatar publicadas por versões anteriores. |
 
 ### Estrutura do repositório

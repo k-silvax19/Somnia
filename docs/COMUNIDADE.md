@@ -2,7 +2,7 @@
 
 Consultas de avaliações para RF08/RF09 e CA10 do PRD v1.2. Não existe uma
 entidade separada de publicação: ambas as áreas consultam as avaliações
-atuais no SQL Server, usando o mesmo DTO do perfil e das páginas de item.
+atuais no PostgreSQL, usando o mesmo DTO do perfil e das páginas de item.
 
 ## Endpoints
 

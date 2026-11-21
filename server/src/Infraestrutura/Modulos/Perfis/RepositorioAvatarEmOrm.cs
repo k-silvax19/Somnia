@@ -31,12 +31,7 @@ public sealed class RepositorioAvatarEmOrm(
         {
             await using var transacao = await db.Database.BeginTransactionAsync(ct);
             // Serializa substituições para que uploads concorrentes tenham uma ordem definida.
-            await db.Database.ExecuteSqlRawAsync("""
-                DECLARE @resultado int;
-                EXEC @resultado = sys.sp_getapplock @Resource=N'Somnia:Avatares',
-                    @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000;
-                IF @resultado < 0 THROW 51000, 'Nao foi possivel reservar processamento de avatar.', 1;
-                """, ct);
+            await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(20261121, 1)", ct);
 
             var existente = await db.SolicitacoesAvatar.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
             if (existente is not null)
@@ -62,7 +57,7 @@ public sealed class RepositorioAvatarEmOrm(
             {
                 await db.Avatares.Where(x => x.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
                 await db.Database.ExecuteSqlInterpolatedAsync(
-                    $"INSERT INTO Avatares (UsuarioId, Conteudo) VALUES ({usuarioId}, {imagem})", ct);
+                    $"INSERT INTO \"Avatares\" (\"UsuarioId\", \"Conteudo\") VALUES ({usuarioId}, {imagem})", ct);
                 await db.Users.Where(x => x.Id == usuarioId).ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.AvatarUrl, x => "/api/users/" + x.UserName + "/avatar"), ct);
             }
@@ -147,7 +142,7 @@ public sealed class RepositorioAvatarEmOrm(
             {
                 await db.Avatares.Where(x => x.UsuarioId == solicitacao.UsuarioId).ExecuteDeleteAsync(ct);
                 await db.Database.ExecuteSqlInterpolatedAsync(
-                    $"INSERT INTO Avatares (UsuarioId, Conteudo) VALUES ({solicitacao.UsuarioId}, {imagem})", ct);
+                    $"INSERT INTO \"Avatares\" (\"UsuarioId\", \"Conteudo\") VALUES ({solicitacao.UsuarioId}, {imagem})", ct);
                 await db.Users.Where(x => x.Id == solicitacao.UsuarioId).ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.AvatarUrl, x => "/api/users/" + x.UserName + "/avatar"), ct);
             }

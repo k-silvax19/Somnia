@@ -7,7 +7,7 @@ O visual segue o [protótipo do Figma](https://rank-splash-97976218.figma.site/)
 
 ## Executar
 
-Requer Node.js 24.15 ou superior na linha 24, npm, SQL Server e a API configurada por HTTPS.
+Requer Node.js 24.15 ou superior na linha 24, npm, PostgreSQL e a API configurada por HTTPS.
 Inicie a API na raiz do repositório:
 
 ```powershell

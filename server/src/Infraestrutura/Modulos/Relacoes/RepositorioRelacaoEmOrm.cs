@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Somnia.Dominio.Modulos.Relacoes;
 using Somnia.Infraestrutura.Compartilhado.Orm;
 
@@ -22,7 +22,7 @@ public sealed class RepositorioRelacaoEmOrm(SomniaDbContext db, ILookupNormalize
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             // PUT repetido é idempotente, inclusive em requisições simultâneas.
             db.Entry(relacao).State = EntityState.Detached;
