@@ -1,172 +1,267 @@
-# Somnia
+![Somnia — Histórias através da música](docs/images/somnia-header.png)
 
-API de avaliações musicais e recursos sociais. O MVP está em
-desenvolvimento: atualmente há autenticação e perfis com avatar estático,
-validado e processado pela própria API, sem RabbitMQ para novas fotos, além de
-catálogo musical integrado ao Spotify, avaliações de álbuns/faixas, histórico
-no perfil, médias comunitárias, seguir/deixar de seguir perfis, feed e descoberta.
+<div align="center">
 
-Para retomar o desenvolvimento, consulte [Contexto e próximos passos](docs/CONTEXTO.md).
+# ✦ Somnia
 
-## Conferência da especificação
+### Música também se vive através do que ela desperta.
 
-Revisão realizada em 10/11/2026, comparando código e documentação com os
-arquivos em Downloads:
+Descubra álbuns e faixas, escreva avaliações e encontre pessoas que sentem a música como você.
 
-- `Somnia_Especificacao_Tecnica_API_MVP_v1.0.pdf`, de 09/11/2026: referência
-  técnica do MVP gratuito, com RF01–RF11 e critérios CA01–CA15 próprios da API.
-- `somnia.docx`, PRD v1.2 de 10/11/2026, com transcrição versionada em
-  [docs/PRD.md](docs/PRD.md): avaliações compõem o histórico do perfil;
-  diário privado e registros de escuta foram retirados do MVP. A expansão
-  Premium continua posterior ao piloto. Os IDs de critérios de aceite do PRD e do PDF têm
-  significados diferentes e devem ser lidos dentro de cada documento.
+<br />
 
-| Área | Estado verificado no repositório |
+![Angular](https://img.shields.io/badge/Angular-22.2-DD0031?style=for-the-badge&logo=angular&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL_Server-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+
+<br />
+
+[O projeto](#-o-projeto) · [Funcionalidades](#-funcionalidades) · [Como executar](#-como-executar) · [Arquitetura](#-arquitetura) · [API](#-api)
+
+</div>
+
+---
+
+## 🌙 O projeto
+
+**Somnia** é uma aplicação social para registrar e compartilhar avaliações musicais. Cada pessoa pode explorar o catálogo, avaliar álbuns ou faixas e acompanhar o que a comunidade está ouvindo e comentando.
+
+O projeto combina uma interface responsiva em Angular com uma API em ASP.NET Core. A API integra o catálogo do Spotify e armazena contas, avaliações e relações entre participantes em SQL Server.
+
+> Um espaço para guardar o que a música fez você sentir.
+
+### A experiência atual
+
+Capturas da área de descoberta e do feed, no desktop e no celular:
+
+<p align="center">
+  <img src="client/docs/home-desktop.png" alt="Feed atual do Somnia em desktop" width="760" />
+  &nbsp;&nbsp;
+  <img src="client/docs/home-mobile.png" alt="Feed atual do Somnia em um celular" width="230" />
+</p>
+
+## ✨ Funcionalidades
+
+| Recurso | O que você pode fazer |
 | --- | --- |
-| RF01 — Conta e autenticação | Cadastro, login, refresh rotativo, logout global e JWT implementados |
-| RF02 — Perfil | Consulta do titular, perfil autenticado, edição de nome/bio e upload/remoção de avatar estático implementados |
-| RF03/RF04 — Catálogo | Busca paginada e detalhes de álbum/faixa integrados ao Spotify, incluindo todas as faixas do álbum |
-| RF05/RF11 — Integração externa | Client Credentials, links oficiais e falhas externas controladas implementados; acesso real validado com o aplicativo local |
-| RF06/RF10 — Avaliações e média | CRUD autenticado, autoria, unicidade e média/quantidade implementados |
-| RF07 da API — Diário privado | Retirado do escopo pelo PRD v1.2; histórico paginado de avaliações implementado |
-| RF08 — Relações | Seguir/deixar de seguir, estado, contagens e listas paginadas implementados |
-| RF08/RF09 — Feed e descoberta | Consultas autenticadas e paginadas de avaliações atuais implementadas |
-| CI | Workflow versionado com restore, build e testes unitários |
-| Deploy e Azure | Não configurados |
-| Premium | Fora do MVP técnico; não implementado |
+| 🔐 Conta e sessão | Criar conta, entrar, renovar a sessão e sair de todos os dispositivos. |
+| 🎧 Catálogo musical | Pesquisar álbuns e faixas e consultar seus detalhes pelo catálogo do Spotify. |
+| ✍️ Avaliações | Escrever, editar e excluir uma avaliação de álbum ou faixa, com nota opcional e resenha. |
+| 📊 Notas da comunidade | Consultar a média e a quantidade de notas dadas a cada item. |
+| 💜 Curtidas | Curtir ou remover a curtida de uma avaliação e ver a contagem e o próprio estado. |
+| 📰 Feed e descoberta | Ver avaliações de quem você segue ou explorar avaliações e perfis sugeridos. |
+| 👥 Relações | Seguir participantes e consultar listas de seguidores e pessoas seguidas. |
+| 👤 Perfis | Editar nome, biografia e avatar e consultar o histórico de avaliações. |
+| 📲 Compartilhamento | Compartilhar suas próprias avaliações como imagem vertical, usando o menu de compartilhamento do navegador ou baixando a imagem. |
+| 📱 Interface responsiva | Usar as telas de autenticação, catálogo, feed e perfil em dispositivos móveis e desktop. |
 
-Os documentos detalhados são [Autenticação](server/AUTENTICACAO.md) e
-[Perfis](server/PERFIS.md), com execução do consumer em
-[Mensageria](server/MENSAGERIA.md). As políticas do piloto estão em
-[Cadastro](server/CADASTRO.md) e o contrato HTTP em [Erros](server/ERROS.md).
-As rotas de busca e detalhes estão em [Catálogo](server/CATALOGO.md).
-Os contratos de avaliações e médias estão em [Avaliações](server/AVALIACOES.md).
-As rotas de seguidores/seguidos estão em [Relações](server/RELACOES.md).
-Feed e descoberta estão em [Comunidade](server/COMUNIDADE.md).
-Esses documentos descrevem o que existe e suas pendências;
-não representam homologação do MVP completo.
+O compartilhamento direto para Stories por integração nativa com aplicativos fica para uma etapa posterior ao MVP.
 
-Na revisão de escopo de 10/11/2026, avaliações passam a seguir o acesso do
-perfil: visíveis aos participantes autenticados e editáveis/excluíveis
-somente pelo autor, sem visibilidade independente de nota e resenha.
-O histórico reúne avaliações atuais, sem datas de escuta nem registros
-repetidos por audição. O PRD revisa jornadas, modelo de dados, critérios de
-aceite e referências Premium. O PDF técnico v1.0 permanece como referência
-original; nas regras alteradas, vale o PRD v1.2. As avaliações já seguem
-essas regras. As preferências antigas de publicação foram removidas do
-contrato e do banco pela migration `AdicionarAvaliacoes`.
+### Um passeio pelo aplicativo
 
-## Arquitetura e diferenças da proposta
+1. **Crie sua conta** e personalize seu perfil.
+2. **Pesquise uma faixa ou álbum** no catálogo musical.
+3. **Escreva uma avaliação** com uma nota, uma resenha ou os dois.
+4. **Explore o feed**, descubra outras avaliações e siga participantes.
+5. **Curta e compartilhe** avaliações para interagir com a comunidade.
 
-Backend em ASP.NET Core 10, organizado em `server/src`:
+## 🧰 Tecnologias
 
-- `Api`: controllers, contratos HTTP, JWT e documentação OpenAPI.
-- `Aplicacao`: casos de uso e handlers MediatR.
-- `Dominio`: contratos e tipos do domínio, sem dependência das outras camadas.
-- `Infraestrutura`: EF Core, SQL Server, Identity e repositórios.
-- `Worker`: host legado MassTransit/RabbitMQ, mantido para consumir mensagens
-  de avatar já publicadas antes da troca para processamento síncrono.
+| Camada | Tecnologias e responsabilidades |
+| --- | --- |
+| Interface | **Angular 22**, **TypeScript 6**, componentes standalone, Signals e Reactive Forms. |
+| Estilos e ícones | **Tailwind CSS 4**, SCSS e **Lucide Angular**. |
+| API | **ASP.NET Core 10**, controllers REST, autenticação e documentação OpenAPI/Swagger. |
+| Aplicação e domínio | Casos de uso com **MediatR**, regras de negócio e contratos. |
+| Persistência | **Entity Framework Core 10**, migrations e **SQL Server**. |
+| Catálogo | Spotify Web API com Client Credentials. |
+| Testes | **xUnit** no backend e **Vitest/Playwright** no frontend. |
 
-| Tema | Proposta do PDF | Implementação atual |
-| --- | --- | --- |
-| Banco | PostgreSQL/Npgsql | SQL Server/EF Core, com migrations versionadas |
-| Base das rotas | `/api/v1` | `/api` |
-| Testes | MSTest e integração HTTP/banco | xUnit e teste integrado Python com SQL Server |
-| OpenAPI | Swagger UI com Swashbuckle | OpenAPI nativo do ASP.NET Core e Swagger UI do Swashbuckle |
-| Configuração do banco | `ConnectionStrings__Default` | `ConnectionStrings__SqlServer` |
-| Perfil público | Acesso anônimo a decidir | No piloto, somente participantes autenticados |
-| Erros | ProblemDetails com `type`, `title`, `status`, `detail`, `traceId` | Padronizados, incluindo validação, autenticação, rate limiting e falhas internas |
+As versões refletem os manifests do repositório. O deploy e a homologação completa do MVP ainda estão pendentes; veja [Preparação do piloto](docs/PILOTO.md).
 
-A seção 16 do PDF identifica stack, URL base e outros detalhes como propostas
-técnicas. Esta revisão registra as diferenças encontradas; não confirma
-aprovação dessas escolhas nem altera banco, rotas ou framework de testes.
-Para o piloto: usernames de 3 a 30 caracteres ASCII permitidos, confirmação
-de e-mail não obrigatória e perfis restritos a participantes autenticados.
-Continuam pendentes exclusão de conta, retenção de dados e eventual controle
-por convites; detalhes em [CADASTRO.md](server/CADASTRO.md).
+## 🚀 Como executar
 
-## Execução local
+### Pré-requisitos
 
-Pré-requisitos: SDK .NET 10, SQL Server acessível e
-certificado HTTPS de desenvolvimento. Execute os comandos na raiz do repositório.
+- **Git**.
+- **SDK do .NET 10**.
+- **Node.js 24.15.x** e **npm 11.19.x**.
+- Uma instância local ou acessível de **SQL Server**.
+- Credenciais de aplicativo do **Spotify** para habilitar a busca real do catálogo.
 
-Configure a conexão e a chave JWT via User Secrets, substituindo os valores
-de exemplo por valores locais. A chave precisa ter pelo menos 32 bytes.
+Os comandos a seguir partem da raiz do repositório e usam PowerShell.
+
+### 1. Clone o repositório
+
+```powershell
+git clone https://github.com/k-silvax19/Somnia.git
+cd Somnia
+```
+
+### 2. Configure a API
+
+Guarde connection string, chave JWT e credenciais Spotify em User Secrets. Use valores próprios para o seu ambiente; a chave JWT precisa ter pelo menos 32 bytes.
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:SqlServer" "<conexão SQL Server local>" --project server/src/Api
 dotnet user-secrets set "Jwt:SigningKey" "<chave aleatória com pelo menos 32 bytes>" --project server/src/Api
-dotnet user-secrets set "Spotify:ClientId" "<Client ID do aplicativo Spotify>" --project server/src/Api
-dotnet user-secrets set "Spotify:ClientSecret" "<Client Secret do aplicativo Spotify>" --project server/src/Api
+dotnet user-secrets set "Spotify:ClientId" "<Client ID do Spotify>" --project server/src/Api
+dotnet user-secrets set "Spotify:ClientSecret" "<Client Secret do Spotify>" --project server/src/Api
 dotnet dev-certs https --trust
+```
+
+`Jwt:Issuer` e `Jwt:Audience` já têm valores de desenvolvimento em `server/src/Api/appsettings.json`. Para uma instância local diferente, ajuste `Cors:AllowedOrigins` para incluir a origem HTTPS do frontend. Não coloque credenciais em arquivos versionados.
+
+Restaure e inicie a API:
+
+```powershell
 dotnet restore server/Somnia.slnx
 dotnet run --project server/src/Api --launch-profile https
 ```
 
-`Jwt:Issuer` e `Jwt:Audience` precisam estar configurados; os valores de base
-estão em `appsettings.json`. Para um frontend em outra origem, configure
-`Cors:AllowedOrigins` com origens HTTPS explícitas conforme o contrato de
-autenticação. Não inclua segredos reais em commits.
+O perfil local usa `https://localhost:7201` e redireciona HTTP em `http://localhost:5094` para HTTPS. Em `Development`, as migrations são aplicadas ao iniciar.
 
-O perfil local usa `https://localhost:7201` e redireciona o HTTP da porta 5094
-para HTTPS. Swagger: `https://localhost:7201/swagger`;
-OpenAPI: `https://localhost:7201/openapi/v1.json`. O `v1` desse arquivo
-identifica o documento OpenAPI; as rotas dos controllers continuam em `/api`.
-Swagger e OpenAPI são expostos somente em Development.
+| Serviço | Endereço local |
+| --- | --- |
+| API | `https://localhost:7201` |
+| Swagger UI | `https://localhost:7201/swagger` |
+| OpenAPI | `https://localhost:7201/openapi/v1.json` |
 
-O Worker e o RabbitMQ não são necessários para novas fotos. O PUT de avatar
-valida e normaliza a imagem dentro da API, grava o resultado no SQL Server e
-responde com status `completed`. O frontend carrega a foto logo após o upload.
-O Worker legado pode ser iniciado para terminar mensagens que já estavam na
-fila antes desta mudança; os detalhes estão em [MENSAGERIA.md](server/MENSAGERIA.md).
+Swagger e OpenAPI ficam disponíveis apenas em `Development`. O appsettings base deixa o catálogo desativado; em desenvolvimento, `appsettings.Development.json` habilita Spotify. Consulte [Catálogo musical](server/CATALOGO.md) para configuração e limites.
 
-Em Development, `MusicCatalog:Provider=Spotify` usa as credenciais dos User
-Secrets compartilhados (`Somnia`). Reinicie a API após configurá-las. Consulte
-`GET /api/catalog/search?q=Radiohead&type=album&limit=10&offset=0` com JWT no
-Swagger. O mercado padrão é `BR`; não é necessário login Spotify do usuário.
-O arquivo base mantém `Disabled`: para produção, configure explicitamente
-`MusicCatalog__Provider=Spotify` e os segredos no ambiente de hospedagem.
-`Simulated` continua disponível somente em Development para testes sem Spotify.
-Configuração, limites e atribuição estão em [CATALOGO.md](server/CATALOGO.md).
+### 3. Inicie o frontend
 
-As migrations em `server/src/Infraestrutura/Compartilhado/Orm/Migrations`
-são aplicadas automaticamente na inicialização em Development. Para produção,
-o gerador de SQL idempotente e as decisões operacionais estão em
-[Preparação do piloto](docs/PILOTO.md). A aplicação do SQL permanece controlada.
+Em outro terminal:
 
-## Verificação
+```powershell
+cd client
+npm ci
+npm start
+```
+
+Abra **https://localhost:4200**. O script prepara o certificado HTTPS local do Angular. A API local já permite essa origem. Use `localhost` no navegador para corresponder ao certificado.
+
+Para conferir as opções adicionais de execução e os testes de navegador, consulte [client/README.md](client/README.md).
+
+## 🏗️ Arquitetura
+
+O backend separa entrada HTTP, casos de uso, domínio e persistência. O frontend Angular consome a API por HTTPS.
+
+```mermaid
+flowchart LR
+    UI[Angular] -->|HTTPS + sessão| API[ASP.NET Core API]
+    API --> APP[Aplicação]
+    APP --> DOM[Domínio]
+    API --> INFRA[Infraestrutura]
+    INFRA --> DOM
+    INFRA -->|Entity Framework Core| DB[(SQL Server)]
+    INFRA -->|Client Credentials| SPOTIFY[Spotify Web API]
+```
+
+| Projeto | Responsabilidade |
+| --- | --- |
+| **Api** | Controllers, contratos HTTP, autenticação, CORS, rate limiting e OpenAPI. |
+| **Aplicacao** | Comandos, consultas, handlers e coordenação dos casos de uso. |
+| **Dominio** | Entidades, regras, tipos e contratos do domínio. |
+| **Infraestrutura** | SQL Server, EF Core, Identity, repositórios e integração com o catálogo. |
+| **Worker** | Host legado RabbitMQ/MassTransit, mantido para concluir mensagens de avatar publicadas por versões anteriores. |
+
+### Estrutura do repositório
+
+```text
+Somnia/
+├── client/
+│   ├── docs/                 # Capturas de tela
+│   ├── public/               # Recursos públicos do frontend
+│   └── src/app/              # Funcionalidades e componentes Angular
+├── docs/                     # Produto, piloto e decisões de funcionalidades
+├── server/
+│   ├── src/
+│   │   ├── Api/
+│   │   ├── Aplicacao/
+│   │   ├── Dominio/
+│   │   ├── Infraestrutura/
+│   │   └── Worker/
+│   └── tests/Somnia.Tests/
+└── README.md
+```
+
+## 🔌 API
+
+As rotas da tabela são relativas a `https://localhost:7201`. A API exige autenticação nas rotas protegidas. O login web usa cookies seguros para refresh e CSRF; o Swagger local está configurado para enviar os cabeçalhos necessários.
+
+| Método | Rota | Operação |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Criar conta. |
+| `POST` | `/api/auth/login` | Iniciar sessão. |
+| `POST` | `/api/auth/refresh` | Renovar a sessão. |
+| `POST` | `/api/auth/logout` | Encerrar sessões da conta. |
+| `GET` | `/api/me` | Consultar o perfil autenticado. |
+| `PATCH` | `/api/me/profile` | Editar nome e biografia. |
+| `GET` | `/api/users/{username}` | Consultar perfil. |
+| `GET` | `/api/catalog/search` | Pesquisar álbuns ou faixas. |
+| `GET` | `/api/catalog/albums/{externalId}` | Consultar detalhes de álbum. |
+| `GET` | `/api/catalog/tracks/{externalId}` | Consultar detalhes de faixa. |
+| `POST` | `/api/reviews` | Criar avaliação. |
+| `GET` | `/api/reviews/{id}` | Consultar avaliação. |
+| `PUT` | `/api/reviews/{id}` | Editar avaliação própria. |
+| `DELETE` | `/api/reviews/{id}` | Excluir avaliação própria. |
+| `PUT` / `DELETE` | `/api/reviews/{id}/like` | Curtir ou remover a curtida. |
+| `GET` | `/api/users/{username}/reviews` | Consultar histórico de avaliações. |
+| `GET` | `/api/feed` | Consultar o feed de quem segue. |
+| `GET` | `/api/discover` | Explorar avaliações e sugestões. |
+| `PUT` / `DELETE` | `/api/users/{username}/follow` | Seguir ou deixar de seguir. |
+| `GET` | `/api/users/{username}/followers` | Listar seguidores. |
+| `GET` | `/api/users/{username}/following` | Listar pessoas seguidas. |
+
+Consulte o Swagger com a API local em execução ou os documentos em [`docs/`](docs/).
+
+## 📐 Regras do produto
+
+- Cada participante tem uma avaliação atual por item musical; álbum e faixa são itens separados.
+- A nota é opcional e, quando informada, é um inteiro de **0 a 100**. Zero é uma nota válida.
+- A resenha é opcional. Uma resenha sem nota não contribui para a média da comunidade.
+- Somente o autor pode editar ou excluir sua avaliação. Os perfis e avaliações exigem autenticação.
+- Participantes podem curtir avaliações, inclusive as próprias; a relação de curtida é única por pessoa e avaliação.
+- O histórico do perfil lista avaliações atuais, sem registros repetidos de audição. Diário musical privado não faz parte do MVP.
+
+## 🧪 Build e testes
+
+Na raiz do repositório, para compilar e executar os testes unitários do backend:
 
 ```powershell
 dotnet build server/Somnia.slnx -c Release
 dotnet test server/tests/Somnia.Tests -c Release
-python server/tests/security/auth_security_smoke.py
 ```
 
-A suíte possui 176 testes xUnit, incluindo avaliações, relações e comunidade. O teste integrado
-exercita HTTPS, SQL e um broker real com API/consumer separados. O build da
-solução inclui o Worker. O avatar usa SkiaSharp com bibliotecas nativas para
-Windows, macOS e Linux. As migrations `AdicionarAvatares` e
-`ProcessarAvataresAssincronos` armazenam imagens normalizadas, solicitações
-privadas e mensagens de outbox no SQL Server, sem exigir diretório de uploads
-ou Blob Storage.
-O teste integrado HTTPS/SQL/RabbitMQ cobre as
-três rotas de catálogo, paginação, indisponibilidade controlada e limites
-por usuário. A execução anterior do Worker Linux, limitada a uma CPU e
-512 MiB, está registrada em [MENSAGERIA.md](server/MENSAGERIA.md).
+No diretório `client`, os comandos de build, formatação, testes unitários e navegador são:
 
-O workflow `.github/workflows/ci.yml` executa restore, build e testes
-unitários em pushes/PRs que alteram o backend, além de execução manual.
-Não exige SQL Server, RabbitMQ ou Spotify para os testes unitários.
-A execução remota ocorrerá depois de enviar os commits ao GitHub.
-Os testes incluem avaliações, médias, histórico, relações, feed e descoberta;
-homologação do frontend e do MVP completo continua pendente. O smoke também
-verifica criação concorrente, autorização, paginação e acesso aos dados
-próprios durante indisponibilidade do catálogo.
+```powershell
+npm run build
+npm run format:check
+npm test -- --watch=false
+npx playwright install chromium
+npm run test:e2e
+```
 
-O teste integrado usa Python com biblioteca padrão, certificado HTTPS do .NET
-e Docker. Atualmente lê a conexão de `appsettings.Development.json` e acessa
-o contêiner `notekeeper-sqlserver-1` pelo nome fixo; não usa a conexão dos
-User Secrets. Exige esse ambiente local, cria um banco temporário com prefixo
-`SomniaAuthSecurity_` e um contêiner RabbitMQ descartável com credenciais
-aleatórias. Os recursos temporários são removidos ao terminar. Detalhes em
-[AUTENTICACAO.md](server/AUTENTICACAO.md) e [MENSAGERIA.md](server/MENSAGERIA.md).
+Os testes de API que dependem de serviços locais descartáveis e os requisitos de execução estão descritos em [client/README.md](client/README.md), [Autenticação](docs/AUTENTICACAO.md) e [Mensageria](docs/MENSAGERIA.md).
+
+## 📚 Documentação
+
+- [Contexto e próximos passos](docs/CONTEXTO.md)
+- [Preparação do piloto](docs/PILOTO.md)
+- [Avaliações](docs/AVALIACOES.md) · [Curtidas](docs/CURTIDAS.md) · [Compartilhamento](docs/COMPARTILHAMENTO.MD)
+- [Catálogo musical](docs/CATALOGO.md) · [Comunidade](docs/COMUNIDADE.md) · [Relações](docs/RELACOES.md)
+- [Autenticação](docs/AUTENTICACAO.md) · [Perfis](docs/PERFIS.md) · [Mensageria](docs/MENSAGERIA.md)
+
+---
+
+<div align="center">
+
+**Somnia — encontre as histórias que a música desperta.**
+
+[Voltar ao topo](#-somnia)
+
+</div>
