@@ -21,6 +21,7 @@ export interface Account {
 export interface Credentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface Registration extends Credentials {
