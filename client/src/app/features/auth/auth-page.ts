@@ -16,8 +16,9 @@ type Field = 'displayName' | 'username' | 'email' | 'password' | 'confirmation';
 export class AuthPage {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
-  protected readonly registering = inject(ActivatedRoute).snapshot.data['register'] === true;
+  protected readonly registering = this.route.snapshot.data['register'] === true;
   private readonly navigationState = this.router.currentNavigation()?.extras.state;
   protected readonly registered = this.navigationState?.['registered'] === true;
   protected readonly pending = signal(false);
@@ -26,6 +27,12 @@ export class AuthPage {
   protected readonly serverFields = signal<Record<string, string>>({});
   protected readonly cooldown = signal(0);
   private cooldownTimer?: ReturnType<typeof setInterval>;
+
+  private get returnUrl(): string {
+    const candidate = this.route.snapshot.queryParamMap.get('returnUrl');
+    return candidate?.startsWith('/') && !candidate.startsWith('//') ? candidate : '/inicio';
+  }
+
   protected readonly form = inject(FormBuilder).nonNullable.group(
     {
       displayName: [
@@ -116,11 +123,12 @@ export class AuthPage {
           password: value.password,
         });
         await this.router.navigate(['/entrar'], {
+          queryParams: this.route.snapshot.queryParams,
           state: { registered: true, email: value.email.trim() },
         });
       } else {
         await this.auth.login({ email: value.email.trim(), password: value.password });
-        await this.router.navigate(['/inicio']);
+        await this.router.navigateByUrl(this.returnUrl);
       }
     } catch (error: unknown) {
       const problem = apiError(error);
