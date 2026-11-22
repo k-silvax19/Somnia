@@ -8,13 +8,17 @@ namespace Somnia.Infraestrutura.Compartilhado.Auth;
 
 public sealed class RefreshTokensEmOrm(SomniaDbContext db) : IRefreshTokens
 {
-    public async Task<RefreshTokenDto> CriarAsync(Guid usuarioId, CancellationToken ct)
+    public Task<RefreshTokenDto> CriarAsync(Guid usuarioId, CancellationToken ct) =>
+        CriarAsync(usuarioId, false, ct);
+
+    public async Task<RefreshTokenDto> CriarAsync(Guid usuarioId, bool lembrarLogin, CancellationToken ct)
     {
         var sessao = new SessaoAutenticacao
         {
             Id = Guid.CreateVersion7(),
             UsuarioId = usuarioId,
-            ExpiraEmUtc = DateTime.UtcNow.AddDays(30)
+            LembrarLogin = lembrarLogin,
+            ExpiraEmUtc = DateTime.UtcNow.AddDays(lembrarLogin ? 90 : 30)
         };
         db.Sessoes.Add(sessao);
         var token = CriarRegistro(sessao);
@@ -90,7 +94,7 @@ public sealed class RefreshTokensEmOrm(SomniaDbContext db) : IRefreshTokens
     private RefreshTokenDto CriarRegistro(SessaoAutenticacao sessao)
     {
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
-        var prazo = DateTime.UtcNow.AddDays(7);
+        var prazo = DateTime.UtcNow.AddDays(sessao.LembrarLogin ? 30 : 7);
         var expiraEmUtc = DateTime.SpecifyKind(
             prazo < sessao.ExpiraEmUtc ? prazo : sessao.ExpiraEmUtc, DateTimeKind.Utc);
         db.RefreshTokens.Add(new RefreshToken

@@ -5,7 +5,7 @@ using Somnia.Dominio.Compartilhado;
 
 namespace Somnia.Aplicacao.Modulos.Auth;
 
-public sealed record AutenticarUsuarioCommand(string? Email, string? Senha)
+public sealed record AutenticarUsuarioCommand(string? Email, string? Senha, bool LembrarLogin = false)
     : IRequest<Result<TokenDto>>;
 
 public sealed class AutenticarUsuarioCommandHandler(
@@ -28,7 +28,9 @@ public sealed class AutenticarUsuarioCommandHandler(
             return Result.Fail<TokenDto>(Erros.Criar(TipoErro.NaoAutenticado, "Credenciais inválidas."));
         }
 
-        var refreshToken = await refreshTokens.CriarAsync(usuario.Id, ct);
+        var refreshToken = command.LembrarLogin
+            ? await refreshTokens.CriarAsync(usuario.Id, true, ct)
+            : await refreshTokens.CriarAsync(usuario.Id, ct);
         var token = emissor.CriarToken(usuario, refreshToken.SessaoId) with
         {
             RefreshToken = refreshToken.Token,

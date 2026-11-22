@@ -20,7 +20,7 @@ public sealed record RegistroRequest(
     [Required] string? Password,
     [Required, StringLength(RegrasCadastro.NomeMaximo)] string? DisplayName
 );
-public sealed record AutenticacaoRequest(string? Email, string? Password);
+public sealed record AutenticacaoRequest(string? Email, string? Password, bool RememberMe = false);
 
 [ApiController]
 [ValidarOrigemAuth]
@@ -49,7 +49,7 @@ public sealed class AuthController(IMediator mediator, IOptions<JwtOptions> jwtO
     [EnableRateLimiting("login")]
     public async Task<IActionResult> Login(AutenticacaoRequest request, CancellationToken ct)
     {
-        var result = await mediator.Send(new AutenticarUsuarioCommand(request.Email, request.Password), ct);
+        var result = await mediator.Send(new AutenticarUsuarioCommand(request.Email, request.Password, request.RememberMe), ct);
 
         if (result.IsFailed)
         {

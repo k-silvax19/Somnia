@@ -60,6 +60,7 @@ export class AuthPage {
           : [Validators.required],
       ],
       confirmation: ['', this.registering ? [Validators.required] : []],
+      rememberMe: [false],
     },
     {
       validators: this.registering
@@ -127,7 +128,11 @@ export class AuthPage {
           state: { registered: true, email: value.email.trim() },
         });
       } else {
-        await this.auth.login({ email: value.email.trim(), password: value.password });
+        await this.auth.login({
+          email: value.email.trim(),
+          password: value.password,
+          rememberMe: value.rememberMe,
+        });
         await this.router.navigateByUrl(this.returnUrl);
       }
     } catch (error: unknown) {

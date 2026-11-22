@@ -138,6 +138,15 @@
               }}</span>
             </div>
           }
+          @if (!registering) {
+            <label class="remember-login" for="rememberMe">
+              <input id="rememberMe" type="checkbox" formControlName="rememberMe" />
+              <span>
+                Manter conectado por mais tempo
+                <small>A sessão termina após 30 dias sem acesso, com limite de 90 dias.</small>
+              </span>
+            </label>
+          }
           <button
             class="button primary submit"
             type="submit"
