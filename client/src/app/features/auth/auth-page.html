@@ -157,9 +157,11 @@
 
       <p class="switch-form">
         {{ registering ? 'Já faz parte do Somnia?' : 'Ainda não tem uma conta?' }}
-        <a [routerLink]="registering ? '/entrar' : '/cadastro'">{{
-          registering ? 'Entrar' : 'Criar conta'
-        }}</a>
+        <a
+          [routerLink]="registering ? '/entrar' : '/cadastro'"
+          queryParamsHandling="preserve"
+          >{{ registering ? 'Entrar' : 'Criar conta' }}</a
+        >
       </p>
       <p class="privacy-note">
         <svg viewBox="0 0 24 24" aria-hidden="true">
