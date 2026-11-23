@@ -1,6 +1,6 @@
 namespace Somnia.Dominio.Compartilhado;
 
-public sealed record RefreshTokenDto(string Token, DateTime ExpiraEmUtc, Guid SessaoId);
+public sealed record RefreshTokenDto(string Token, DateTime ExpiraEmUtc, Guid SessaoId, bool LembrarLogin = false);
 public sealed record SessaoRenovada(CredenciaisUsuario Usuario, RefreshTokenDto RefreshToken);
 
 public interface IRefreshTokens

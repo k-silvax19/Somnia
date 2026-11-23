@@ -7,6 +7,7 @@ import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private static readonly csrfCookieName = '__Host-somnia-csrf';
   private readonly apiUrl = environment.apiUrl;
   // Auth calls bypass the interceptor to avoid recursive refresh requests.
   private readonly http = new HttpClient(inject(HttpBackend));
@@ -23,6 +24,7 @@ export class AuthService {
   constructor() {
     if (this.channel) {
       this.channel.onmessage = (event: MessageEvent<unknown>) => {
+        if (event.data === 'logout') this.clearCsrfToken();
         if (event.data === 'logout') this.invalidate('Sua sessão foi encerrada em outra aba.');
         if (event.data === 'login') {
           // Another login replaces shared cookies; don't keep a different account's JWT.
@@ -44,6 +46,7 @@ export class AuthService {
       const session = await firstValueFrom(
         this.http.post<Session>(`${this.apiUrl}/auth/login`, data, this.options()),
       );
+      this.saveCsrfCookie(session);
       this.revision++;
       this.current.set(session);
       this.refreshBlocked = false;
@@ -58,7 +61,7 @@ export class AuthService {
       return Promise.resolve(session);
     }
     if (this.refreshFlight) return this.refreshFlight;
-    if (this.refreshBlocked || !this.csrfCookie()) {
+    if (this.refreshBlocked || !this.csrfToken()) {
       if (session) this.invalidate('Sua sessão expirou. Entre novamente.');
       return Promise.resolve(null);
     }
@@ -67,7 +70,7 @@ export class AuthService {
     this.refreshFlight = this.withSessionLock(async () => {
       if (revision !== this.revision) return this.current();
       // Read AFTER acquiring the cross-tab lock: refresh rotates both cookies.
-      const csrf = this.csrfCookie();
+      const csrf = this.csrfToken();
       if (!csrf) {
         this.invalidate('Sua sessão expirou. Entre novamente.');
         return null;
@@ -77,6 +80,7 @@ export class AuthService {
           this.http.post<Session>(`${this.apiUrl}/auth/refresh`, {}, this.options(csrf)),
         );
         if (revision !== this.revision) return this.current();
+        this.saveCsrfCookie(renewed);
         this.current.set(renewed);
         this.notice.set('');
         return renewed;
@@ -102,7 +106,7 @@ export class AuthService {
     const revision = this.revision;
     await this.withSessionLock(async () => {
       if (revision !== this.revision) return;
-      const csrf = this.csrfCookie();
+      const csrf = this.csrfToken();
       if (!csrf) {
         this.invalidate('Sua sessão expirou. Entre novamente.');
         return;
@@ -121,6 +125,7 @@ export class AuthService {
       );
       if (revision !== this.revision) return;
       this.invalidate('Você saiu de todos os dispositivos.');
+      this.clearCsrfToken();
       this.channel?.postMessage('logout');
     });
   }
@@ -132,14 +137,34 @@ export class AuthService {
     this.notice.set(message);
   }
 
-  private csrfCookie(): string | null {
+  private csrfToken(): string | null {
     const value = this.document.cookie
       .split('; ')
-      .find((cookie) => cookie.startsWith('__Host-somnia-csrf='))
+      .find((cookie) => cookie.startsWith(`${AuthService.csrfCookieName}=`))
       ?.split('=')
       .slice(1)
       .join('=');
-    return value || null;
+    return value ? decodeURIComponent(value) : null;
+  }
+
+  private saveCsrfCookie(session: Session): void {
+    try {
+      const expires = session.lembrarLogin && session.refreshExpiraEmUtc
+        ? `; Expires=${new Date(session.refreshExpiraEmUtc).toUTCString()}`
+        : '';
+      this.document.cookie =
+        `${AuthService.csrfCookieName}=${encodeURIComponent(session.csrfToken)}; Path=/; Secure; SameSite=Strict${expires}`;
+    } catch {
+      // The access token remains usable in memory until a refresh is needed.
+    }
+  }
+
+  private clearCsrfToken(): void {
+    try {
+      this.document.cookie = `${AuthService.csrfCookieName}=; Path=/; Secure; SameSite=Strict; Max-Age=0`;
+    } catch {
+      // The API logout already clears its own cookies.
+    }
   }
 
   private options(csrf?: string) {

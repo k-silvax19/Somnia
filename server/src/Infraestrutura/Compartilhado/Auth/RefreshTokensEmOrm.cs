@@ -106,7 +106,7 @@ public sealed class RefreshTokensEmOrm(SomniaDbContext db) : IRefreshTokens
             ExpiraEmUtc = expiraEmUtc
         });
 
-        return new RefreshTokenDto(token, expiraEmUtc, sessao.Id);
+        return new RefreshTokenDto(token, expiraEmUtc, sessao.Id, sessao.LembrarLogin);
     }
 
     private static string CalcularHash(string token)

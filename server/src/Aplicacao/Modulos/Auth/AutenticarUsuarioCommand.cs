@@ -34,7 +34,8 @@ public sealed class AutenticarUsuarioCommandHandler(
         var token = emissor.CriarToken(usuario, refreshToken.SessaoId) with
         {
             RefreshToken = refreshToken.Token,
-            RefreshExpiraEmUtc = refreshToken.ExpiraEmUtc
+            RefreshExpiraEmUtc = refreshToken.ExpiraEmUtc,
+            LembrarLogin = refreshToken.LembrarLogin
         };
 
         return Result.Ok(token);

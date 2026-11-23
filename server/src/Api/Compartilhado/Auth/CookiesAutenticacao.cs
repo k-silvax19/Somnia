@@ -28,8 +28,8 @@ public static class CookiesAutenticacao
     {
         var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         var csrf = nonce + "." + AssinarCsrf(nonce, token.RefreshToken!, signingKey);
-        response.Cookies.Append(RefreshCookie, token.RefreshToken!, Opcoes(token.RefreshExpiraEmUtc, true));
-        response.Cookies.Append(CsrfCookie, csrf, Opcoes(token.RefreshExpiraEmUtc, false));
+        response.Cookies.Append(RefreshCookie, token.RefreshToken!, Opcoes(token.RefreshExpiraEmUtc, true, token.LembrarLogin));
+        response.Cookies.Append(CsrfCookie, csrf, Opcoes(token.RefreshExpiraEmUtc, false, token.LembrarLogin));
 
         return new
         {
@@ -39,6 +39,7 @@ public static class CookiesAutenticacao
             token.AccessToken,
             token.DataExpiracaoEmUtc,
             token.RefreshExpiraEmUtc,
+            token.LembrarLogin,
             CsrfToken = csrf
         };
     }
@@ -64,15 +65,17 @@ public static class CookiesAutenticacao
         return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(nonce + ":" + refreshToken)));
     }
 
-    private static CookieOptions Opcoes(DateTime? expires, bool httpOnly)
+    private static CookieOptions Opcoes(DateTime? expires, bool httpOnly, bool persistir = false)
     {
         return new CookieOptions
         {
             HttpOnly = httpOnly,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Path = "/",
-            Expires = expires is null ? null : new DateTimeOffset(DateTime.SpecifyKind(expires.Value, DateTimeKind.Utc))
+            Expires = !persistir || expires is null
+                ? null
+                : new DateTimeOffset(DateTime.SpecifyKind(expires.Value, DateTimeKind.Utc))
         };
     }
 }
