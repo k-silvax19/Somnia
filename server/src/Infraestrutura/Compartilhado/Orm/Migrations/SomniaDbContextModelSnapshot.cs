@@ -383,9 +383,6 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
                     b.Property<DateTime>("ExpiraEmUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("LembrarLogin")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTime?>("RevogadoEmUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -420,6 +417,9 @@ namespace Somnia.Infraestrutura.Compartilhado.Orm.Migrations
 
                     b.Property<DateTime>("ExpiraEmUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("LembrarLogin")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("RevogadaEmUtc")
                         .HasColumnType("timestamp with time zone");
