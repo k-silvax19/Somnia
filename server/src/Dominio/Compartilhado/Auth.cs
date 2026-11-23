@@ -16,7 +16,8 @@ public sealed record TokenDto(
     string AccessToken,
     DateTime DataExpiracaoEmUtc,
     string? RefreshToken = null,
-    DateTime? RefreshExpiraEmUtc = null
+    DateTime? RefreshExpiraEmUtc = null,
+    bool LembrarLogin = false
 );
 public sealed record CredenciaisUsuario(Guid Id, string Nome, string Email);
 
