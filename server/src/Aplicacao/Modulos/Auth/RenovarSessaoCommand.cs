@@ -27,7 +27,8 @@ public sealed class RenovarSessaoCommandHandler(IRefreshTokens refreshTokens, IE
         var token = emissor.CriarToken(sessao.Usuario, sessao.RefreshToken.SessaoId) with
         {
             RefreshToken = sessao.RefreshToken.Token,
-            RefreshExpiraEmUtc = sessao.RefreshToken.ExpiraEmUtc
+            RefreshExpiraEmUtc = sessao.RefreshToken.ExpiraEmUtc,
+            LembrarLogin = sessao.RefreshToken.LembrarLogin
         };
 
         return Result.Ok(token);
